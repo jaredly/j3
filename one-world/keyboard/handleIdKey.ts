@@ -10,7 +10,7 @@ import { collapseAdjacentIDs, findPath, flatToUpdateNew, flatten, pruneEmptyIds,
 import { Config } from './test-utils';
 import { Current, Cursor, IdCursor, Path, Top, Update, findTableLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
 
-export const handleIdKey = (config: Config, top: Top, current: Extract<Current, { type: 'id' }>, grem: string): KeyAction[] | Update | void => {
+export const handleIdKey = (config: Config, top: Top, current: Extract<Current, { type: 'id' }>, grem: string): KeyAction[] | void => {
     // let node = top.nodes[lastChild(current.path)];
     // if (node.type !== 'id') throw new Error('not id');
     const kind = textKind(grem, config);
@@ -36,7 +36,7 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
         }
     }
 
-    const table = handleTableSplit(grem, config, path, top, splitIdCell(current), current.cursor.end);
+    const table = handleTableSplit(grem, config, path, top, current.cursor.end);
     if (table) return table;
 
     const text = idText(top.tmpText, cursor, node);
@@ -158,6 +158,46 @@ const getSplit = (top: Top, path: Path, at: number | 'before' | 'after') => {
         const blank: Node = richNode(pnode) ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: -1 } : { type: 'id', text: '', loc: -1 };
         return splitListCell(node, { type: 'list', where: at === 'before' ? 'before' : 'after' }, blank);
     }
+};
+
+export const splitTableCol = (top: Top, path: Path, tablePath: Path, at: number | 'before' | 'after') => {
+    const table = top.nodes[lastChild(tablePath)];
+    if (table.type !== 'table') return;
+
+    const splitCell = getSplit(top, path, at);
+    if (!splitCell) return;
+
+    const celloc = path.children[tablePath.children.length];
+    const { row, col } = findTableLoc(table.rows, celloc);
+    if (table.rows[row][col] !== celloc) {
+        throw new Error(`coudlnt find cell in table`);
+    }
+
+    const item = table.rows[row][col];
+    const loc = table.loc;
+
+    // This is the thing to split
+    const cell = top.nodes[item];
+
+    const { result, two } = splitCell(cell, top, loc);
+    if (result.sloc == null) throw new Error(`sel node not encountered`);
+
+    const rows = table.rows.slice();
+    rows[row] = rows[row].slice();
+    rows[row].splice(col, 1, ...result.other);
+
+    result.nodes[loc] = { ...table, rows };
+
+    const selPath = findPath(loc, result.nodes, result.sloc);
+    if (!selPath) throw new Error(`can't find sel in selpath.`);
+
+    return {
+        nodes: result.nodes,
+        nextLoc: result.nextLoc,
+        selection: {
+            start: selStart(pathWithChildren(parentPath(tablePath), ...selPath), two.selection.cursor),
+        },
+    };
 };
 
 export const splitTableRow = (top: Top, path: Path, tablePath: Path, at: number | 'before' | 'after', multi: boolean) => {
@@ -288,55 +328,18 @@ export const handleTagCloser = (
     }
 };
 
-export const handleTableSplit = (
-    grem: string,
-    config: Config,
-    path: Path,
-    top: Top,
-    splitCell: (cell: Node, top: Top, loc: number) => SplitRes,
-    at: number | 'before' | 'after',
-): Update | void | KeyAction[] => {
+export const handleTableSplit = (grem: string, config: Config, path: Path, top: Top, at: number | 'before' | 'after'): void | KeyAction[] => {
     if (config.tableRow.includes(grem)) {
         const parent = findParent(2, parentPath(path), top);
         if (parent?.node.type === 'table') {
-            return [{ type: 'table-row-split', path, tablePath: parent.path, at, multi: grem === '\n' }];
+            return [{ type: 'table-split', path, tablePath: parent.path, at, rowMulti: grem === '\n' }];
         }
     }
 
     if (config.tableCol.includes(grem)) {
         const parent = findParent(2, parentPath(path), top);
         if (parent?.node.type === 'table') {
-            const celloc = path.children[parent.path.children.length];
-            const { row, col } = findTableLoc(parent.node.rows, celloc);
-            if (parent.node.rows[row][col] !== celloc) {
-                throw new Error(`coudlnt find cell in table`);
-            }
-
-            const item = parent.node.rows[row][col];
-            const loc = parent.node.loc;
-
-            // This is the thing to split
-            const cell = top.nodes[item];
-
-            const { result, two } = splitCell(cell, top, loc);
-            if (result.sloc == null) throw new Error(`sel node not encountered`);
-
-            const rows = parent.node.rows.slice();
-            rows[row] = rows[row].slice();
-            rows[row].splice(col, 1, ...result.other);
-
-            result.nodes[loc] = { ...parent.node, rows };
-
-            const selPath = findPath(loc, result.nodes, result.sloc);
-            if (!selPath) throw new Error(`can't find sel in selpath.`);
-
-            return {
-                nodes: result.nodes,
-                nextLoc: result.nextLoc,
-                selection: {
-                    start: selStart(pathWithChildren(parentPath(parent.path), ...selPath), two.selection.cursor),
-                },
-            };
+            return [{ type: 'table-split', path, tablePath: parent.path, at }];
         }
     }
 };

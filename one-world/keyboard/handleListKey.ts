@@ -162,10 +162,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
         }
     }
 
-    const pnode = top.nodes[parentLoc(path)];
-    const blank: Node = richNode(pnode) ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: -1 } : { type: 'id', text: '', loc: -1 };
-
-    const table = handleTableSplit(grem, config, path, top, splitListCell(current, cursor, blank), cursor.where === 'before' ? 'before' : 'after');
+    const table = handleTableSplit(grem, config, path, top, cursor.where === 'before' ? 'before' : 'after');
     if (table) return table;
 
     const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);

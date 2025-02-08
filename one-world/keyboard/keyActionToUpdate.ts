@@ -10,7 +10,7 @@ import { handleDeleteTooMuch } from './multi-change';
 import { ListKind, RecNodeT, Style, TextSpan } from '../shared/cnodes';
 import { handleIdWrap, handleInsertList, wrapUpdate } from './handleWrap';
 import { addSpan, dedentOutOfRich, splitTextInRich } from './handleTextText';
-import { handleInsertText, splitTableRow } from './handleIdKey';
+import { handleInsertText, splitTableCol, splitTableRow } from './handleIdKey';
 
 export const keyActionToUpdate = (state: TestState, action: KeyAction): Update | void => {
     switch (action.type) {
@@ -73,8 +73,12 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
             return handleInsertText(state.top, action.path, action.pos, action.what);
         case 'replace-self':
             return replaceSelf(state.top, action.path, action.node, action.cursor);
-        case 'table-row-split':
-            return splitTableRow(state.top, action.path, action.tablePath, action.at, action.multi);
+        case 'table-split':
+            if (action.rowMulti != null) {
+                return splitTableRow(state.top, action.path, action.tablePath, action.at, action.rowMulti);
+            } else {
+                return splitTableCol(state.top, action.path, action.tablePath, action.at);
+            }
     }
 };
 
@@ -88,7 +92,7 @@ export type KeyAction =
     | { type: 'insert-text'; path: Path; pos: 'before' | 'after' | number; what: KeyWhat }
     | { type: 'sub-rich'; path: Path; kind: ListKind<any> }
     //
-    | { type: 'table-row-split'; path: Path; tablePath: Path; at: number | 'before' | 'after'; multi: boolean }
+    | { type: 'table-split'; path: Path; tablePath: Path; at: number | 'before' | 'after'; rowMulti?: boolean }
     // tag related
     | { type: 'tag-set-attributes'; path: Path; table: RecNodeT<boolean>; cursor: Cursor }
     // text related
