@@ -19,7 +19,7 @@ Ok, so some CRDT thgouths:
     - [x] "dedent current Text out of parent rich-list"
     - [x] split text in rich (list or table)
 - [x] handleClose
-- [ ] handleKey
+- [x] handleKey
   - [x] handleIdKey
     - [x] tag attributes
     - [x] list -> tableNew
@@ -29,8 +29,8 @@ Ok, so some CRDT thgouths:
     - [x] handleTagCloser
     - [x] handleTextInsert
     - [x] handleTableSplit
-  - [ ] handleListKey
-  - [ ] handleTextKey
+  - [x] handleListKey
+  - [x] handleTextKey
 
 ##
 

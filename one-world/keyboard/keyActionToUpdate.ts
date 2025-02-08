@@ -11,6 +11,7 @@ import { ListKind, RecNodeT, Style, TextSpan } from '../shared/cnodes';
 import { handleIdWrap, handleInsertList, wrapUpdate } from './handleWrap';
 import { addSpan, dedentOutOfRich, splitTextInRich } from './handleTextText';
 import { handleInsertText, splitTableCol, splitTableRow } from './handleIdKey';
+import { addInside, controlToggle } from './handleListKey';
 
 export const keyActionToUpdate = (state: TestState, action: KeyAction): Update | void => {
     switch (action.type) {
@@ -79,12 +80,18 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
             } else {
                 return splitTableCol(state.top, action.path, action.tablePath, action.at);
             }
+        case 'control-toggle':
+            return controlToggle(state.top, action.path, action.index);
+        case 'add-inside':
+            return addInside(state.top, action.path, action.children, action.cursor);
     }
 };
 
 export type KeyWhat = { type: 'space' } | { type: 'string' } | { type: 'sep'; newLine: boolean } | { type: 'text'; grem: string; ccls: number };
 
 export type KeyAction =
+    | { type: 'add-inside'; path: Path; children: RecNodeT<boolean>[]; cursor: Cursor }
+    | { type: 'control-toggle'; path: Path; index: number }
     | { type: 'unwrap'; path: Path }
     | { type: 'wrap'; path: Path; min: number; max: number; kind: ListKind<any> }
     | { type: 'id-wrap'; path: Path; left: number; right: number; kind: ListKind<any> }

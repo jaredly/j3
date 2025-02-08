@@ -8,7 +8,7 @@ import { getCurrent } from './selections';
 import { Mods } from './handleShiftNav';
 import { KeyAction } from './keyActionToUpdate';
 
-export const handleKey = (state: TestState, key: string, config: Config, mods?: Mods): Update | KeyAction[] | void => {
+export const handleKey = (state: TestState, key: string, config: Config, mods?: Mods): KeyAction[] | void => {
     const current = getCurrent(state.sel, state.top);
     switch (current.type) {
         case 'id':

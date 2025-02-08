@@ -226,7 +226,7 @@ test('after list', () => {
 test('newline list', () => {
     let state = asTop(round([], true), listc('inside'));
     state = applyUpdate(state, handleKey(state, '\n', js));
-    check(state, round([id('', true)], false, true), idc(0));
+    check(state, round([], true, true), listc('inside'));
 });
 
 test('newline list id', () => {

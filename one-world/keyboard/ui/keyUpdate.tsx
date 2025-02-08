@@ -14,7 +14,7 @@ export type Visual = {
     spans: Src[];
 };
 
-export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Visual, config: Config = js): Update | KeyAction[] | void => {
+export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Visual, config: Config = js): KeyAction[] | void => {
     if (key === 'Enter') key = '\n';
     if (key === 'Backspace') {
         return handleDelete(state);

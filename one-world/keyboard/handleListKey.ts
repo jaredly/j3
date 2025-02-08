@@ -1,4 +1,4 @@
-import { isRich, List, Node, Nodes } from '../shared/cnodes';
+import { fromRec, isRich, List, Node, Nodes, RecNodeT } from '../shared/cnodes';
 import { findParent, listKindForKeyKind, Flat, addNeighborBefore, addNeighborAfter } from './flatenate';
 import { isTag, justSel, richNode, selectStart, selUpdate } from './handleNav';
 import { Kind, textKind } from './insertId';
@@ -19,32 +19,65 @@ import {
     parentLoc,
 } from './utils';
 import { flatNeighbor, handleTableSplit, handleTagCloser } from './handleIdKey';
-import { KeyAction } from './keyActionToUpdate';
+import { KeyAction, moveA } from './keyActionToUpdate';
 
 export const braced = (node: Node) => node.type !== 'list' || (node.kind !== 'smooshed' && node.kind !== 'spaced');
 
-export const handleListKey = (config: Config, top: Top, path: Path, cursor: CollectionCursor, grem: string): Update | KeyAction[] | void => {
+export const controlToggle = (top: Top, path: Path, index: number): void | Update => {
+    const current = top.nodes[lastChild(path)];
+    if (current.type !== 'list' || typeof current.kind === 'string') return;
+    if (current.kind.type === 'checks') {
+        const loc = current.children[index];
+        return {
+            nodes: {
+                [current.loc]: {
+                    ...current,
+                    kind: { type: 'checks', checked: { ...current.kind.checked, [loc]: !current.kind.checked[loc] } },
+                },
+            },
+        };
+    }
+    if (current.kind.type === 'opts') {
+        const loc = current.children[index];
+        return { nodes: { [current.loc]: { ...current, kind: { type: 'opts', which: loc === current.kind.which ? undefined : loc } } } };
+    }
+};
+
+export const addInside = (top: Top, path: Path, children: RecNodeT<boolean>[], cursor: Cursor): void | Update => {
+    let nextLoc = top.nextLoc;
+
+    const node = top.nodes[lastChild(path)];
+    if (node.type !== 'list' && node.type !== 'table') return;
+
+    const nodes: Nodes = {};
+    let selPath: number[] = [];
+    const roots = children.map((child) =>
+        fromRec(child, nodes, (loc, __, path) => {
+            const nl = nextLoc!++;
+            if (loc === true) {
+                selPath = path.concat([nl]);
+            }
+            return nl;
+        }),
+    );
+
+    if (selPath.length === 0) throw new Error(`nothing selected in node to add`);
+
+    nodes[node.loc] = node.type === 'table' ? { ...node, rows: [roots] } : { ...node, children: roots };
+
+    return {
+        nodes,
+        nextLoc,
+        selection: { start: selStart(pathWithChildren(path, ...selPath), cursor) },
+    };
+};
+
+export const handleListKey = (config: Config, top: Top, path: Path, cursor: CollectionCursor, grem: string): KeyAction[] | void => {
     const current = top.nodes[lastChild(path)];
     const kind = textKind(grem, config);
     if (cursor.type === 'control' && current.type === 'list') {
         if (grem === ' ' || grem === '\n') {
-            if (typeof current.kind !== 'string') {
-                if (current.kind.type === 'checks') {
-                    const loc = current.children[cursor.index];
-                    return {
-                        nodes: {
-                            [current.loc]: {
-                                ...current,
-                                kind: { type: 'checks', checked: { ...current.kind.checked, [loc]: !current.kind.checked[loc] } },
-                            },
-                        },
-                    };
-                }
-                if (current.kind.type === 'opts') {
-                    const loc = current.children[cursor.index];
-                    return { nodes: { [current.loc]: { ...current, kind: { type: 'opts', which: loc === current.kind.which ? undefined : loc } } } };
-                }
-            }
+            return [{ type: 'control-toggle', path, index: cursor.index }];
         }
         return;
     }
@@ -57,107 +90,78 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
         cursor.where === 'inside' &&
         (current.kind === 'round' || current.kind === 'square' || current.kind === 'curly')
     ) {
-        return { nodes: { [current.loc]: { type: 'table', kind: current.kind, rows: [], loc: current.loc } } };
+        return [
+            {
+                type: 'replace-self',
+                path,
+                cursor: { type: 'list', where: 'inside' },
+                node: { type: 'table', kind: current.kind, loc: true, rows: [] },
+            },
+        ];
     }
 
     if (grem === '\n' && braced(current) && current.type === 'list' && !current.forceMultiline && cursor.where === 'inside') {
-        let nextLoc = top.nextLoc;
-        const loc = nextLoc++;
-        return {
-            nodes: { [current.loc]: { ...current, forceMultiline: true, children: [loc] }, [loc]: { type: 'id', text: '', loc } },
-            nextLoc,
-            selection: { start: selStart(pathWithChildren(path, loc), { type: 'id', end: 0 }) },
-        };
+        return [{ type: 'toggle-multiline', loc: current.loc }];
     }
 
     if (cursor.where === 'inside') {
         if (current.type === 'text') {
             if (kind === 'string') {
-                return justSel(path, { type: 'list', where: 'after' });
+                return moveA(selStart(path, { type: 'list', where: 'after' }));
             }
-            return {
-                nodes: {
-                    [current.loc]: {
-                        ...current,
-                        spans: [{ type: 'text', text: grem }],
-                    },
-                },
-                selection: {
-                    start: selStart(path, {
-                        type: 'text',
-                        end: {
-                            index: 0,
-                            cursor: 1,
-                        },
-                    }),
-                },
-            };
+            return [{ type: 'add-span', path, span: { type: 'text', text: grem }, index: 0, cursor: 1 }];
         }
         if (current.type !== 'list' && current.type !== 'table') throw new Error('not list or table');
         if (grem === '>' && current.type === 'list' && isTag(current.kind)) {
-            return justSel(path, { type: 'list', where: 'after' });
+            return moveA(selStart(path, { type: 'list', where: 'after' }));
         }
         switch (kind) {
             case 'string': {
-                let nextLoc = top.nextLoc;
-                const loc = nextLoc++;
-                return {
-                    nodes: {
-                        [loc]: { type: 'text', spans: [{ type: 'text', text: '' }], loc },
-                        [current.loc]: current.type === 'table' ? { ...current, rows: [[loc]] } : { ...current, children: [loc] },
+                return [
+                    {
+                        type: 'add-inside',
+                        path,
+                        children: [{ type: 'text', spans: [{ type: 'text', text: '' }], loc: true }],
+                        cursor: {
+                            type: 'text',
+                            end: { index: 0, cursor: 0 },
+                        },
                     },
-                    nextLoc,
-                    selection: { start: selStart(pathWithChildren(path, loc), { type: 'text', end: { index: 0, cursor: 0 } }) },
-                };
+                ];
             }
             case 'space':
             case 'sep': {
                 if (current.type === 'list' && isTag(current.kind)) {
-                    let nextLoc = top.nextLoc;
-                    const loc = nextLoc++;
-                    return {
-                        nodes: {
-                            [loc]: { type: 'id', loc, text: '' },
-                            [current.loc]: { ...current, children: [loc] },
-                        },
-                        nextLoc,
-                        selection: { start: selStart(pathWithChildren(path, loc), { type: 'id', end: 0 }) },
-                    };
+                    return [{ type: 'add-inside', path, children: [{ type: 'id', text: '', loc: true }], cursor: { type: 'id', end: 0 } }];
                 }
-                let nextLoc = top.nextLoc;
-                const left = nextLoc++;
-                const right = nextLoc++;
-                const nodes: Nodes = {};
-                let children = [left, right];
-                let selPath = pathWithChildren(path, right);
-                if (kind === 'space') {
-                    const wrap = nextLoc++;
-                    nodes[wrap] = { type: 'list', kind: 'spaced', children, loc: wrap };
-                    children = [wrap];
-                    selPath = pathWithChildren(path, wrap, right);
-                }
-                return {
-                    nodes: {
-                        ...nodes,
-                        [left]: { type: 'id', loc: left, text: '' },
-                        [right]: { type: 'id', loc: right, text: '' },
-                        [current.loc]: current.type === 'table' ? { ...current, rows: [children] } : { ...current, children },
+                // [add-inside, ... add another insideee]
+                return [
+                    {
+                        type: 'add-inside',
+                        path,
+                        children:
+                            kind === 'space'
+                                ? [
+                                      {
+                                          type: 'list',
+                                          loc: false,
+                                          kind: 'spaced',
+                                          children: [
+                                              { type: 'id', text: '', loc: false },
+                                              { type: 'id', text: '', loc: true },
+                                          ],
+                                      },
+                                  ]
+                                : [
+                                      { type: 'id', text: '', loc: false },
+                                      { type: 'id', text: '', loc: true },
+                                  ],
+                        cursor: { type: 'id', end: 0 },
                     },
-                    nextLoc,
-                    selection: { start: selStart(selPath, { type: 'id', end: 0 }) },
-                };
+                ];
             }
             default: {
-                let nextLoc = top.nextLoc;
-                const loc = nextLoc++;
-                return {
-                    nodes: {
-                        [loc]: { type: 'id', loc, text: grem, ccls: kind },
-                        [current.loc]: current.type === 'table' ? { ...current, rows: [[loc]] } : { ...current, children: [loc] },
-                    },
-                    nextLoc,
-                    selection: { start: selStart(pathWithChildren(path, loc), { type: 'id', end: 1 }) },
-                };
+                return [{ type: 'add-inside', path, children: [{ type: 'id', text: grem, ccls: kind, loc: true }], cursor: { type: 'id', end: 1 } }];
             }
         }
     }

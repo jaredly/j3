@@ -258,15 +258,15 @@ export const applyAppUpdate = (state: AppState, action: Action, noJoin = false):
                 const result = applyUpdate({ top, sel }, update);
                 top = result.top;
                 selections[i] = result.sel;
-                if (update && Array.isArray(update.selection)) {
-                    for (let j = 0; j < selections.length; j++) {
-                        if (j !== i) {
-                            update.selection.forEach((up) => {
-                                selections[j] = applySelUp(selections[i], up);
-                            });
-                        }
-                    }
-                }
+                // if (update && Array.isArray(update.selection)) {
+                //     for (let j = 0; j < selections.length; j++) {
+                //         if (j !== i) {
+                //             update.selection.forEach((up) => {
+                //                 selections[j] = applySelUp(selections[i], up);
+                //             });
+                //         }
+                //     }
+                // }
             }
             return recordHistory(state, { ...state, top, selections }, noJoin);
     }

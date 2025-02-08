@@ -378,7 +378,7 @@ export const handleTextKey = (
     cursor: ListCursor | TextCursor,
     grem: string,
     mods?: Mods,
-): Update | KeyAction[] | void => {
+): KeyAction[] | void => {
     const current = top.nodes[lastChild(path)];
     if (current.type !== 'text') throw new Error('not text');
     if (cursor.type === 'list') {
