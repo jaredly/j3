@@ -172,41 +172,19 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
     const closeUp = handleTagCloser(top, current, grem, parent, path);
     if (closeUp) return closeUp;
 
-    // const grand = parentPath(parent ? parent.path : path);
-    // const gnode = top.nodes[lastChild(grand)];
-    // if (gnode?.type === 'list' && isTag(gnode.kind) && gnode.kind.node === (parent ? parent.node.loc : current.loc)) {
-    //     if (grem === '>') {
-    //         return selUpdate(
-    //             gnode.children.length
-    //                 ? selectStart(pathWithChildren(grand, gnode.children[0]), top)
-    //                 : selStart(grand, { type: 'list', where: 'after' }),
-    //         );
-    //     } else if (grem === ' ') {
-    //         if (gnode.kind.attributes == null) {
-    //             return {
-    //                 nodes: {
-    //                     [gnode.loc]: { ...gnode, kind: { ...gnode.kind, attributes: top.nextLoc } },
-    //                     [top.nextLoc]: { type: 'table', kind: 'curly', loc: top.nextLoc, rows: [] },
-    //                 },
-    //                 nextLoc: top.nextLoc + 1,
-    //                 selection: { start: selStart(pathWithChildren(grand, top.nextLoc), { type: 'list', where: 'inside' }) },
-    //             };
-    //         } else {
-    //             return selUpdate(selectStart(pathWithChildren(grand, gnode.kind.attributes), top));
-    //         }
-    //     }
-    // }
-
-    const flat = parent ? flatten(parent.node, top) : [current];
-    var { sel, ncursor, nodes } = addNeighbor({ flat, current, neighbor: flatNeighbor(kind, grem), cursor, blank });
-
-    return flatToUpdateNew(
-        flat,
-        { node: sel, cursor: ncursor },
-        { isParent: parent != null, node: parent?.node ?? current, path: parent?.path ?? path },
-        nodes,
-        top,
-    );
+    return [
+        {
+            type: 'insert-text',
+            path,
+            pos: cursor.where === 'after' ? 'after' : 'before',
+            what:
+                typeof kind === 'number'
+                    ? { type: 'text', grem, ccls: kind }
+                    : kind === 'sep'
+                    ? { type: 'sep', newLine: grem === '\n' }
+                    : { type: kind },
+        },
+    ];
 };
 
 export const splitCell = (current: Node, cursor: ListCursor, blank: Node) => (cell: Node, top: Top, loc: number) => {

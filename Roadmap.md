@@ -22,12 +22,13 @@ Ok, so some CRDT thgouths:
 - [ ] handleKey
   - [ ] handleIdKey
     - [x] tag attributes
-    - [ ] list -> tableNew
-    - [ ] </ -> tag
+    - [x] list -> tableNew
+    - [x] </ -> tag
+    - [x] <hello> -> tag
     - [ ] handleTableSplit
-    - [ ] set-id-text
-    - [ ] handleTagCloser
-    - [ ] handleTextInsert
+    - [x] set-id-text
+    - [x] handleTagCloser
+    - [x] handleTextInsert
 
 
 ##

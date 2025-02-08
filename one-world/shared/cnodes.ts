@@ -288,6 +288,9 @@ export const childLocs = (node: Node): number[] => {
 
 export const fromMap = <Loc>(id: number, nodes: Nodes, toLoc: (l: number) => Loc): RecNodeT<Loc> => {
     const node = nodes[id];
+    if (!node) {
+        throw new Error(`id ${id} not found in nodes map`);
+    }
     const loc = toLoc(node.loc);
     switch (node.type) {
         case 'id':

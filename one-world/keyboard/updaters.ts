@@ -167,6 +167,29 @@ export const joinTable = (top: Top, path: Path, node: Node, cursor: Cursor, at: 
 
     return up;
 };
+
+export const replaceSelf = (top: Top, path: Path, node: RecNodeT<boolean>, cursor: Cursor) => {
+    let nextLoc = top.nextLoc;
+    const nodes: Nodes = {};
+    let selPath: number[] = [];
+
+    const root = fromRec(node, nodes, (loc, __, path) => {
+        const nl = nextLoc!++;
+        if (loc === true) {
+            selPath = path.concat([nl]);
+        }
+        return nl;
+    });
+
+    if (!selPath.length) return;
+
+    const up = replaceAt(parentPath(path).children, top, lastChild(path), root);
+    up.nextLoc = nextLoc;
+    Object.assign(up.nodes, nodes);
+    up.selection = { start: selStart(pathWithChildren(parentPath(path), ...selPath), cursor) };
+    return up;
+};
+
 export const removeSelf = (top: Top, current: { path: Path; node: Node }): Update | void => {
     const pnode = top.nodes[parentLoc(current.path)];
     if (pnode && pnode.type === 'list' && pnode.kind === 'smooshed') {
@@ -264,7 +287,7 @@ export const setTextText = (top: Top, path: Path, text: string, index: number, e
     };
 };
 
-export const setIdText = (top: Top, path: Path, text: string, end: number) => {
+export const setIdText = (top: Top, path: Path, text: string, end: number, ccls?: number) => {
     if (text.length === 0) {
         const ppath = parentPath(path);
         const parent = top.nodes[lastChild(ppath)];
@@ -283,7 +306,7 @@ export const setIdText = (top: Top, path: Path, text: string, end: number) => {
     const node = top.nodes[lastChild(path)];
     if (node.type !== 'id') return;
     return {
-        nodes: { [node.loc]: { ...node, text, ccls: text.length === 0 ? undefined : node.ccls } },
+        nodes: { [node.loc]: { ...node, text, ccls: text.length === 0 ? undefined : ccls ?? node.ccls } },
         // tmpText: { [current.node.loc]: text },
         selection: { start: selStart(path, { type: 'id', end }) },
     };

@@ -1,5 +1,5 @@
 import { handleJoinText, unwrap } from './handleDelete';
-import { disolveSmooshed, joinSmooshed, rebalanceSmooshed, setIdText, setTextText, tagSetAttributes } from './updaters';
+import { disolveSmooshed, joinSmooshed, rebalanceSmooshed, replaceSelf, setIdText, setTextText, tagSetAttributes } from './updaters';
 import { selUpdate } from './handleNav';
 import { handleTextFormat, SelStart } from './handleShiftNav';
 import { Spat } from './handleSpecialText';
@@ -36,7 +36,7 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
             return;
         }
         case 'set-id-text':
-            return setIdText(state.top, action.path, action.text, action.end);
+            return setIdText(state.top, action.path, action.text, action.end, action.ccls);
         case 'set-text-text': {
             return setTextText(state.top, action.path, action.text, action.index, action.end);
         }
@@ -71,6 +71,8 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
             return tagSetAttributes(state.top, action.path, action.table, action.cursor);
         case 'insert-text':
             return handleInsertText(state.top, action.path, action.pos, action.what);
+        case 'replace-self':
+            return replaceSelf(state.top, action.path, action.node, action.cursor);
     }
 };
 
@@ -104,7 +106,7 @@ export type KeyAction =
     | { type: 'remove-self'; path: Path }
     | { type: 'multi-delete'; start: SelStart; end: SelStart }
     // things I minght want to ... consolidate or something ... idk
-    | { type: 'set-id-text'; path: Path; text: string; end: number }
+    | { type: 'set-id-text'; path: Path; text: string; end: number; ccls?: number }
     | { type: 'text-delete'; path: Path; left: Spat; right: Spat }
     | { type: 'toggle-multiline'; loc: number };
 

@@ -1,40 +1,14 @@
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Collection, Id, List, Loc, Node, Nodes } from '../shared/cnodes';
+import { Collection, Id, Node } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { cursorSplit, idText, Split } from './cursorSplit';
+import { cursorSplit, idText } from './cursorSplit';
 import { Flat, addNeighborAfter, addNeighborBefore, findParent, listKindForKeyKind } from './flatenate';
 import { addNeighbor, braced } from './handleListKey';
+import { isTag, richNode, selectStart } from './handleNav';
 import { Kind, textKind } from './insertId';
-import { Config } from './test-utils';
-import { collapseAdjacentIDs, findPath, flatToUpdateNew, flatten, flattenRow, pruneEmptyIds, rough, unflat } from './rough';
-import {
-    Current,
-    Cursor,
-    IdCursor,
-    Path,
-    TmpText,
-    Top,
-    Update,
-    findTableLoc,
-    lastChild,
-    parentLoc,
-    parentPath,
-    pathWithChildren,
-    selStart,
-} from './utils';
-import { isTag, justSel, richNode, selectStart, selUpdate } from './handleNav';
 import { KeyAction, KeyWhat, moveA } from './keyActionToUpdate';
-import { Neighbor } from './selections';
-
-// const isNumber = (grems: undefined | string[], text: string) => {
-//     if (grems) {
-//         return grems.every((g) => g.match(/[0-9]/));
-//     }
-//     return text.match(/^[0-9.]*$/);
-// };
-// const isDot = (grems: undefined | string[], text: string) => {
-//     return grems ? grems.length === 1 && grems[0] === '.' : text === '.';
-// };
+import { collapseAdjacentIDs, findPath, flatToUpdateNew, flatten, pruneEmptyIds, unflat } from './rough';
+import { Config } from './test-utils';
+import { Current, Cursor, IdCursor, Path, Top, Update, findTableLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
 
 export const handleIdKey = (config: Config, top: Top, current: Extract<Current, { type: 'id' }>, grem: string): KeyAction[] | Update | void => {
     // let node = top.nodes[lastChild(current.path)];
@@ -46,8 +20,19 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
 
     if (grem === config.tableNew && current.cursor.end === 0) {
         const parent = top.nodes[parentLoc(path)];
-        if (parent?.type === 'list' && (parent.kind === 'round' || parent.kind === 'curly' || parent.kind === 'square')) {
-            return { nodes: { [parent.loc]: { type: 'table', kind: parent.kind, loc: parent.loc, rows: [[current.node.loc]] } } };
+        if (
+            parent?.type === 'list' &&
+            parent.children.length === 1 &&
+            (parent.kind === 'round' || parent.kind === 'curly' || parent.kind === 'square')
+        ) {
+            return [
+                {
+                    type: 'replace-self',
+                    path: parentPath(path),
+                    cursor: { type: 'id', end: 0 },
+                    node: { type: 'table', kind: parent.kind, loc: false, rows: [[{ ...node, loc: true }]] },
+                },
+            ];
         }
     }
 
@@ -58,20 +43,19 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
     if (config.xml && grem === '/' && cursor.end === 1 && text.length === 1 && text[0] === '<') {
         const pnode = top.nodes[parentLoc(path)];
         if (pnode?.type !== 'list' || pnode.kind !== 'smooshed') {
-            return {
-                nodes: {
-                    [node.loc]: {
+            return [
+                {
+                    type: 'replace-self',
+                    path,
+                    node: {
                         type: 'list',
-                        kind: { type: 'tag', node: top.nextLoc },
-                        loc: node.loc,
-                        children: [top.nextLoc + 1],
+                        kind: { type: 'tag', node: { type: 'id', text: '', loc: true } },
+                        children: [{ type: 'id', text: '', loc: false }],
+                        loc: false,
                     },
-                    [top.nextLoc + 1]: { type: 'id', text: '', loc: top.nextLoc + 1 },
-                    [top.nextLoc]: { type: 'id', text: '', loc: top.nextLoc },
+                    cursor: { type: 'id', end: 0 },
                 },
-                selection: { start: selStart(pathWithChildren(path, top.nextLoc), { type: 'id', end: 0 }) },
-                nextLoc: top.nextLoc + 2,
-            };
+            ];
         }
     }
 
@@ -83,40 +67,39 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
             pnode.kind === 'smooshed' &&
             pnode.children.length === 2 &&
             pnode.children[1] === node.loc &&
+            node.type === 'id' &&
             cursor.end === chars.length
         ) {
             const prev = top.nodes[pnode.children[0]];
             if (prev.type === 'id' && prev.text === '<') {
-                return {
-                    nodes: {
-                        [pnode.loc]: { type: 'list', kind: { type: 'tag', node: node.loc }, children: [prev.loc], loc: pnode.loc },
-                        [prev.loc]: { loc: prev.loc, type: 'id', text: '' },
+                return [
+                    {
+                        type: 'replace-self',
+                        path: parentPath(path),
+                        node: {
+                            type: 'list',
+                            // sooo it would be nice if we could say `node already has a loc, thanks`
+                            kind: { type: 'tag', node: { ...node, loc: false } },
+                            children: [{ type: 'id', text: '', loc: true }],
+                            loc: false,
+                        },
+                        cursor: { type: 'id', end: 0 },
                     },
-                    selection: { start: selStart(pathWithChildren(parentPath(path), prev.loc), { type: 'id', end: 0 }) },
-                };
+                ];
             }
         }
     }
 
     if (typeof kind === 'number') {
         if (node.ccls == null) {
-            return {
-                nodes: { [node.loc]: { ...node, ccls: kind, text: grem } },
-                selection: { start: selStart(path, { type: 'id', end: 1 }) },
-            };
+            return [{ type: 'set-id-text', path, end: 1, text: grem, ccls: kind }];
         }
 
         if (node.ccls === kind) {
-            // Just update the selection
             const chars = idText(top.tmpText, cursor, node).slice();
             const { left, right } = cursorSides(cursor, current.start);
             chars.splice(left, right - left, grem);
-            return {
-                nodes: {
-                    [node.loc]: { ...node, text: chars.join('') },
-                },
-                selection: { start: selStart(path, { ...cursor, end: left + 1 }) },
-            };
+            return [{ type: 'set-id-text', path, end: left + 1, text: chars.join(''), ccls: kind }];
         }
     }
 
@@ -210,31 +193,6 @@ export const handleInsertText = (top: Top, path: Path, pos: 'before' | 'after' |
     }
 };
 
-export const handleTextInsert = (
-    kind: Kind,
-    grem: string,
-    current: { node: Id<number>; cursor: IdCursor; start?: number },
-    path: Path,
-    parent: void | { node: Collection<number>; path: Path },
-    top: Top,
-) => {
-    const flat = parent ? flatten(parent.node, top) : [current.node];
-
-    const nodes: Update['nodes'] = {};
-
-    const neighbor = flatNeighbor(kind, grem);
-    const { sel, ncursor } = addIdNeighbor({ neighbor, current, flat, nodes, top });
-
-    const up = flatToUpdateNew(
-        flat,
-        { node: sel, cursor: ncursor },
-        { isParent: parent != null, node: parent?.node ?? current.node, path: parent?.path ?? path },
-        nodes,
-        top,
-    );
-    return up;
-};
-
 export const handleTagCloser = (
     top: Top,
     node: Node,
@@ -268,7 +226,13 @@ export const handleTagCloser = (
     }
 };
 
-export const handleTableSplit = (grem: string, config: Config, path: Path, top: Top, splitCell: (cell: Node, top: Top, loc: number) => SplitRes) => {
+export const handleTableSplit = (
+    grem: string,
+    config: Config,
+    path: Path,
+    top: Top,
+    splitCell: (cell: Node, top: Top, loc: number) => SplitRes,
+): Update | void | KeyAction[] => {
     if (config.tableRow.includes(grem)) {
         const parent = findParent(2, parentPath(path), top);
         if (parent?.node.type === 'table') {
