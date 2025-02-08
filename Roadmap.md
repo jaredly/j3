@@ -25,11 +25,10 @@ Ok, so some CRDT thgouths:
     - [x] list -> tableNew
     - [x] </ -> tag
     - [x] <hello> -> tag
-    - [ ] handleTableSplit
     - [x] set-id-text
     - [x] handleTagCloser
     - [x] handleTextInsert
-
+    - [ ] handleTableSplit
 
 ##
 
