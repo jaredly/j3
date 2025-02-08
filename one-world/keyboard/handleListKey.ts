@@ -1,76 +1,14 @@
-import { fromRec, isRich, List, Node, Nodes, RecNodeT } from '../shared/cnodes';
+import { isRich, List, Node } from '../shared/cnodes';
 import { findParent, listKindForKeyKind, Flat, addNeighborBefore, addNeighborAfter } from './flatenate';
 import { isTag, justSel, richNode, selectStart, selUpdate } from './handleNav';
 import { Kind, textKind } from './insertId';
 import { Config } from './test-utils';
 import { collapseAdjacentIDs, flatten, flatToUpdateNew, pruneEmptyIds, unflat } from './rough';
-import {
-    Top,
-    Path,
-    CollectionCursor,
-    Update,
-    lastChild,
-    selStart,
-    pathWithChildren,
-    parentPath,
-    Cursor,
-    findTableLoc,
-    ListCursor,
-    parentLoc,
-} from './utils';
+import { Top, Path, CollectionCursor, Update, lastChild, selStart, parentPath, Cursor, findTableLoc, ListCursor, parentLoc } from './utils';
 import { flatNeighbor, handleTableSplit, handleTagCloser } from './handleIdKey';
 import { KeyAction, moveA } from './keyActionToUpdate';
 
 export const braced = (node: Node) => node.type !== 'list' || (node.kind !== 'smooshed' && node.kind !== 'spaced');
-
-export const controlToggle = (top: Top, path: Path, index: number): void | Update => {
-    const current = top.nodes[lastChild(path)];
-    if (current.type !== 'list' || typeof current.kind === 'string') return;
-    if (current.kind.type === 'checks') {
-        const loc = current.children[index];
-        return {
-            nodes: {
-                [current.loc]: {
-                    ...current,
-                    kind: { type: 'checks', checked: { ...current.kind.checked, [loc]: !current.kind.checked[loc] } },
-                },
-            },
-        };
-    }
-    if (current.kind.type === 'opts') {
-        const loc = current.children[index];
-        return { nodes: { [current.loc]: { ...current, kind: { type: 'opts', which: loc === current.kind.which ? undefined : loc } } } };
-    }
-};
-
-export const addInside = (top: Top, path: Path, children: RecNodeT<boolean>[], cursor: Cursor): void | Update => {
-    let nextLoc = top.nextLoc;
-
-    const node = top.nodes[lastChild(path)];
-    if (node.type !== 'list' && node.type !== 'table') return;
-
-    const nodes: Nodes = {};
-    let selPath: number[] = [];
-    const roots = children.map((child) =>
-        fromRec(child, nodes, (loc, __, path) => {
-            const nl = nextLoc!++;
-            if (loc === true) {
-                selPath = path.concat([nl]);
-            }
-            return nl;
-        }),
-    );
-
-    if (selPath.length === 0) throw new Error(`nothing selected in node to add`);
-
-    nodes[node.loc] = node.type === 'table' ? { ...node, rows: [roots] } : { ...node, children: roots };
-
-    return {
-        nodes,
-        nextLoc,
-        selection: { start: selStart(pathWithChildren(path, ...selPath), cursor) },
-    };
-};
 
 export const handleListKey = (config: Config, top: Top, path: Path, cursor: CollectionCursor, grem: string): KeyAction[] | void => {
     const current = top.nodes[lastChild(path)];

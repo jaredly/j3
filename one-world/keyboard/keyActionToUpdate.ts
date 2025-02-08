@@ -6,12 +6,12 @@ import { Spat } from './handleSpecialText';
 import { TestState } from './test-utils';
 import { joinInList, joinTable, removeSelf, removeSpan, textDelete } from './updaters';
 import { Cursor, lastChild, Path, Update } from './utils';
-import { handleDeleteTooMuch } from './multi-change';
+import { CopiedValues, handleDeleteTooMuch } from './multi-change';
 import { ListKind, RecNodeT, Style, TextSpan } from '../shared/cnodes';
 import { handleIdWrap, handleInsertList, wrapUpdate } from './handleWrap';
-import { addSpan, dedentOutOfRich, splitTextInRich } from './handleTextText';
+import { addSpan, dedentOutOfRich, splitTextInRich } from './updaters';
 import { handleInsertText, splitTableCol, splitTableRow } from './handleIdKey';
-import { addInside, controlToggle } from './handleListKey';
+import { addInside, controlToggle } from './updaters';
 
 export const keyActionToUpdate = (state: TestState, action: KeyAction): Update | void => {
     switch (action.type) {
@@ -114,6 +114,7 @@ export type KeyAction =
     | { type: 'join-list'; path: Path; child: { loc: number; cursor: Cursor } }
     | { type: 'join-table'; path: Path; child: { loc: number; cursor: Cursor }; at: { row: number; col: number } }
     // Selections
+    | { type: 'paste'; path: Path; cursor: Cursor; values: CopiedValues }
     | { type: 'move'; sel: SelStart }
     | { type: 'sel-expand'; sel: SelStart }
     // Deletion n stuch

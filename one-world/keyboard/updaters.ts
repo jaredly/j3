@@ -1,12 +1,14 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, Node, Nodes, RecNodeT, Table, childLocs, fromRec, isRich } from '../shared/cnodes';
+import { Id, Node, Nodes, RecNodeT, Table, TextSpan, childLocs, fromRec, isRich } from '../shared/cnodes';
 import { addUpdate, simpleSide, spanLength } from './handleDelete';
-import { isTag, selectEnd, spanEnd, spanStart } from './handleNav';
+import { isTag, richNode, selectEnd, spanEnd, spanStart } from './handleNav';
+import { SelStart } from './handleShiftNav';
 import { Spat } from './handleSpecialText';
+import { maybeJoin } from './handleTextText';
 import { replaceAt } from './replaceAt';
 import { replaceIn } from './replaceIn';
 import { collapseAdjacentIDs, findPath, fixSelection, flatToUpdateNew, flatten, pruneEmptyIds, unflat } from './rough';
-import { Cursor, Path, Top, Update, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
+import { Cursor, Path, Top, Update, findTableLoc, gparentLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
 
 export const tagSetAttributes = (top: Top, path: Path, node: RecNodeT<boolean>, cursor: Cursor) => {
     const tag = top.nodes[lastChild(path)];
@@ -421,4 +423,224 @@ export const findParent = (nodes: Update['nodes'], loc: number): number | null =
         }
     }
     return null;
+};
+export const controlToggle = (top: Top, path: Path, index: number): void | Update => {
+    const current = top.nodes[lastChild(path)];
+    if (current.type !== 'list' || typeof current.kind === 'string') return;
+    if (current.kind.type === 'checks') {
+        const loc = current.children[index];
+        return {
+            nodes: {
+                [current.loc]: {
+                    ...current,
+                    kind: { type: 'checks', checked: { ...current.kind.checked, [loc]: !current.kind.checked[loc] } },
+                },
+            },
+        };
+    }
+    if (current.kind.type === 'opts') {
+        const loc = current.children[index];
+        return { nodes: { [current.loc]: { ...current, kind: { type: 'opts', which: loc === current.kind.which ? undefined : loc } } } };
+    }
+};
+
+export const addInside = (top: Top, path: Path, children: RecNodeT<boolean>[], cursor: Cursor): void | Update => {
+    let nextLoc = top.nextLoc;
+
+    const node = top.nodes[lastChild(path)];
+    if (node.type !== 'list' && node.type !== 'table') return;
+
+    const nodes: Nodes = {};
+    let selPath: number[] = [];
+    const roots = children.map((child) =>
+        fromRec(child, nodes, (loc, __, path) => {
+            const nl = nextLoc!++;
+            if (loc === true) {
+                selPath = path.concat([nl]);
+            }
+            return nl;
+        }),
+    );
+
+    if (selPath.length === 0) throw new Error(`nothing selected in node to add`);
+
+    nodes[node.loc] = node.type === 'table' ? { ...node, rows: [roots] } : { ...node, children: roots };
+
+    return {
+        nodes,
+        nextLoc,
+        selection: { start: selStart(pathWithChildren(path, ...selPath), cursor) },
+    };
+};
+export const splitTextInRich = (top: Top, path: Path, at: Spat): void | Update => {
+    let parent = top.nodes[parentLoc(path)];
+    if (!richNode(parent)) return;
+    const current = top.nodes[lastChild(path)];
+    if (current.type !== 'text') return;
+    const span = current.spans[at.index];
+    if (span.type !== 'text') return;
+    const text = splitGraphemes(span.text);
+
+    // nowww we split.
+    // hrm but we also need to allow a mods
+    const before = current.spans.slice(0, at.index + 1);
+    before[before.length - 1] = { ...span, text: text.slice(0, at.cursor).join('') };
+    const after = current.spans.slice(at.index);
+    after[0] = { ...span, text: text.slice(at.cursor).join('') };
+
+    let nextLoc = top.nextLoc;
+    const loc = nextLoc++;
+
+    const nodes: Nodes = {};
+
+    if (parent.type === 'list') {
+        const pat = parent.children.indexOf(current.loc);
+        if (pat === -1) throw new Error(`canrt find ${current.loc} in parent ${parent.loc} : ${parent.children}`);
+        const children = parent.children.slice();
+        children.splice(pat + 1, 0, loc);
+        parent = { ...parent, children };
+    } else if (parent.type === 'table') {
+        const { row, col } = findTableLoc(parent.rows, current.loc);
+        const rows = parent.rows.slice();
+        const right = rows[row].slice(col + 1);
+        rows[row] = rows[row].slice(0, col + 1);
+        rows.splice(row + 1, 0, [loc, ...right]);
+        if (!right.length) {
+            for (let i = 1; i < rows[row].length; i++) {
+                const cloc = nextLoc++;
+                nodes[cloc] = { type: 'text', spans: [{ type: 'text', text: '' }], loc: cloc };
+                rows[row + 1].push(cloc);
+            }
+        }
+        parent = { ...parent, rows };
+    }
+
+    return {
+        nodes: {
+            ...nodes,
+            [current.loc]: { ...current, spans: before },
+            [loc]: { type: 'text', loc, spans: after },
+            [parent.loc]: parent,
+        },
+        selection: { start: selStart(pathWithChildren(parentPath(path), loc), { type: 'text', end: { index: 0, cursor: 0 } }) },
+        nextLoc,
+    };
+};
+
+export const dedentOutOfRich = (top: Top, path: Path): void | Update => {
+    const parent = top.nodes[parentLoc(path)];
+    const gparent = top.nodes[gparentLoc(path)];
+    const loc = lastChild(path);
+    if (gparent.type !== 'list' || parent.type !== 'list' || !richNode(parent) || !richNode(gparent)) {
+        return;
+    }
+
+    const gchildren = gparent.children.slice();
+    const children = parent.children.slice();
+    const at = children.indexOf(loc);
+    const gat = gchildren.indexOf(parent.loc);
+    const after = children.slice(at + 1);
+    children.splice(at);
+    gchildren.splice(gat + 1, 0, loc);
+    let nextLoc = top.nextLoc;
+    const nodes: Nodes = {};
+    if (after.length) {
+        const loc = nextLoc++;
+        gchildren.splice(gat + 2, 0, loc);
+        nodes[loc] = { ...parent, children: after, loc };
+    }
+    nodes[gparent.loc] = { ...gparent, children: gchildren };
+    nodes[parent.loc] = { ...parent, children };
+    return {
+        nodes,
+        selection: {
+            start: selStart(pathWithChildren(parentPath(parentPath(path)), loc), {
+                type: 'text',
+                end: { index: 0, cursor: 0 },
+            }),
+        },
+        nextLoc,
+    };
+};
+
+export const addSpan = (
+    top: Top,
+    path: Path,
+    recSpan: TextSpan<RecNodeT<boolean>>,
+    index: number,
+    cursor: number | Cursor,
+    within?: number,
+): void | Update => {
+    const node = top.nodes[lastChild(path)];
+    if (node.type !== 'text') return;
+    const spans = node.spans.slice();
+
+    const nodes: Nodes = {};
+
+    let sel: SelStart;
+
+    let nextLoc = undefined as undefined | number;
+    let span: TextSpan<number>;
+
+    if (recSpan.type === 'embed') {
+        nextLoc = top.nextLoc;
+        let selPath: number[] = [];
+        const root = fromRec(recSpan.item, nodes, (loc, __, path) => {
+            const nl = nextLoc!++;
+            if (loc === true) {
+                selPath = path.concat([nl]);
+            }
+            return nl;
+        });
+        span = { ...recSpan, item: root };
+
+        sel =
+            selPath.length && typeof cursor !== 'number'
+                ? selStart(pathWithChildren(path, ...selPath), cursor)
+                : selStart(path, { type: 'text', end: { index: index, cursor: 0 } });
+    } else {
+        span = recSpan;
+
+        if (typeof cursor !== 'number') {
+            cursor = 0;
+        }
+
+        sel = selStart(path, { type: 'text', end: { index: index, cursor } });
+    }
+
+    if (within != null) {
+        const current = spans[index];
+        if (current?.type === 'text') {
+            const text = splitGraphemes(current.text);
+            if (within < text.length) {
+                spans[index] = { ...current, text: text.slice(0, within).join('') };
+                spans.splice(index + 1, 0, { ...current, text: text.slice(within).join('') });
+            }
+            index++;
+        }
+    }
+
+    const left = maybeJoin(spans[index - 1], span);
+    if (left) {
+        spans[index - 1] = left.joined;
+        if (sel.cursor.type === 'text') {
+            sel.cursor.end.index--;
+            sel.cursor.end.cursor += left.off;
+        }
+    } else {
+        const right = maybeJoin(span, spans[index]);
+        if (right) {
+            spans[index] = right.joined;
+        } else {
+            spans.splice(index, 0, span);
+        }
+    }
+
+    nodes[node.loc] = { ...node, spans };
+
+    return {
+        nodes,
+        selection: { start: sel },
+        nextLoc,
+    };
 };
