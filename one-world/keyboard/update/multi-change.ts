@@ -1,14 +1,14 @@
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { childLocs, fromRec, Node, Nodes, RecNodeT } from '../shared/cnodes';
-import { applySelUp } from './applyUpdate';
-import { selectEnd, selectStart } from './handleNav';
-import { SelStart } from './handleShiftNav';
-import { replaceIn } from './replaceIn';
-import { root } from './root';
-import { updateNodes } from './rough';
-import { collectSelectedNodes, Neighbor } from './selections';
-import { TestState } from './test-utils';
-import { disolveSmooshed, joinSmooshed, rebalanceSmooshed } from './updaters';
+import { splitGraphemes } from '../../../src/parse/splitGraphemes';
+import { childLocs, fromRec, Node, Nodes, RecNodeT } from '../../shared/cnodes';
+import { applySelUp } from '../applyUpdate';
+import { selectEnd, selectStart } from '../handleNav';
+import { SelStart } from '../handleShiftNav';
+import { replaceIn } from '../replaceIn';
+import { root } from '../root';
+import { updateNodes } from '../rough';
+import { collectSelectedNodes, Neighbor } from '../selections';
+import { TestState } from '../test-utils';
+import { disolveSmooshed, joinSmooshed, rebalanceSmooshed } from './list';
 import {
     Cursor,
     JustSelUpdate,
@@ -22,7 +22,7 @@ import {
     selStart,
     Top,
     Update,
-} from './utils';
+} from '../utils';
 
 export const shouldNudgeRight = (path: Path, cursor: Cursor, top: Top) => {
     const node = top.nodes[lastChild(path)];

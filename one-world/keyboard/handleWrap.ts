@@ -1,19 +1,15 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Collection, List, ListKind, Node, Nodes } from '../shared/cnodes';
-import { shape } from '../shared/shape';
-import { cursorSides } from './cursorSides';
-import { idText } from './cursorSplit';
+import { List, ListKind, Node, Nodes } from '../shared/cnodes';
 import { findParent } from './flatenate';
-import { justSel, selectStart } from './handleNav';
+import { selectStart } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import { handleTextText } from './handleTextText';
 import { KeyAction, moveA } from './keyActionToUpdate';
-import { partitionNeighbors } from './multi-change';
 import { replaceAt } from './replaceAt';
 import { flatten, flatToUpdateNew } from './rough';
-import { collectSelectedNodes, getCurrent, orderSelections } from './selections';
+import { getCurrent } from './selections';
 import { TestState } from './test-utils';
-import { CollectionCursor, Current, Cursor, lastChild, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
+import { Cursor, lastChild, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
 
 export const wrapKind = (key: string): ListKind<any> | void => {
     switch (key) {

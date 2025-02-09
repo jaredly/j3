@@ -1,13 +1,12 @@
-import { isRich, List, Node } from '../shared/cnodes';
-import { findParent, listKindForKeyKind, Flat, addNeighborBefore, addNeighborAfter } from './flatenate';
-import { isTag, justSel, richNode, selectStart } from './handleNav';
-import { selUpdate } from './updaters';
-import { Kind, textKind } from './insertId';
-import { Config } from './test-utils';
-import { collapseAdjacentIDs, flatten, pruneEmptyIds, unflat } from './rough';
-import { Top, Path, CollectionCursor, lastChild, selStart, parentPath, Cursor, findTableLoc, ListCursor, parentLoc, UNodes } from './utils';
-import { flatNeighbor, handleTableSplit, handleTagCloser } from './handleIdKey';
+import { Node } from '../shared/cnodes';
+import { addNeighborAfter, addNeighborBefore, findParent, Flat, listKindForKeyKind } from './flatenate';
+import { handleTableSplit, handleTagCloser } from './handleIdKey';
+import { isTag } from './handleNav';
+import { textKind } from './insertId';
 import { KeyAction, moveA } from './keyActionToUpdate';
+import { collapseAdjacentIDs, flatten, pruneEmptyIds, unflat } from './rough';
+import { Config } from './test-utils';
+import { CollectionCursor, Cursor, lastChild, ListCursor, parentPath, Path, selStart, Top, UNodes } from './utils';
 
 export const braced = (node: Node) => node.type !== 'list' || (node.kind !== 'smooshed' && node.kind !== 'spaced');
 

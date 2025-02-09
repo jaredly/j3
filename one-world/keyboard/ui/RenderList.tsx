@@ -1,6 +1,6 @@
 import React from 'react';
 import { List, isRich } from '../../shared/cnodes';
-import { selUpdate } from '../updaters';
+import { selUpdate } from '../update/updaters';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
 import { SelectionStatuses, Path, ListWhere, parentPath, Top, TmpText } from '../utils';
@@ -288,7 +288,6 @@ export const RenderList = (
                         const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, top);
                         if (sel) {
                             ctx.drag.start(sel);
-                            // ctx.dispatch(selUpdate(sel)!);
                         }
                     }}
                     onMouseMove={(evt) => {
@@ -318,7 +317,6 @@ export const RenderList = (
                         const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, top);
                         if (sel) {
                             ctx.drag.start(sel);
-                            // ctx.dispatch(selUpdate(sel)!);
                         }
                     }}
                     onMouseMove={(evt) => {

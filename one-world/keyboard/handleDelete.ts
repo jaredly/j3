@@ -3,7 +3,7 @@ import { isRich, List, Node, Table, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { isBlank } from './flatenate';
 import { goLeft, isTag, selectEnd, selectStart, spanEnd } from './handleNav';
-import { mergeAdjacentSpans, Spat } from './handleSpecialText';
+import { Spat } from './handleSpecialText';
 // import { textCursorSides, textCursorSides2 } from './insertId';
 import { idText } from './cursorSplit';
 import { KeyAction, moveA } from './keyActionToUpdate';
@@ -11,7 +11,7 @@ import { replaceAt } from './replaceAt';
 import { flatten, updateNodes } from './rough';
 import { getCurrent } from './selections';
 import { TestState } from './test-utils';
-import { disolveSmooshed, joinSmooshed, rebalanceSmooshed } from './updaters';
+import { disolveSmooshed, joinSmooshed, rebalanceSmooshed } from './update/list';
 import {
     Cursor,
     findTableLoc,
@@ -24,7 +24,6 @@ import {
     pathWithChildren,
     selStart,
     SelUpdate,
-    TextCursor,
     Top,
 } from './utils';
 
@@ -255,7 +254,6 @@ export const handleDelete = (state: TestState): KeyAction[] | void => {
         case 'text': {
             if (current.cursor.type === 'list') {
                 if (current.cursor.where === 'after') {
-                    // return justSel(current.path, { type: 'list', where: 'end' });
                     if (current.node.spans.length === 0) {
                         return moveA(selStart(current.path, { type: 'list', where: 'inside' }));
                     }
@@ -320,35 +318,6 @@ export const normalizeTextCursorSide = (
         break;
     }
     return side;
-};
-
-export const handleJoinText = (top: Top, path: Path) => {
-    const node = top.nodes[lastChild(path)];
-    const parent = top.nodes[parentLoc(path)];
-    if (parent?.type !== 'list' || !isRich(parent.kind) || node.type !== 'text') {
-        return;
-    }
-    const at = parent.children.indexOf(node.loc);
-    if (at < 1) return;
-    const prev = top.nodes[parent.children[at - 1]];
-    if (prev.type !== 'text') return;
-    const children = parent.children.slice();
-    children.splice(at, 1);
-
-    const spans = prev.spans.concat(node.spans);
-    const cursor: TextCursor = {
-        type: 'text',
-        end: { index: prev.spans.length, cursor: 0 },
-    };
-    return {
-        nodes: {
-            [prev.loc]: { ...prev, spans: mergeAdjacentSpans(spans, cursor) },
-            [parent.loc]: { ...parent, children },
-        },
-        selection: {
-            start: selStart(pathWithChildren(parentPath(path), prev.loc), cursor),
-        },
-    };
 };
 
 export const handleTextDelete = (state: TestState, current: { node: Text<number>; path: Path }, left: Spat, right: Spat): KeyAction[] | void => {

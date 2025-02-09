@@ -2,13 +2,13 @@ import { Collection, Id, Node } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { cursorSplit, idText } from './cursorSplit';
 import { Flat, addNeighborAfter, addNeighborBefore, findParent, listKindForKeyKind } from './flatenate';
-import { addNeighbor, braced, splitListCell } from './handleListKey';
+import { braced, splitListCell } from './handleListKey';
 import { isTag, richNode, selectStart } from './handleNav';
 import { Kind, textKind } from './insertId';
 import { KeyAction, KeyWhat, moveA } from './keyActionToUpdate';
-import { collapseAdjacentIDs, findPath, flatToUpdateNew, flatten, pruneEmptyIds, unflat } from './rough';
+import { collapseAdjacentIDs, flatten, pruneEmptyIds, unflat } from './rough';
 import { Config } from './test-utils';
-import { Current, Cursor, IdCursor, Path, Top, UNodes, findTableLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
+import { Current, Cursor, IdCursor, Path, Top, UNodes, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
 
 export const handleIdKey = (config: Config, top: Top, current: Extract<Current, { type: 'id' }>, grem: string): KeyAction[] | void => {
     // let node = top.nodes[lastChild(current.path)];
@@ -148,7 +148,7 @@ export const whatNeighbor = (what: KeyWhat): Flat => {
         : { type: 'id', text: what.grem, loc: -1, ccls: what.ccls };
 };
 
-const getSplit = (top: Top, path: Path, at: number | 'before' | 'after') => {
+export const getSplit = (top: Top, path: Path, at: number | 'before' | 'after') => {
     const node = top.nodes[lastChild(path)];
     if (node.type === 'id') {
         return splitIdCell({ type: 'id', node, path, cursor: { type: 'id', end: typeof at === 'number' ? at : 0 } });
@@ -157,141 +157,6 @@ const getSplit = (top: Top, path: Path, at: number | 'before' | 'after') => {
         const pnode = top.nodes[parentLoc(path)];
         const blank: Node = richNode(pnode) ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: -1 } : { type: 'id', text: '', loc: -1 };
         return splitListCell(node, { type: 'list', where: at === 'before' ? 'before' : 'after' }, blank);
-    }
-};
-
-export const splitTableCol = (top: Top, path: Path, tablePath: Path, at: number | 'before' | 'after') => {
-    const table = top.nodes[lastChild(tablePath)];
-    if (table.type !== 'table') return;
-
-    const splitCell = getSplit(top, path, at);
-    if (!splitCell) return;
-
-    const celloc = path.children[tablePath.children.length];
-    const { row, col } = findTableLoc(table.rows, celloc);
-    if (table.rows[row][col] !== celloc) {
-        throw new Error(`coudlnt find cell in table`);
-    }
-
-    const item = table.rows[row][col];
-    const loc = table.loc;
-
-    // This is the thing to split
-    const cell = top.nodes[item];
-
-    const { result, two } = splitCell(cell, top, loc);
-    if (result.sloc == null) throw new Error(`sel node not encountered`);
-
-    const rows = table.rows.slice();
-    rows[row] = rows[row].slice();
-    rows[row].splice(col, 1, ...result.other);
-
-    result.nodes[loc] = { ...table, rows };
-
-    const selPath = findPath(loc, result.nodes, result.sloc);
-    if (!selPath) throw new Error(`can't find sel in selpath.`);
-
-    return {
-        nodes: result.nodes,
-        nextLoc: result.nextLoc,
-        selection: {
-            start: selStart(pathWithChildren(parentPath(tablePath), ...selPath), two.selection.cursor),
-        },
-    };
-};
-
-export const splitTableRow = (top: Top, path: Path, tablePath: Path, at: number | 'before' | 'after', multi: boolean) => {
-    const table = top.nodes[lastChild(tablePath)];
-    if (table.type !== 'table') return;
-
-    const splitCell = getSplit(top, path, at);
-    if (!splitCell) return;
-
-    const celloc = path.children[tablePath.children.length];
-    const { row, col } = findTableLoc(table.rows, celloc);
-    if (table.rows[row][col] !== celloc) {
-        return;
-    }
-
-    const item = table.rows[row][col];
-    const loc = table.loc;
-
-    // This is the thing to split
-    const cell = top.nodes[item];
-
-    const { result, two } = splitCell(cell, top, loc);
-    if (result.sloc == null) throw new Error(`sel node not encountered`);
-    if (result.other.length !== 2) throw new Error(`spit should result in 2 tops`);
-
-    const rows = table.rows.slice();
-    const newRow = [result.other[1], ...rows[row].slice(col + 1)];
-    rows[row] = [...rows[row].slice(0, col), result.other[0]];
-    rows.splice(row + 1, 0, newRow);
-
-    if (newRow.length === 1) {
-        for (let i = 1; i < rows[row].length; i++) {
-            const nloc = result.nextLoc++;
-            newRow.push(nloc);
-            result.nodes[nloc] = { type: 'id', text: '', loc: nloc };
-        }
-    }
-
-    result.nodes[loc] = { ...table, rows, forceMultiline: multi ? true : table.forceMultiline };
-
-    const selPath = findPath(loc, result.nodes, result.sloc);
-    if (!selPath) throw new Error(`can't find sel in selpath.`);
-
-    return {
-        nodes: result.nodes,
-        nextLoc: result.nextLoc,
-        selection: {
-            start: selStart(pathWithChildren(parentPath(tablePath), ...selPath), two.selection.cursor),
-        },
-    };
-};
-
-export const handleInsertText = (top: Top, path: Path, pos: 'before' | 'after' | number, what: KeyWhat) => {
-    const node = top.nodes[lastChild(path)];
-    const kind = what.type === 'text' ? what.ccls : what.type;
-
-    const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
-
-    const flat = parent ? flatten(parent.node, top) : [node];
-
-    const neighbor = whatNeighbor(what);
-    if (typeof pos === 'number' && node.type === 'id') {
-        const nodes: UNodes = {};
-        const { sel, ncursor } = addIdNeighbor({ neighbor, current: { node, cursor: { type: 'id', end: pos } }, flat, nodes, top });
-
-        return flatToUpdateNew(
-            flat,
-            { node: sel, cursor: ncursor },
-            { isParent: parent != null, node: parent?.node ?? node, path: parent?.path ?? path },
-            nodes,
-            top,
-        );
-    } else {
-        const pnode = top.nodes[parentLoc(path)];
-        const blank: Node = richNode(pnode) ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: -1 } : { type: 'id', text: '', loc: -1 };
-
-        var { sel, ncursor, nodes } = addNeighbor({
-            flat,
-            current: node,
-            neighbor,
-            cursor: {
-                type: 'list',
-                where: typeof pos === 'number' ? 'inside' : pos,
-            },
-            blank,
-        });
-
-        return flatToUpdateNew(
-            flat,
-            { node: sel, cursor: ncursor },
-            { isParent: parent != null, node: parent?.node ?? node, path: parent?.path ?? path },
-            nodes,
-            top,
-        );
     }
 };
 
@@ -363,7 +228,7 @@ export const splitIdCell =
         return { result, two };
     };
 
-function addIdNeighbor({
+export function addIdNeighbor({
     neighbor,
     current,
     // cursor,

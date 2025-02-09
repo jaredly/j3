@@ -2,7 +2,7 @@ import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { handleDelete } from '../handleDelete';
 import { handleKey } from '../handleKey';
 import { handleNav } from '../handleNav';
-import { selUpdate } from '../updaters';
+import { selUpdate } from '../update/updaters';
 import { Mods, SelStart, Src, handleShiftNav, handleSpecial, handleTab, shiftExpand, wordNav } from '../handleShiftNav';
 import { wrapKind, handleWrap, closerKind, handleClose } from '../handleWrap';
 import { Config, TestState, js } from '../test-utils';

@@ -1,15 +1,9 @@
-import { RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
-import { applySel, applyUpdate } from './applyUpdate';
+import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
-import { handleDelete, normalizeTextCursorSide } from './handleDelete';
-import { handleKey } from './handleKey';
-import { handleNav } from './handleNav';
 import { KeyAction } from './keyActionToUpdate';
-import { CopiedValues, handleCopyMulti } from './multi-change';
-import { root } from './root';
-import { asTop, atPath, id, idc, lisp, listc, noText, round, selPath, smoosh, spaced, TestState, text, textc, tspan } from './test-utils';
-import { Cursor } from './utils';
+import { CopiedValues, handleCopyMulti } from './update/multi-change';
+import { asTop, id, idc, round, smoosh, spaced, TestState } from './test-utils';
 import { validate } from './validate';
 
 test('full smoosh', () => {

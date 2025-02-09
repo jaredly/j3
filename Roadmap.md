@@ -34,6 +34,8 @@ Ok, so some CRDT thgouths:
 
 UPDATEE
 
+ohhhhk so I have 700 lines of updaters.
+
 ##
 
 General idea:

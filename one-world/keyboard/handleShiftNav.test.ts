@@ -1,32 +1,10 @@
-import { RecNodeT } from '../shared/cnodes';
-import { ctx, matchers, stmtSpans } from '../syntaxes/gleam2';
-import { parse } from '../syntaxes/dsl';
 import { applyNormalUpdate, applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleKey } from './handleKey';
-import { handleShiftNav, handleSpecial, handleTab, nextLargerSpan, selEnd, shiftExpand, Src } from './handleShiftNav';
-import { root } from './root';
-import {
-    asTop,
-    asTopAndLocs,
-    asTopAndPaths,
-    curly,
-    id,
-    idc,
-    lisp,
-    listc,
-    round,
-    Sels,
-    smoosh,
-    spaced,
-    square,
-    TestState,
-    text,
-    textc,
-    tspan,
-} from './test-utils';
-import { NodeSelection, Path, selStart, Top } from './utils';
-import { selUpdate } from './updaters';
+import { handleShiftNav, handleSpecial, handleTab } from './handleShiftNav';
+import { asTop, asTopAndPaths, id, idc, lisp, listc, round, Sels, smoosh, spaced, square, TestState, text, textc, tspan } from './test-utils';
+import { selUpdate } from './update/updaters';
+import { Top } from './utils';
 
 test('id shift-left', () => {
     let state = asTop(id('hi', true), idc(0));

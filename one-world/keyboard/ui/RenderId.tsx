@@ -1,10 +1,9 @@
 import React from 'react';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Id } from '../../shared/cnodes';
-import { justSel } from '../handleNav';
-import { SelectionStatuses, Path, IdCursor, selStart, TmpText } from '../utils';
+import { IdCursor, Path, SelectionStatuses, selStart, TmpText } from '../utils';
 import { TextWithCursor, Zwd } from './cursor';
-import { RCtx, cursorPositionInSpanForEvt } from './RenderNode';
+import { cursorPositionInSpanForEvt, RCtx } from './RenderNode';
 
 export const RenderId = (
     status: SelectionStatuses[''],

@@ -1,18 +1,33 @@
-import { handleJoinText, unwrap } from './handleDelete';
-import { disolveSmooshed, joinSmooshed, rebalanceSmooshed, replaceSelf, setIdText, setTextText, tagSetAttributes } from './updaters';
-import { selUpdate } from './updaters';
+import { unwrap } from './handleDelete';
+import { handleJoinText } from './update/text';
+import { replaceSelf } from './update/updaters';
+import { disolveSmooshed, joinSmooshed, rebalanceSmooshed } from './update/list';
+import { setIdText } from './update/id';
+import { setTextText } from './update/text';
+import { tagSetAttributes } from './update/list';
 import { SelStart } from './handleShiftNav';
-import { handleTextFormat } from './updaters';
+import { handleTextFormat } from './update/text';
 import { Spat } from './handleSpecialText';
 import { TestState } from './test-utils';
-import { joinInList, joinTable, removeSelf, removeSpan, textDelete } from './updaters';
+import { removeSelf } from './update/updaters';
+import { joinTable } from './update/table';
+import { removeSpan } from './update/text';
+import { joinInList } from './update/list';
+import { textDelete } from './update/text';
 import { Cursor, lastChild, Path, Update } from './utils';
-import { CopiedValues, handleDeleteTooMuch, pasteUpdate } from './multi-change';
+import { CopiedValues, handleDeleteTooMuch, pasteUpdate } from './update/multi-change';
 import { ListKind, RecNodeT, Style, TextSpan } from '../shared/cnodes';
 import { handleIdWrap, handleInsertList, wrapUpdate } from './handleWrap';
-import { addSpan, dedentOutOfRich, splitTextInRich } from './updaters';
-import { handleInsertText, splitTableCol, splitTableRow } from './handleIdKey';
-import { addInside, controlToggle } from './updaters';
+import { addSpan } from './update/text';
+import { dedentOutOfRich, splitTextInRich } from './update/rich';
+import { splitTableCol } from './update/table';
+import { handleInsertText } from './update/updaters';
+import { splitTableRow } from './update/table';
+import { addInside, controlToggle } from './update/updaters';
+import { applyNormalUpdate } from './applyUpdate';
+
+export const selUpdate = (sel?: void | SelStart, start?: SelStart): Update | void =>
+    sel ? { nodes: {}, selection: start ? { start, end: sel } : { start: sel } } : undefined;
 
 export const keyActionToUpdate = (state: TestState, action: KeyAction): Update | void => {
     switch (action.type) {

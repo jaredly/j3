@@ -5,7 +5,7 @@ import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
-import { selUpdate } from './updaters';
+import { selUpdate } from './update/updaters';
 import { SelStart } from './handleShiftNav';
 import { handleWrap } from './handleWrap';
 import { asTop, bullet, checks, controlc, id, idc, lisp, list, listc, rich, round, smoosh, TestState, text, textc, tspan } from './test-utils';

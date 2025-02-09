@@ -142,18 +142,6 @@ export const handleSpecialText = (
     if (!mod) return;
 
     return [{ type: 'text-format', format: mod, path, left: cursor.end, right: cursor.end }];
-
-    // const grems = top.tmpText[`${node.loc}:${cursor.end.index}`];
-    // const res = specialTextMod(node, cursor.end, cursor.end, mod);
-    // if (!res) return;
-
-    // return {
-    //     nodes: { [node.loc]: res.node },
-    //     selection: {
-    //         start: selStart(path, { type: 'text', end: res.end }),
-    //         end: selStart(path, { type: 'text', end: res.start }),
-    //     },
-    // };
 };
 
 export const mergeAdjacentSpans = <T>(spans: TextSpan<T>[], cursor: { start?: Spat; end: Spat }): TextSpan<T>[] => {

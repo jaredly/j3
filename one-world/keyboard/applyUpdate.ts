@@ -1,13 +1,11 @@
 import { shape } from '../shared/shape';
-import { TestState } from './test-utils';
-import { lastChild, NodeSelection, parentPath, Path, pathWithChildren, selStart, SelUpdate, Top, Update } from './utils';
-import { KeyAction, keyActionToUpdate } from './keyActionToUpdate';
-import { validate } from './validate';
-import { root } from './root';
-import { SelStart } from './handleShiftNav';
-import { selectEnd, selectStart } from './handleNav';
-import { selUpdate } from './updaters';
 import { addInPath, removeInPath } from './handleDelete';
+import { SelStart } from './handleShiftNav';
+import { KeyAction, keyActionToUpdate, selUpdate } from './keyActionToUpdate';
+import { root } from './root';
+import { TestState } from './test-utils';
+import { lastChild, NodeSelection, parentPath, pathWithChildren, selStart, SelUpdate, Update } from './utils';
+import { validate } from './validate';
 
 export const applySel = (state: TestState, sel: SelStart | void) => applyNormalUpdate(state, selUpdate(sel));
 

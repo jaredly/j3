@@ -19,7 +19,7 @@ import { posDown, posUp, selectionPos } from './selectionPos';
 import { ShowXML } from './XML';
 import { parser as jsMinusParser } from '../../syntaxes/js--';
 import { HiddenInput } from './HiddenInput';
-import { CopiedValues, handleCopyMulti } from '../multi-change';
+import { CopiedValues, handleCopyMulti } from '../update/multi-change';
 import { shape } from '../../shared/shape';
 import { KeyAction, moveA } from '../keyActionToUpdate';
 

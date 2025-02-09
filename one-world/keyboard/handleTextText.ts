@@ -1,13 +1,13 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { stylesEqual, Text, TextSpan, ListKind, childLocs } from '../shared/cnodes';
-import { idText, spanText } from './cursorSplit';
+import { ListKind, Text, TextSpan, childLocs, stylesEqual } from '../shared/cnodes';
+import { spanText } from './cursorSplit';
 import { handleListKey } from './handleListKey';
-import { justSel, richNode } from './handleNav';
+import { richNode } from './handleNav';
 import { Mods } from './handleShiftNav';
 import { KeyAction, moveA } from './keyActionToUpdate';
 // import { textCursorSides } from './insertId';
 import { Config } from './test-utils';
-import { TextCursor, Path, Top, selStart, parentLoc, parentPath, ListCursor, lastChild, gparentLoc } from './utils';
+import { ListCursor, Path, TextCursor, Top, gparentLoc, lastChild, parentLoc, parentPath, selStart } from './utils';
 
 export const maybeJoin = (one?: TextSpan<number>, two?: TextSpan<number>) => {
     if (one?.type === 'text' && two?.type === 'text' && stylesEqual(one.style, two.style)) {
