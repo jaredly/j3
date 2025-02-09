@@ -32,6 +32,8 @@ Ok, so some CRDT thgouths:
   - [x] handleListKey
   - [x] handleTextKey
 
+UPDATEE
+
 ##
 
 General idea:

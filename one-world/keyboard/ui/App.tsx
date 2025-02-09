@@ -21,6 +21,7 @@ import { parser as jsMinusParser } from '../../syntaxes/js--';
 import { HiddenInput } from './HiddenInput';
 import { CopiedValues, handleCopyMulti } from '../multi-change';
 import { shape } from '../../shared/shape';
+import { KeyAction, moveA } from '../keyActionToUpdate';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
@@ -57,7 +58,7 @@ export type Menu = {
 
 export type Action =
     | { type: 'add-sel'; sel: NodeSelection }
-    | { type: 'update'; update: Update | null | undefined }
+    | { type: 'update'; update: KeyAction[] | null | undefined }
     | { type: 'key'; key: string; mods: Mods; visual?: Visual; config: Config }
     | { type: 'paste'; data: { type: 'json'; data: CopiedValues[] } | { type: 'plain'; text: string } }
     | { type: 'undo' }
@@ -174,10 +175,10 @@ export const App = ({ id }: { id: string }) => {
         const start = selectStart(l, state.top);
         if (!start) return;
         if (!src.right) {
-            return dispatch({ type: 'update', update: { nodes: {}, selection: { start } } }); // multi: { end: selEnd(l) }
+            return dispatch({ type: 'update', update: moveA(start) }); // multi: { end: selEnd(l) }
         }
         const r = paths[src.right[0].idx];
-        return dispatch({ type: 'update', update: { nodes: {}, selection: { start } } }); // multi: { end: selEnd(r) }
+        return dispatch({ type: 'update', update: moveA(start) }); // multi: { end: selEnd(r) }
     };
 
     const [menu, setMenu] = useState(null as null | Menu);
@@ -263,28 +264,25 @@ export const App = ({ id }: { id: string }) => {
                     action() {
                         dispatch({
                             type: 'update',
-                            update: {
-                                nodes: {
-                                    [current.node.loc]: {
+                            update: [
+                                {
+                                    type: 'replace-self',
+                                    path: sel.start.path,
+                                    node: {
                                         type: 'list',
                                         kind,
-                                        loc: current.node.loc,
-                                        children: [cstate.current.top.nextLoc],
+                                        loc: false,
+                                        children: [
+                                            {
+                                                type: 'text',
+                                                loc: true,
+                                                spans: [{ type: 'text', text: '' }],
+                                            },
+                                        ],
                                     },
-                                    [cstate.current.top.nextLoc]: {
-                                        type: 'text',
-                                        loc: cstate.current.top.nextLoc,
-                                        spans: [{ type: 'text', text: '' }],
-                                    },
+                                    cursor: { type: 'text', end: { index: 0, cursor: 0 } },
                                 },
-                                selection: {
-                                    start: selStart(pathWithChildren(current.path, cstate.current.top.nextLoc), {
-                                        type: 'text',
-                                        end: { index: 0, cursor: 0 },
-                                    }),
-                                },
-                                nextLoc: cstate.current.top.nextLoc + 1,
-                            },
+                            ],
                         });
                     },
                 }))
@@ -300,33 +298,24 @@ export const App = ({ id }: { id: string }) => {
                         action() {
                             dispatch({
                                 type: 'update',
-                                update: {
-                                    nodes: {
-                                        [current.node.loc]: {
+                                update: [
+                                    {
+                                        type: 'replace-self',
+                                        path: sel.start.path,
+                                        cursor: { type: 'text', end: { index: 0, cursor: 0 } },
+                                        node: {
                                             type: 'table',
                                             kind: { type: 'rich' },
-                                            loc: current.node.loc,
-                                            rows: [[cstate.current.top.nextLoc, cstate.current.top.nextLoc + 1]],
-                                        },
-                                        [cstate.current.top.nextLoc]: {
-                                            type: 'text',
-                                            loc: cstate.current.top.nextLoc,
-                                            spans: [{ type: 'text', text: '' }],
-                                        },
-                                        [cstate.current.top.nextLoc + 1]: {
-                                            type: 'text',
-                                            loc: cstate.current.top.nextLoc + 1,
-                                            spans: [{ type: 'text', text: '' }],
+                                            loc: false,
+                                            rows: [
+                                                [
+                                                    { type: 'text', loc: true, spans: [{ type: 'text', text: '' }] },
+                                                    { type: 'text', loc: false, spans: [{ type: 'text', text: '' }] },
+                                                ],
+                                            ],
                                         },
                                     },
-                                    selection: {
-                                        start: selStart(pathWithChildren(current.path, cstate.current.top.nextLoc + 1), {
-                                            type: 'text',
-                                            end: { index: 0, cursor: 0 },
-                                        }),
-                                    },
-                                    nextLoc: cstate.current.top.nextLoc + 2,
-                                },
+                                ],
                             });
                         },
                     },
@@ -368,7 +357,7 @@ export const App = ({ id }: { id: string }) => {
                     );
                 } else {
                     drag.dragging = true;
-                    dispatch({ type: 'update', update: { nodes: {}, selection: { start: sel } } });
+                    dispatch({ type: 'update', update: moveA(sel) });
                     document.addEventListener('mouseup', up);
                 }
             },
@@ -379,7 +368,7 @@ export const App = ({ id }: { id: string }) => {
                 } else if (alt) {
                     [start, sel] = atomify(start, sel, cstate.current.top);
                 }
-                dispatch({ type: 'update', update: { nodes: {}, selection: { start, end: sel } } });
+                dispatch({ type: 'update', update: [{ type: 'move', sel: start, end: sel }] });
             },
         };
         return drag;

@@ -22,7 +22,7 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
         case 'unwrap':
             return unwrap(action.path, state.top);
         case 'move':
-            return selUpdate(action.sel);
+            return action.end ? selUpdate(action.end, action.sel) : selUpdate(action.sel);
         case 'sel-expand':
             return { nodes: {}, selection: { start: state.sel.start, end: action.sel } };
         case 'remove-self':
@@ -117,7 +117,7 @@ export type KeyAction =
     | { type: 'join-table'; path: Path; child: { loc: number; cursor: Cursor }; at: { row: number; col: number } }
     // Selections
     | { type: 'paste'; path: Path; cursor: Cursor; values: CopiedValues }
-    | { type: 'move'; sel: SelStart }
+    | { type: 'move'; sel: SelStart; end?: SelStart }
     | { type: 'sel-expand'; sel: SelStart }
     // Deletion n stuch
     | { type: 'replace-self'; path: Path; node: RecNodeT<boolean>; cursor: Cursor }

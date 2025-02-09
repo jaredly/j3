@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Config, init, js, lisp, TestState } from '../test-utils';
 import React from 'react';
 import { DisplayConfig, RenderNode } from './RenderNode';
-import { applyUpdate } from '../applyUpdate';
+import { applyNormalUpdate, applyUpdate } from '../applyUpdate';
 import { keyUpdate } from './keyUpdate';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { ShowXML } from './XML';
@@ -37,7 +37,7 @@ const precompute = (text: string[], config: Config) => {
         if (grem === '\r') {
             const path = state.sel.start.path;
             const node = state.top.nodes[lastChild(path)];
-            state = applyUpdate(state, {
+            state = applyNormalUpdate(state, {
                 nodes: {
                     [node.loc]: { type: 'list', kind: { type: 'plain' }, children: [state.top.nextLoc], loc: node.loc },
                     [state.top.nextLoc]: { type: 'text', loc: state.top.nextLoc, spans: [{ type: 'text', text: '' }] },

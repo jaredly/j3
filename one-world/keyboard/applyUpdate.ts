@@ -8,9 +8,8 @@ import { SelStart } from './handleShiftNav';
 import { selectEnd, selectStart, selUpdate } from './handleNav';
 import { addInPath, removeInPath } from './handleDelete';
 
-export const applySel = (state: TestState, sel: SelStart | void) => applyUpdate(state, selUpdate(sel));
+export const applySel = (state: TestState, sel: SelStart | void) => applyNormalUpdate(state, selUpdate(sel));
 
-// const addParent = (path: Path, )
 const modId = (sel: SelStart, mod: Extract<SelUpdate, { type: 'id' }>) => {
     const at = lastChild(sel.path);
     if (at !== mod.from.loc) return sel;
@@ -44,15 +43,8 @@ export const applySelUp = (sel: NodeSelection, up: SelUpdate): NodeSelection => 
     }
 };
 
-export function applyUpdate<T extends TestState>(state: T, update: Update | KeyAction[] | null | void): T {
+export const applyNormalUpdate = <T extends TestState>(state: T, update: null | undefined | void | Update): T => {
     if (!update) return state;
-    if (Array.isArray(update)) {
-        for (let sub of update) {
-            state = applyUpdate(state, keyActionToUpdate(state, sub));
-        }
-        return state;
-    }
-    const prev = state.sel;
     state = {
         ...state,
         top: {
@@ -83,22 +75,20 @@ export function applyUpdate<T extends TestState>(state: T, update: Update | KeyA
         }
     });
 
-    // if (
-    //     prev.start.cursor.type === 'text' &&
-    //     prev.start.cursor.end.text != null &&
-    //     update.selection &&
-    //     (update.selection.start.key !== prev.start.key ||
-    //         update.selection.start.cursor.type !== 'text' ||
-    //         update.selection.start.cursor.end.index !== prev.start.cursor.end.index)
-    // ) {
-    // }
-
     try {
         validate(state);
     } catch (err) {
         console.log(JSON.stringify(state, null, 2));
         console.log(shape(root(state)));
         throw err;
+    }
+    return state;
+};
+
+export function applyUpdate<T extends TestState>(state: T, update: KeyAction[] | null | void): T {
+    if (!update) return state;
+    for (let sub of update) {
+        state = applyNormalUpdate(state, keyActionToUpdate(state, sub));
     }
     return state;
 }

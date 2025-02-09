@@ -10,6 +10,7 @@ import { RenderList } from './RenderList';
 import { RenderText } from './RenderText';
 import { RenderTable } from './RenderTable';
 import { SelStart } from '../handleShiftNav';
+import { KeyAction } from '../keyActionToUpdate';
 
 export const hlColor = 'rgba(100,100,100,0.2)';
 // ? ''
@@ -36,7 +37,7 @@ export type RCtx = {
     styles: Record<number, Style>;
     placeholders: Record<number, string>;
     selectionStatuses: SelectionStatuses;
-    dispatch: (up: Update) => void;
+    dispatch: (up: KeyAction[]) => void;
     // msel: null | string[];
     // mhover: null | string[];
     drag: {

@@ -1,7 +1,7 @@
 import { RecNodeT } from '../shared/cnodes';
 import { ctx, matchers, stmtSpans } from '../syntaxes/gleam2';
 import { parse } from '../syntaxes/dsl';
-import { applyUpdate } from './applyUpdate';
+import { applyNormalUpdate, applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleKey } from './handleKey';
 import { handleShiftNav, handleSpecial, handleTab, nextLargerSpan, selEnd, shiftExpand, Src } from './handleShiftNav';
@@ -162,7 +162,7 @@ function checkTabs(
 ) {
     let state: TestState = { top, sel: sels[0] };
     for (let i = 1; sels[i]; i++) {
-        state = applyUpdate(state, selUpdate(handleTab(state, shift)));
+        state = applyNormalUpdate(state, selUpdate(handleTab(state, shift)));
         expect(state.sel).toEqual(sels[i]);
     }
 }

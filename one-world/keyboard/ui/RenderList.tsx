@@ -178,14 +178,17 @@ export const RenderList = (
                                 evt.stopPropagation();
                             }}
                             onChange={(evt) => {
-                                ctx.dispatch({
-                                    nodes: {
-                                        [node.loc]: {
-                                            ...node,
-                                            kind: { type: 'checks', checked: { ...ch, [loc]: !ch[loc] } },
-                                        },
-                                    },
-                                });
+                                ctx.dispatch(
+                                    [{ type: 'control-toggle', path: nextParent, index: i }],
+                                    //     {
+                                    //     nodes: {
+                                    //         [node.loc]: {
+                                    //             ...node,
+                                    //             kind: { type: 'checks', checked: { ...ch, [loc]: !ch[loc] } },
+                                    //         },
+                                    //     },
+                                    // }
+                                );
                             }}
                         />
                         <div style={{ gridColumn: 2 }}>{children[i]}</div>
@@ -209,14 +212,17 @@ export const RenderList = (
                             onMouseDown={(evt) => {
                                 evt.stopPropagation();
                                 evt.preventDefault();
-                                ctx.dispatch({
-                                    nodes: {
-                                        [node.loc]: {
-                                            ...node,
-                                            kind: { type: 'opts', which: which === loc ? undefined : loc },
-                                        },
-                                    },
-                                });
+                                ctx.dispatch(
+                                    [{ type: 'control-toggle', path: nextParent, index: i }],
+                                    //     {
+                                    //     nodes: {
+                                    //         [node.loc]: {
+                                    //             ...node,
+                                    //             kind: { type: 'opts', which: which === loc ? undefined : loc },
+                                    //         },
+                                    //     },
+                                    // }
+                                );
                             }}
                             // to appease react
                             onChange={(evt) => {}}

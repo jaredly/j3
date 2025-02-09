@@ -1,7 +1,7 @@
 import equal from 'fast-deep-equal';
 import { Node, Nodes } from '../../shared/cnodes';
 import { shape } from '../../shared/shape';
-import { applyUpdate, applySelUp } from '../applyUpdate';
+import { applyUpdate, applySelUp, applyNormalUpdate } from '../applyUpdate';
 import { keyActionToUpdate } from '../keyActionToUpdate';
 import { root } from '../root';
 import { init } from '../test-utils';
@@ -256,7 +256,7 @@ export const applyAppUpdate = (state: AppState, action: Action, noJoin = false):
                 if (Array.isArray(update)) {
                     for (let keyAction of update) {
                         const sub = keyActionToUpdate({ top, sel }, keyAction);
-                        const result = applyUpdate({ top, sel }, sub);
+                        const result = applyNormalUpdate({ top, sel }, sub);
                         top = result.top;
                         selections[i] = result.sel;
                         if (sub && Array.isArray(sub.selection)) {
@@ -274,40 +274,14 @@ export const applyAppUpdate = (state: AppState, action: Action, noJoin = false):
                 const result = applyUpdate({ top, sel }, update);
                 top = result.top;
                 selections[i] = result.sel;
-                // if (update && Array.isArray(update.selection)) {
-                //     for (let j = 0; j < selections.length; j++) {
-                //         if (j !== i) {
-                //             update.selection.forEach((up) => {
-                //                 selections[j] = applySelUp(selections[i], up);
-                //             });
-                //         }
-                //     }
-                // }
             }
             return recordHistory(state, { ...state, top, selections }, noJoin);
     }
-
-    // let top = state.top;
-    // if (Array.isArray(action)) {
-    //     const selections = action.map((action, i) => {
-    //         const result = applyUpdate({ top, sel: i >= state.selections.length ? state.selections[0] : state.selections[i] }, action);
-    //         top = result.top;
-    //         return result.sel;
-    //     });
-    //     return { ...state, top, selections };
-    // }
-    // if (!state.selections.length) return state;
-    // const result = applyUpdate({ top, sel: state.selections[0] }, action);
-    // // const selections = state.selections.map((sel, i) => {
-    // //     const result = applyUpdate({ top, sel }, action);
-    // //     top = result.top;
-    // //     return result.sel;
-    // // });
-    // return { ...state, top: result.top, selections: [result.sel] };
 };
+
 export const reducer = (state: AppState, action: Action) => {
     const result = applyAppUpdate(state, action);
-    // console.log(shape(root({ top: result.top })));
     return result;
 };
+
 export const initialAppState: AppState = { top: init.top, selections: [init.sel], history: [] };
