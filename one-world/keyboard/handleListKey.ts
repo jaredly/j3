@@ -1,10 +1,11 @@
 import { isRich, List, Node } from '../shared/cnodes';
 import { findParent, listKindForKeyKind, Flat, addNeighborBefore, addNeighborAfter } from './flatenate';
-import { isTag, justSel, richNode, selectStart, selUpdate } from './handleNav';
+import { isTag, justSel, richNode, selectStart } from './handleNav';
+import { selUpdate } from './updaters';
 import { Kind, textKind } from './insertId';
 import { Config } from './test-utils';
-import { collapseAdjacentIDs, flatten, flatToUpdateNew, pruneEmptyIds, unflat } from './rough';
-import { Top, Path, CollectionCursor, Update, lastChild, selStart, parentPath, Cursor, findTableLoc, ListCursor, parentLoc } from './utils';
+import { collapseAdjacentIDs, flatten, pruneEmptyIds, unflat } from './rough';
+import { Top, Path, CollectionCursor, lastChild, selStart, parentPath, Cursor, findTableLoc, ListCursor, parentLoc, UNodes } from './utils';
 import { flatNeighbor, handleTableSplit, handleTagCloser } from './handleIdKey';
 import { KeyAction, moveA } from './keyActionToUpdate';
 
@@ -128,7 +129,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
 
 export const splitListCell = (current: Node, cursor: ListCursor, blank: Node) => (cell: Node, top: Top, loc: number) => {
     const flat = flatten(cell, top, undefined, 1);
-    const nodes: Update['nodes'] = {};
+    const nodes: UNodes = {};
     const neighbor: Flat = { type: 'sep', loc };
     const { sel, ncursor } = addNeighbor({ current, cursor, flat, neighbor, blank });
     const one = pruneEmptyIds(flat, { node: sel, cursor: ncursor });
@@ -154,7 +155,7 @@ export function addNeighbor({
     let at = flat.indexOf(current);
     if (at === -1) throw new Error(`flatten didnt work I guess`);
     // for (; at < flat.length - 1 && flat[at + 1].type === 'smoosh'; at++); // skip smooshes
-    const nodes: Update['nodes'] = {};
+    const nodes: UNodes = {};
 
     let sel: Node = current;
     let ncursor: Cursor = cursor;

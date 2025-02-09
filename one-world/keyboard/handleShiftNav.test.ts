@@ -26,7 +26,7 @@ import {
     tspan,
 } from './test-utils';
 import { NodeSelection, Path, selStart, Top } from './utils';
-import { selUpdate } from './handleNav';
+import { selUpdate } from './updaters';
 
 test('id shift-left', () => {
     let state = asTop(id('hi', true), idc(0));

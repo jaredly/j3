@@ -8,7 +8,7 @@ import { Kind, textKind } from './insertId';
 import { KeyAction, KeyWhat, moveA } from './keyActionToUpdate';
 import { collapseAdjacentIDs, findPath, flatToUpdateNew, flatten, pruneEmptyIds, unflat } from './rough';
 import { Config } from './test-utils';
-import { Current, Cursor, IdCursor, Path, Top, Update, findTableLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
+import { Current, Cursor, IdCursor, Path, Top, UNodes, findTableLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
 
 export const handleIdKey = (config: Config, top: Top, current: Extract<Current, { type: 'id' }>, grem: string): KeyAction[] | void => {
     // let node = top.nodes[lastChild(current.path)];
@@ -260,7 +260,7 @@ export const handleInsertText = (top: Top, path: Path, pos: 'before' | 'after' |
 
     const neighbor = whatNeighbor(what);
     if (typeof pos === 'number' && node.type === 'id') {
-        const nodes: Update['nodes'] = {};
+        const nodes: UNodes = {};
         const { sel, ncursor } = addIdNeighbor({ neighbor, current: { node, cursor: { type: 'id', end: pos } }, flat, nodes, top });
 
         return flatToUpdateNew(
@@ -345,7 +345,7 @@ export const handleTableSplit = (grem: string, config: Config, path: Path, top: 
 };
 
 export type SplitRes = {
-    result: { sloc: number | null; other: number[]; nodes: Update['nodes']; forceMultiline: boolean | undefined; nextLoc: number };
+    result: { sloc: number | null; other: number[]; nodes: UNodes; forceMultiline: boolean | undefined; nextLoc: number };
     two: { items: Flat[]; selection: { node: Node; cursor: Cursor } };
 };
 
@@ -353,7 +353,7 @@ export const splitIdCell =
     (current: Extract<Current, { type: 'id' }>) =>
     (cell: Node, top: Top, loc: number): SplitRes => {
         const flat = flatten(cell, top, undefined, 1);
-        const nodes: Update['nodes'] = {};
+        const nodes: UNodes = {};
         const neighbor: Flat = { type: 'sep', loc };
         const { sel, ncursor } = addIdNeighbor({ neighbor, current, flat, nodes, top });
         const one = pruneEmptyIds(flat, { node: sel, cursor: ncursor });

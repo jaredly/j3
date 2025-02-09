@@ -1,6 +1,6 @@
 import React from 'react';
 import { List, isRich } from '../../shared/cnodes';
-import { selUpdate } from '../handleNav';
+import { selUpdate } from '../updaters';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
 import { SelectionStatuses, Path, ListWhere, parentPath, Top, TmpText } from '../utils';
@@ -178,17 +178,7 @@ export const RenderList = (
                                 evt.stopPropagation();
                             }}
                             onChange={(evt) => {
-                                ctx.dispatch(
-                                    [{ type: 'control-toggle', path: nextParent, index: i }],
-                                    //     {
-                                    //     nodes: {
-                                    //         [node.loc]: {
-                                    //             ...node,
-                                    //             kind: { type: 'checks', checked: { ...ch, [loc]: !ch[loc] } },
-                                    //         },
-                                    //     },
-                                    // }
-                                );
+                                ctx.dispatch([{ type: 'control-toggle', path: nextParent, index: i }]);
                             }}
                         />
                         <div style={{ gridColumn: 2 }}>{children[i]}</div>

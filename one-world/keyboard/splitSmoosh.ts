@@ -1,9 +1,3 @@
-import { List, Nodes } from '../shared/cnodes';
-import { cursorSplit } from './cursorSplit';
-import { cursorSides } from './cursorSides';
-import { joinAdjacent, joinAdjacentList } from './joinAdjacent';
-import { lastChild, ListCursor, parentPath, pathWithChildren } from './utils';
-import { Top, Path, IdCursor, Update, PartialSel, CollectionCursor, selStart } from './utils';
 // import { parentList, replaceWithList } from './replaceWithSmooshed';
 
 /* Places that a cursor can be:

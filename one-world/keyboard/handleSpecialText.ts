@@ -1,10 +1,8 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { linksEqual, Style, stylesEqual, Text, TextSpan } from '../shared/cnodes';
-import { sideEqual } from './handleNav';
 import { Mods } from './handleShiftNav';
 import { KeyAction } from './keyActionToUpdate';
-// import { textCursorSides2 } from './insertId';
-import { Path, TextCursor, ListCursor, Top, Update, selStart, TmpText } from './utils';
+import { ListCursor, Path, TextCursor, Top } from './utils';
 
 const isStyleKey = (key: string) => key === 'b' || key === 'i' || key === 'u';
 

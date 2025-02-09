@@ -1,5 +1,5 @@
 import { Text } from '../shared/cnodes';
-import { selUpdate } from './handleNav';
+import { selUpdate } from './updaters';
 import { Config } from './test-utils';
 import { TextCursor } from './utils';
 

@@ -1,7 +1,8 @@
 import { handleJoinText, unwrap } from './handleDelete';
 import { disolveSmooshed, joinSmooshed, rebalanceSmooshed, replaceSelf, setIdText, setTextText, tagSetAttributes } from './updaters';
-import { selUpdate } from './handleNav';
-import { handleTextFormat, SelStart } from './handleShiftNav';
+import { selUpdate } from './updaters';
+import { SelStart } from './handleShiftNav';
+import { handleTextFormat } from './updaters';
 import { Spat } from './handleSpecialText';
 import { TestState } from './test-utils';
 import { joinInList, joinTable, removeSelf, removeSpan, textDelete } from './updaters';

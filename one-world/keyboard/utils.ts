@@ -233,8 +233,10 @@ export type SelUpdate =
 
 export type JustSelUpdate = Omit<Update, 'selection'> & { selection?: NodeSelection };
 
+export type UNodes = Record<number, Node | null>;
+
 export type Update = {
-    nodes: Record<number, Node | null>;
+    nodes: UNodes;
     root?: number;
     nextLoc?: number;
     selection?: NodeSelection | SelUpdate[];

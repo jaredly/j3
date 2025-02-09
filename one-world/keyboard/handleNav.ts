@@ -3,20 +3,7 @@ import { hasControls, isRich, ListKind, Node, TableKind, Text, TextSpan } from '
 import { cursorSides } from './cursorSides';
 // import { textCursorSides, textCursorSides2 } from './insertId';
 import { TestState } from './test-utils';
-import {
-    Current,
-    Cursor,
-    findTableLoc,
-    lastChild,
-    NodeSelection,
-    parentLoc,
-    parentPath,
-    Path,
-    pathWithChildren,
-    selStart,
-    Top,
-    Update,
-} from './utils';
+import { Current, Cursor, findTableLoc, lastChild, NodeSelection, parentLoc, parentPath, Path, pathWithChildren, selStart, Top } from './utils';
 import { getCurrent } from './selections';
 import { SelStart } from './handleShiftNav';
 import { idText, spanText } from './cursorSplit';
@@ -362,9 +349,6 @@ export const navRight = (current: Current, state: TestState): SelStart | void =>
         }
     }
 };
-
-export const selUpdate = (sel?: void | NodeSelection['start'], start?: NodeSelection['end']): Update | void =>
-    sel ? { nodes: {}, selection: start ? { start, end: sel } : { start: sel } } : undefined;
 
 export const navLeft = (current: Current, state: TestState): SelStart | void => {
     switch (current.type) {

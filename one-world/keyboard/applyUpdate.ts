@@ -5,7 +5,8 @@ import { KeyAction, keyActionToUpdate } from './keyActionToUpdate';
 import { validate } from './validate';
 import { root } from './root';
 import { SelStart } from './handleShiftNav';
-import { selectEnd, selectStart, selUpdate } from './handleNav';
+import { selectEnd, selectStart } from './handleNav';
+import { selUpdate } from './updaters';
 import { addInPath, removeInPath } from './handleDelete';
 
 export const applySel = (state: TestState, sel: SelStart | void) => applyNormalUpdate(state, selUpdate(sel));

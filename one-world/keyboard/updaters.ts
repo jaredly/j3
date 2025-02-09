@@ -1,14 +1,27 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, Node, Nodes, RecNodeT, Table, TextSpan, childLocs, fromRec, isRich } from '../shared/cnodes';
+import { Id, Node, Nodes, RecNodeT, Style, Table, TextSpan, childLocs, fromRec, isRich } from '../shared/cnodes';
 import { addUpdate, simpleSide, spanLength } from './handleDelete';
 import { isTag, richNode, selectEnd, spanEnd, spanStart } from './handleNav';
-import { SelStart } from './handleShiftNav';
-import { Spat } from './handleSpecialText';
+import { SelStart, toggleFormat } from './handleShiftNav';
+import { Spat, specialTextMod } from './handleSpecialText';
 import { maybeJoin } from './handleTextText';
 import { replaceAt } from './replaceAt';
 import { replaceIn } from './replaceIn';
 import { collapseAdjacentIDs, findPath, fixSelection, flatToUpdateNew, flatten, pruneEmptyIds, unflat } from './rough';
-import { Cursor, Path, Top, Update, findTableLoc, gparentLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
+import {
+    Cursor,
+    NodeSelection,
+    Path,
+    Top,
+    Update,
+    findTableLoc,
+    gparentLoc,
+    lastChild,
+    parentLoc,
+    parentPath,
+    pathWithChildren,
+    selStart,
+} from './utils';
 
 export const tagSetAttributes = (top: Top, path: Path, node: RecNodeT<boolean>, cursor: Cursor) => {
     const tag = top.nodes[lastChild(path)];
@@ -642,5 +655,37 @@ export const addSpan = (
         nodes,
         selection: { start: sel },
         nextLoc,
+    };
+};
+export const selUpdate = (sel?: void | NodeSelection['start'], start?: NodeSelection['end']): Update | void =>
+    sel ? { nodes: {}, selection: start ? { start, end: sel } : { start: sel } } : undefined;
+export const handleTextFormat = (
+    top: Top,
+    path: Path,
+    format: Partial<Style>,
+    left: Spat,
+    right: Spat,
+    select?: 'before' | 'after' | 'cover',
+): Update | undefined => {
+    const node = top.nodes[lastChild(path)];
+    if (node.type !== 'text') return;
+
+    const res = specialTextMod(node, left, right, (style) => toggleFormat(style, format));
+    if (!res) return;
+    return {
+        nodes: { [node.loc]: res.node },
+        selection:
+            select === 'after'
+                ? {
+                      start: selStart(path, { type: 'text', end: res.start }),
+                  }
+                : select === 'before'
+                ? {
+                      start: selStart(path, { type: 'text', end: res.end }),
+                  }
+                : {
+                      end: selStart(path, { type: 'text', end: res.start }),
+                      start: selStart(path, { type: 'text', end: res.end }),
+                  },
     };
 };

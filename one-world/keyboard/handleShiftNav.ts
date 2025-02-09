@@ -1,42 +1,20 @@
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { childLocs, Id, Loc, Node, Style, Text } from '../shared/cnodes';
-import { spanLength } from './handleDelete';
-import { goLateral, handleNav, justSel, selectEnd, selectStart, selUpdate } from './handleNav';
-import { handleSpecialText, keyFormat, keyMod, Spat, specialTextMod } from './handleSpecialText';
-import { TestState } from './test-utils';
-import {
-    Current,
-    Cursor,
-    IdCursor,
-    lastChild,
-    ListCursor,
-    NodeSelection,
-    parentLoc,
-    parentPath,
-    Path,
-    pathKey,
-    pathWithChildren,
-    selStart,
-    TextCursor,
-    Top,
-    Update,
-} from './utils';
-import { getCurrent, ltCursor, orderSelections } from './selections';
-import { idText } from './cursorSplit';
-import { handleCopyMulti } from './multi-change';
-import { shape } from '../shared/shape';
-import { KeyAction, moveA } from './keyActionToUpdate';
 import equal from 'fast-deep-equal';
-// import { textCursorSides2 } from './insertId';
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
+import { childLocs, Loc, Node, Style, Text } from '../shared/cnodes';
+import { idText } from './cursorSplit';
+import { goLateral, handleNav, selectEnd, selectStart } from './handleNav';
+import { handleSpecialText, keyFormat } from './handleSpecialText';
+import { KeyAction, moveA } from './keyActionToUpdate';
+import { getCurrent, ltCursor } from './selections';
+import { TestState } from './test-utils';
+import { lastChild, NodeSelection, parentLoc, parentPath, Path, pathKey, pathWithChildren, selStart, Top } from './utils';
 
 export type Src = { left: Loc; right?: Loc };
 
 export const nextLargerSpan = (sel: NodeSelection, spans: Src[], top: Top) => {
-    // const multi = sel.multi ? multiSelChildren(sel, top) :
     const multi = { parent: parentPath(sel.start.path), children: [lastChild(sel.start.path)] };
 
     if (!multi) {
-        // console.log('no multi');
         return;
     }
 
@@ -264,7 +242,7 @@ const wordNext = (node: Text<number>, left: boolean, index: number, cursor: numb
     return { index, cursor: i };
 };
 
-const toggleFormat = (style: Style, up: Partial<Style>) => {
+export const toggleFormat = (style: Style, up: Partial<Style>) => {
     if (Object.keys(up).every((k) => equal(style[k as 'color'], up[k as 'color']))) {
         Object.keys(up).forEach((k) => {
             delete style[k as 'color'];
@@ -272,37 +250,6 @@ const toggleFormat = (style: Style, up: Partial<Style>) => {
     } else {
         Object.assign(style, up);
     }
-};
-
-export const handleTextFormat = (
-    top: Top,
-    path: Path,
-    format: Partial<Style>,
-    left: Spat,
-    right: Spat,
-    select?: 'before' | 'after' | 'cover',
-): Update | undefined => {
-    const node = top.nodes[lastChild(path)];
-    if (node.type !== 'text') return;
-
-    const res = specialTextMod(node, left, right, (style) => toggleFormat(style, format));
-    if (!res) return;
-    return {
-        nodes: { [node.loc]: res.node },
-        selection:
-            select === 'after'
-                ? {
-                      start: selStart(path, { type: 'text', end: res.start }),
-                  }
-                : select === 'before'
-                ? {
-                      start: selStart(path, { type: 'text', end: res.end }),
-                  }
-                : {
-                      end: selStart(path, { type: 'text', end: res.start }),
-                      start: selStart(path, { type: 'text', end: res.end }),
-                  },
-    };
 };
 
 export const wordNav = (state: TestState, left: boolean, shift: boolean | undefined): KeyAction[] | void => {

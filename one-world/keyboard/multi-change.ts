@@ -1,29 +1,28 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { childLocs, fromRec, Loc, Node, Nodes, RecNode, RecNodeT } from '../shared/cnodes';
+import { childLocs, fromRec, Node, Nodes, RecNodeT } from '../shared/cnodes';
 import { applySelUp } from './applyUpdate';
-import { rebalanceSmooshed, joinSmooshed, disolveSmooshed } from './updaters';
 import { selectEnd, selectStart } from './handleNav';
-import { replaceAt } from './replaceAt';
+import { SelStart } from './handleShiftNav';
 import { replaceIn } from './replaceIn';
 import { root } from './root';
 import { updateNodes } from './rough';
 import { collectSelectedNodes, Neighbor } from './selections';
 import { TestState } from './test-utils';
+import { disolveSmooshed, joinSmooshed, rebalanceSmooshed } from './updaters';
 import {
-    Path,
     Cursor,
-    Top,
-    lastChild,
-    parentLoc,
-    Update,
-    selStart,
-    NodeSelection,
-    parentPath,
-    pathKey,
     JustSelUpdate,
+    lastChild,
+    NodeSelection,
+    parentLoc,
+    parentPath,
+    Path,
+    pathKey,
     pathWithChildren,
+    selStart,
+    Top,
+    Update,
 } from './utils';
-import { SelStart } from './handleShiftNav';
 
 export const shouldNudgeRight = (path: Path, cursor: Cursor, top: Top) => {
     const node = top.nodes[lastChild(path)];
@@ -129,6 +128,7 @@ export const handleDeleteTooMuch = (top: Top, start: SelStart, end: SelStart): J
 
     return { nodes, selection, nextLoc };
 };
+
 const copyDeep = (loc: number, top: Top, dest: Nodes) => {
     if (dest[loc]) return; // already handled
     dest[loc] = top.nodes[loc];
@@ -202,15 +202,6 @@ export const pasteUpdate = (top: Top, path: Path, cursor: Cursor, values: Copied
     // ah ok here's the story.
     // if we're in a blank ID, and it's a multi, then we splice
 };
-
-// export const handlePaste = (state: TestState, values: CopiedValues): void | Update => {
-//     let update: JustSelUpdate = { nodes: {} };
-//     if (state.sel.end) {
-//         const up = handleDeleteTooMuch(state.top, state.sel.start, state.sel.end);
-//         if (!up) return;
-//         update = up;
-//     }
-// };
 
 export const handleCopyMulti = (state: TestState): void | CopiedValues => {
     if (!state.sel.end) return;
