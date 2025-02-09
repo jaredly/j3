@@ -36,6 +36,11 @@ UPDATEE
 
 ohhhhk so I have 700 lines of updaters.
 
+annnnd. some things I want to do:
+
+- turn my nodes into ... classes? or something like that. Interfaces? So that I can e.g. store a /length/ on IDs,
+  which would reduce the amount of splitGraphemes I have to do.
+
 ##
 
 General idea:
