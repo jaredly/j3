@@ -137,70 +137,63 @@ const copyDeep = (loc: number, top: Top, dest: Nodes) => {
 
 export type CopiedValues = { tree: RecNodeT<number>; single: boolean };
 
-export const handlePaste = (state: TestState, values: CopiedValues): void | Update => {
-    let update: JustSelUpdate = { nodes: {} };
-    if (state.sel.end) {
-        const up = handleDeleteTooMuch(state.top, state.sel.start, state.sel.end);
-        if (!up) return;
-        update = up;
-    }
+export const pasteUpdate = (top: Top, path: Path, cursor: Cursor, values: CopiedValues): void | Update => {
+    let nextLoc = top.nextLoc;
+    const nodes: Nodes = {};
 
-    let nextLoc = state.top.nextLoc;
-
-    const root = fromRec(values.tree, update.nodes, (l) => {
-        if (l == null || l < 0 || update.nodes[l] || state.top.nodes[l]) {
+    const root = fromRec(values.tree, nodes, (l) => {
+        if (l == null || l < 0 || nodes[l] || top.nodes[l]) {
             return nextLoc++;
         }
         return l;
     });
 
-    const sel = update.selection ?? state.sel;
-
     // options include:
     // it's just an ID, and we're in an ID.
-    const node = state.top.nodes[lastChild(sel.start.path)];
+    const node = top.nodes[lastChild(path)];
     if (node.type === 'id') {
         if (node.text === '') {
-            const rootNode = update.nodes[root]!;
-            const pnode = state.top.nodes[parentLoc(sel.start.path)];
+            const rootNode = nodes[root]!;
+            const pnode = top.nodes[parentLoc(path)];
             if (!values.single && rootNode.type === 'list' && pnode?.type === 'list' && rootNode.kind === pnode.kind) {
                 const upnode = replaceIn(pnode, node.loc, ...rootNode.children);
-                update.nodes[upnode.loc] = upnode;
+                nodes[upnode.loc] = upnode;
+                const update: Update = { nodes };
 
-                rebalanceSmooshed(update, state.top);
-                joinSmooshed(update, state.top);
-                disolveSmooshed(update, state.top);
+                rebalanceSmooshed(update, top);
+                joinSmooshed(update, top);
+                disolveSmooshed(update, top);
 
-                const stop = { ...state.top, nodes: updateNodes(state.top.nodes, update.nodes) };
-                const selS = selectStart(pathWithChildren(parentPath(sel.start.path), rootNode.children[0]), stop);
-                const selE = selectEnd(pathWithChildren(parentPath(sel.start.path), rootNode.children[rootNode.children.length - 1]), stop);
+                const stop = { ...top, nodes: updateNodes(top.nodes, update.nodes) };
+                const selS = selectStart(pathWithChildren(parentPath(path), rootNode.children[0]), stop);
+                const selE = selectEnd(pathWithChildren(parentPath(path), rootNode.children[rootNode.children.length - 1]), stop);
                 if (selS && selE) {
                     return { ...update, selection: { start: selS, end: selE }, nextLoc };
                 }
             }
 
-            update.nodes[node.loc] = { ...rootNode!, loc: node.loc };
-            delete update.nodes[root];
+            nodes[node.loc] = { ...rootNode!, loc: node.loc };
+            delete nodes[root];
 
-            const top = { ...state.top, nodes: updateNodes(state.top.nodes, update.nodes) };
+            const stop = { ...top, nodes: updateNodes(top.nodes, nodes) };
+            const st = selectStart(path, stop);
+            const ed = selectEnd(path, stop);
 
-            const st = selectStart(sel.start.path, top);
-            const ed = selectEnd(sel.start.path, top);
             if (st && ed) {
-                return { ...update, selection: { start: st, end: ed }, nextLoc };
+                return { nodes, selection: { start: st, end: ed }, nextLoc };
             }
-            return update;
+            return;
         }
 
-        if (values.tree.type === 'id' && sel.start.cursor.type === 'id') {
+        if (values.tree.type === 'id' && cursor.type === 'id') {
             const grems = splitGraphemes(node.text);
             const nws = splitGraphemes(values.tree.text);
-            grems.splice(sel.start.cursor.end, 0, ...nws);
+            grems.splice(cursor.end, 0, ...nws);
             return {
                 nodes: { [node.loc]: { ...node, text: grems.join('') } },
                 selection: {
-                    start: selStart(sel.start.path, { type: 'id', end: sel.start.cursor.end }),
-                    end: selStart(sel.start.path, { type: 'id', end: sel.start.cursor.end + nws.length }),
+                    start: selStart(path, { type: 'id', end: cursor.end }),
+                    end: selStart(path, { type: 'id', end: cursor.end + nws.length }),
                 },
             };
         }
@@ -209,6 +202,15 @@ export const handlePaste = (state: TestState, values: CopiedValues): void | Upda
     // ah ok here's the story.
     // if we're in a blank ID, and it's a multi, then we splice
 };
+
+// export const handlePaste = (state: TestState, values: CopiedValues): void | Update => {
+//     let update: JustSelUpdate = { nodes: {} };
+//     if (state.sel.end) {
+//         const up = handleDeleteTooMuch(state.top, state.sel.start, state.sel.end);
+//         if (!up) return;
+//         update = up;
+//     }
+// };
 
 export const handleCopyMulti = (state: TestState): void | CopiedValues => {
     if (!state.sel.end) return;

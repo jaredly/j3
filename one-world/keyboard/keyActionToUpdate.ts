@@ -6,7 +6,7 @@ import { Spat } from './handleSpecialText';
 import { TestState } from './test-utils';
 import { joinInList, joinTable, removeSelf, removeSpan, textDelete } from './updaters';
 import { Cursor, lastChild, Path, Update } from './utils';
-import { CopiedValues, handleDeleteTooMuch } from './multi-change';
+import { CopiedValues, handleDeleteTooMuch, pasteUpdate } from './multi-change';
 import { ListKind, RecNodeT, Style, TextSpan } from '../shared/cnodes';
 import { handleIdWrap, handleInsertList, wrapUpdate } from './handleWrap';
 import { addSpan, dedentOutOfRich, splitTextInRich } from './updaters';
@@ -84,6 +84,8 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
             return controlToggle(state.top, action.path, action.index);
         case 'add-inside':
             return addInside(state.top, action.path, action.children, action.cursor);
+        case 'paste':
+            return pasteUpdate(state.top, action.path, action.cursor, action.values);
     }
 };
 

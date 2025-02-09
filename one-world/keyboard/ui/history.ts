@@ -8,7 +8,6 @@ import { init } from '../test-utils';
 import { Top, NodeSelection } from '../utils';
 import { AppState, Action } from './App';
 import { keyUpdate } from './keyUpdate';
-import { handlePaste } from '../multi-change';
 
 type Delta<T> = { next: T; prev: T };
 export type HistoryItem =
@@ -219,11 +218,28 @@ export const applyAppUpdate = (state: AppState, action: Action, noJoin = false):
             if (action.data.type === 'json') {
                 const selections = state.selections.slice();
                 let top = state.top;
+
+                selections.forEach((sel, i) => {
+                    if (sel.end) {
+                        const result = applyUpdate({ top, sel: state.selections[i] }, [{ type: 'multi-delete', start: sel.start, end: sel.end }]);
+                        top = result.top;
+                        selections[i] = result.sel;
+                    }
+                });
+
                 for (let i = 0; i < state.selections.length; i++) {
                     const v = action.data.data.length === 1 ? action.data.data[0] : action.data.data[i];
                     if (!v) break;
-                    const up = handlePaste({ top, sel: state.selections[0] }, action.data.data[i]);
-                    const result = applyUpdate({ top, sel: state.selections[0] }, up);
+                    const sel = state.selections[i];
+
+                    const result = applyUpdate({ top, sel: state.selections[i] }, [
+                        {
+                            type: 'paste',
+                            path: sel.start.path,
+                            cursor: sel.start.cursor,
+                            values: v,
+                        },
+                    ]);
                     selections[i] = result.sel;
                     top = result.top;
                 }

@@ -5,7 +5,8 @@ import { check } from './check.test';
 import { handleDelete, normalizeTextCursorSide } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
-import { handleCopyMulti, handlePaste } from './multi-change';
+import { KeyAction } from './keyActionToUpdate';
+import { CopiedValues, handleCopyMulti } from './multi-change';
 import { root } from './root';
 import { asTop, atPath, id, idc, lisp, listc, noText, round, selPath, smoosh, spaced, TestState, text, textc, tspan } from './test-utils';
 import { Cursor } from './utils';
@@ -55,6 +56,15 @@ test('collapse copied singleton', () => {
     expect(shape(result.tree)).toEqual(shape(round([id('hi'), id('hello')])));
     expect(result.single).toBe(false);
 });
+
+const handlePaste = (state: TestState, data: CopiedValues): KeyAction[] => [
+    {
+        type: 'paste',
+        path: state.sel.start.path,
+        cursor: state.sel.start.cursor,
+        values: data,
+    },
+];
 
 test('paste into here', () => {
     let state = asTop(round([id('hello'), id('', true)]), idc(0));
