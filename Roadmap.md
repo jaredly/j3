@@ -1,4 +1,65 @@
 
+# We find ourselves, once again, at the beginning of things
+
+and specifically with a decision about topnodes, and docnodes, and ... durable identity.
+
+my most recent decision had been to have Tops own their own Nodes.
+
+top has a 'module id'
+modules have a 'parent id'
+
+a Top can be evaluated by different evaluators.
+a top has a `syntax-kind`, which has a direct mapping to a lexer config.
+when an evaluator wants to evaluate a top, it should pick a parser that knows how to deal with that `syntax-kind`.
+
+a given evaluator must have at most one parser per syntax-kind. or rather, syntax-kind is the only flag persisted on the top to indicate
+how the evaluator should be parsing.
+
+ok.
+hm honestly the value of syntax-kind miiight be like a hash of the json of the lexer config? that could make sense.
+
+ok, back to the one things.
+
+So: cases that ought to be supportable
+
+- I extract part of a function into a different toplevel function, at the same time that a collegue does a refactor on a function call,
+  changing a value.
+
+So the thing about toplevel having a different identity from DocNode, is this:
+when you "commit" that toplevel back to Version Control, we want to be able to
+know what the callsites are that ought to be updated, without relying on name
+resolution. That's the whole point of "locking down references in version control."
+
+Can This Support:
+- having a mutually recursive function that stops being mutually recursive?
+hmm well yeah that would be fine, because the Toplevel ID would not change, just the hash. So that is fine.
+
+ok so here's the problem.
+Let's say, you pull in a toplevel, which brings in all its nodes into the general pool.
+Then you "refactor out" some of the nodes into a separate toplevel.
+Then you "delete" that docNode & drop that toplevel.
+Then you pull in that same toplevel again; now you have some nodes *twice*.
+
+
+ohhhk, so I thikn I've actually come back around to the "evrey toplevel has its own separate graph" approach.
+The "I want to merge two commits, with changes from one and changes of another" can be solved by having the
+one toplevel have an item of metadata saying "this was extracted from this other toplevel", and node IDs will
+be comparable, so we can do a manual, user-in-the-loop merge if desired.
+For the case of "we're CRDTing concurrent edits, and we want these changes to follow these nodes across toplevels"
+I don't think that's actually all that desirable. or rather it's probably a little bit desirable, but not all that critical.
+If you're doing non-realtime collaboration, you should be working in separate documents and doing commits.
+If you're doign realtime collaboration, it won't be an issue.
+
+A critical thing about realtime collaboration is that you can be aware of, and incorporate, the changes the other person
+is making, as you are making changes. If it's not realtime, then I don't actually want "automatic merge" to happen.
+I want something much more akin to "track changes", so I can determine how compatible our changes were.
+
+This does kindof beg the question of whether there's use in making a realtime system that can "notice" if you're collaborating
+in not-real-time, and sequester the incoming changes to their own document for manual review.... but that's out of scope for the moment.
+
+
+#
+
 Ok, so some CRDT thgouths:
 
 - within a document, we'll have all nodes in common. no separation between toplevels.
@@ -40,6 +101,27 @@ annnnd. some things I want to do:
 
 - turn my nodes into ... classes? or something like that. Interfaces? So that I can e.g. store a /length/ on IDs,
   which would reduce the amount of splitGraphemes I have to do.
+
+OK SO at this point, I have
+
+(user actions, keys, etc) --> KeyAction[] -> Update -> applyUpdate (w/ history tracking)
+
+with some messing around for multi-select that I should probably clean up.
+
+anddd what we would want to do is change `Update` so that it is ... crdtable.
+and I know from experience that I can do a non-intrusive CRDT by having the
+metadata be stored adjacent to the normal data.
+
+How do I conceptualize all this though.
+I guess the ... whole document ... is a CRDT. And everything else ... merges?
+
+Doc/
+- docNodes
+  - LWW maybe? or the fancy graph structure dealio?
+- topNodes (all together its fine)
+- tops
+- some LWW attributes maybe idk
+
 
 ##
 

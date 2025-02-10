@@ -203,6 +203,7 @@ export const handleTextFormat = (
                   },
     };
 };
+
 export const handleJoinText = (top: Top, path: Path) => {
     const node = top.nodes[lastChild(path)];
     const parent = top.nodes[parentLoc(path)];
