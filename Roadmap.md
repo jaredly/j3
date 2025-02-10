@@ -57,6 +57,11 @@ I want something much more akin to "track changes", so I can determine how compa
 This does kindof beg the question of whether there's use in making a realtime system that can "notice" if you're collaborating
 in not-real-time, and sequester the incoming changes to their own document for manual review.... but that's out of scope for the moment.
 
+# ALRIGHTYFOLKS
+
+So, next big change, we gotta make Mapped nodes have string locs instead of numeric ones.
+this will probably break some things.
+
 
 #
 

@@ -43,6 +43,8 @@ my rich-text nodes.
 
 */
 
+export type NodeID = number;
+
 export type Style = {
     format?: 'code';
     fontWeight?: number | string;
@@ -75,14 +77,14 @@ export const stylesEqual = (one?: Style, two?: Style) => {
 
 // Used to track "the place some code was copied from", to aid in
 // more intelligent merges
-type Src = { top: string; loc: number; moved: boolean };
+type Src = { top: string; loc: NodeID; moved: boolean };
 
-export type Loc = { id: string; idx: number }[];
+export type Loc = { id: string; idx: NodeID }[];
 
 export type IdRef =
     | {
           type: 'toplevel';
-          loc: { id: string; idx: number };
+          loc: { id: string; idx: NodeID };
           kind: string;
           lock?: { hash: string; manual: boolean };
       }
@@ -125,8 +127,8 @@ export type RichKind =
     | { type: 'plain' }
     | { type: 'section'; level?: number } // collapsible, and first item is treated as a header
     | { type: 'list'; ordered: boolean }
-    | { type: 'checks'; checked: Record<number, boolean> }
-    | { type: 'opts'; which?: number }
+    | { type: 'checks'; checked: Record<NodeID, boolean> }
+    | { type: 'opts'; which?: NodeID }
     | { type: 'indent'; quote: boolean }
     | { type: 'callout'; vibe: 'info' | 'warning' | 'error' };
 
@@ -148,11 +150,11 @@ export type ListKind<Tag> =
 export type Text<Loc> = { type: 'text'; spans: TextSpan<Loc>[]; loc: Loc; src?: Src };
 export type List<Loc> = {
     type: 'list';
-    kind: ListKind<number>;
+    kind: ListKind<NodeID>;
     // Whether the user has specified that it should be multiline.
     // If absent, multiline is calculated based on pretty-printing logic
     forceMultiline?: boolean;
-    children: number[];
+    children: NodeID[];
     loc: Loc;
     src?: Src;
 };
@@ -162,13 +164,13 @@ export type Table<Loc> = {
     type: 'table';
     kind: TableKind;
     forceMultiline?: boolean;
-    rows: number[][];
+    rows: NodeID[][];
     loc: Loc;
     src?: Src;
 };
 
 export type NodeT<Loc> = Id<Loc> | Text<Loc> | Collection<Loc>;
-export type Node = NodeT<number>;
+export type Node = NodeT<NodeID>;
 
 export type RecList<Loc> = {
     type: 'list';
@@ -201,7 +203,7 @@ export type RecCollection<Loc> =
 
 export type RecNodeT<Loc> = Id<Loc> | RecText<Loc> | RecCollection<Loc>;
 export type RecNode = RecNodeT<Loc>;
-export type Nodes = Record<number, Node>;
+export type Nodes = Record<NodeID, Node>;
 
 const refsEqual = (one: IdRef, two: IdRef): boolean => {
     switch (one.type) {
@@ -266,12 +268,12 @@ export const childNodes = <Loc>(node: RecNodeT<Loc>): RecNodeT<Loc>[] => {
     }
 };
 
-export const childLocs = (node: Node): number[] => {
+export const childLocs = (node: Node): NodeID[] => {
     switch (node.type) {
         case 'id':
             return [];
         case 'list':
-            let children: number[] = [];
+            let children: NodeID[] = [];
             if (isTag(node.kind)) {
                 children.push(node.kind.node);
                 if (node.kind.attributes) {
@@ -282,11 +284,11 @@ export const childLocs = (node: Node): number[] => {
         case 'table':
             return node.rows.flat();
         case 'text':
-            return node.spans.map((s) => (s.type === 'embed' ? s.item : undefined)).filter((x) => x != null) as number[];
+            return node.spans.map((s) => (s.type === 'embed' ? s.item : undefined)).filter((x) => x != null) as NodeID[];
     }
 };
 
-export const fromMap = <Loc>(id: number, nodes: Nodes, toLoc: (l: number) => Loc): RecNodeT<Loc> => {
+export const fromMap = <Loc>(id: NodeID, nodes: Nodes, toLoc: (l: NodeID) => Loc): RecNodeT<Loc> => {
     const node = nodes[id];
     if (!node) {
         throw new Error(`id ${id} not found in nodes map`);
@@ -327,9 +329,9 @@ export const fromMap = <Loc>(id: number, nodes: Nodes, toLoc: (l: number) => Loc
 export const fromRec = <Loc>(
     node: RecNodeT<Loc>,
     map: Nodes | Update['nodes'],
-    get: (l: Loc, node: RecNodeT<Loc>, path: number[]) => number,
-    path: number[] = [],
-): number => {
+    get: (l: Loc, node: RecNodeT<Loc>, path: NodeID[]) => NodeID,
+    path: NodeID[] = [],
+): NodeID => {
     const loc = get(node.loc, node, path);
     const inner = path.concat([loc]);
     switch (node.type) {
