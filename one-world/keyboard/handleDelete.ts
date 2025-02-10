@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { isRich, List, Node, Table, Text, TextSpan } from '../shared/cnodes';
+import { isRich, List, Node, NodeID, Table, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { isBlank } from './flatenate';
 import { goLeft, isTag, selectEnd, selectStart, spanEnd } from './handleNav';
@@ -31,11 +31,11 @@ type JoinParent =
     | {
           type: 'list';
           at: number;
-          pnode: List<number>;
+          pnode: List<NodeID>;
           parent: Path;
       }
-    | { type: 'tag'; pnode: List<number>; parent: Path }
-    | { type: 'table'; pat: null | { row: number; col: number }; at: { row: number; col: number }; pnode: Table<number>; parent: Path };
+    | { type: 'tag'; pnode: List<NodeID>; parent: Path }
+    | { type: 'table'; pat: null | { row: number; col: number }; at: { row: number; col: number }; pnode: Table<NodeID>; parent: Path };
 export const joinParent = (path: Path, top: Top): void | JoinParent => {
     const loc = lastChild(path);
     const parent = parentPath(path);
@@ -62,17 +62,17 @@ export const joinParent = (path: Path, top: Top): void | JoinParent => {
     return up ?? { type: 'list', pnode, parent, at };
 };
 
-export const removeInPath = ({ root, children }: Path, loc: number): Path => ({
+export const removeInPath = ({ root, children }: Path, loc: NodeID): Path => ({
     root,
     children: children.filter((f) => f != loc),
 });
 
-export const addInPath = ({ root, children }: Path, loc: number, parent: number): Path => ({
+export const addInPath = ({ root, children }: Path, loc: NodeID, parent: NodeID): Path => ({
     root,
     children: addInChildren(children, loc, parent),
 });
 
-export const addInChildren = (children: number[], loc: number, parent: number): number[] => {
+export const addInChildren = (children: NodeID[], loc: NodeID, parent: NodeID): NodeID[] => {
     if (!children.includes(loc)) return children;
     children = children.slice();
     const at = children.indexOf(loc);
@@ -291,7 +291,7 @@ export const simpleSide = (node: Node, side: 'start' | 'end'): Cursor => {
 };
 
 export const normalizeTextCursorSide = (
-    spans: TextSpan<number>[],
+    spans: TextSpan<NodeID>[],
     side: { index: number; cursor: number },
     text?: { index: number; grems: string[] },
 ): 'before' | 'after' | { index: number; cursor: number } => {
@@ -320,7 +320,7 @@ export const normalizeTextCursorSide = (
     return side;
 };
 
-export const handleTextDelete = (state: TestState, current: { node: Text<number>; path: Path }, left: Spat, right: Spat): KeyAction[] | void => {
+export const handleTextDelete = (state: TestState, current: { node: Text<NodeID>; path: Path }, left: Spat, right: Spat): KeyAction[] | void => {
     const spans = current.node.spans.slice();
 
     if (left.index === right.index && left.cursor === right.cursor) {

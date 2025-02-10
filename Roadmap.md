@@ -62,6 +62,10 @@ in not-real-time, and sequester the incoming changes to their own document for m
 So, next big change, we gotta make Mapped nodes have string locs instead of numeric ones.
 this will probably break some things.
 
+- [ ] LOC as String
+- [ ] SpanIndex as String
+- [ ] Control Index as String
+
 
 #
 

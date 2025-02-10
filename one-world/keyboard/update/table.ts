@@ -91,7 +91,7 @@ export const splitTableRow = (top: Top, path: Path, tablePath: Path, at: number 
 
     if (newRow.length === 1) {
         for (let i = 1; i < rows[row].length; i++) {
-            const nloc = result.nextLoc++;
+            const nloc = result.nextLoc++ + '';
             newRow.push(nloc);
             result.nodes[nloc] = { type: 'id', text: '', loc: nloc };
         }
@@ -110,6 +110,7 @@ export const splitTableRow = (top: Top, path: Path, tablePath: Path, at: number 
         },
     };
 };
+
 export const splitTableCol = (top: Top, path: Path, tablePath: Path, at: number | 'before' | 'after') => {
     const table = top.nodes[lastChild(tablePath)];
     if (table.type !== 'table') return;

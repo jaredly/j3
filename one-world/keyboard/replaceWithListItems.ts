@@ -1,7 +1,7 @@
-import { Text } from '../shared/cnodes';
+import { NodeID, Text } from '../shared/cnodes';
 import { Top, UNodes, findTableLoc } from './utils';
 
-export const replaceWithListItems = (path: number[], top: Top, old: number, locs: number[]): UNodes => {
+export const replaceWithListItems = (path: number[], top: Top, old: NodeID, locs: NodeID[]): UNodes => {
     if (path.length <= 1) throw new Error(`no parent`);
     const ploc = path[path.length - 2];
     const parent = top.nodes[ploc];
@@ -11,7 +11,7 @@ export const replaceWithListItems = (path: number[], top: Top, old: number, locs
         const spans = parent.spans.slice();
         const at = spans.findIndex((s) => s.type === 'embed' && s.item === old);
         if (at === -1) throw new Error(`not in parent`);
-        const insert: Text<number>['spans'] = [];
+        const insert: Text<NodeID>['spans'] = [];
         for (let i = 0; i < locs.length; i++) {
             if (i > 0) {
                 insert.push({ type: 'text', text: ' ' });

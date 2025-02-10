@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { RecNodeT, Nodes, fromRec } from '../../shared/cnodes';
+import { RecNodeT, Nodes, fromRec, NodeID } from '../../shared/cnodes';
 import { addUpdate } from '../handleDelete';
 import { isTag } from '../handleNav';
 import { replaceIn } from '../replaceIn';
@@ -14,10 +14,10 @@ export const tagSetAttributes = (top: Top, path: Path, node: RecNodeT<boolean>, 
     }
     let nextLoc = top.nextLoc;
     const nodes: Nodes = {};
-    let selPath: number[] = [];
+    let selPath: NodeID[] = [];
 
     const root = fromRec(node, nodes, (loc, __, path) => {
-        const nl = nextLoc!++;
+        const nl = nextLoc!++ + '';
         if (loc === true) {
             selPath = path.concat([nl]);
         }
@@ -33,7 +33,7 @@ export const tagSetAttributes = (top: Top, path: Path, node: RecNodeT<boolean>, 
     };
 };
 
-export const joinInList = (top: Top, path: Path, child: { loc: number; cursor: Cursor }) => {
+export const joinInList = (top: Top, path: Path, child: { loc: NodeID; cursor: Cursor }) => {
     const pnode = top.nodes[lastChild(path)];
     const node = top.nodes[child.loc];
     let flat = flatten(pnode, top, {});

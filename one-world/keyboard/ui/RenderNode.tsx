@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Style } from '../../shared/cnodes';
+import { NodeID, Style } from '../../shared/cnodes';
 import { TestState } from '../test-utils';
 import { Path, pathKey, pathWithChildren, SelectionStatuses, Top, Update } from '../utils';
 
@@ -31,11 +31,11 @@ export type DisplayConfig = {
 };
 
 export type RCtx = {
-    errors: Record<number, string>;
-    refs: Record<number, HTMLElement>; // -1 gets you 'cursor' b/c why not
+    errors: Record<NodeID, string>;
+    refs: Record<NodeID, HTMLElement>; // -1 gets you 'cursor' b/c why not
     config: DisplayConfig;
-    styles: Record<number, Style>;
-    placeholders: Record<number, string>;
+    styles: Record<NodeID, Style>;
+    placeholders: Record<NodeID, string>;
     selectionStatuses: SelectionStatuses;
     dispatch: (up: KeyAction[]) => void;
     // msel: null | string[];
@@ -96,7 +96,7 @@ export const RenderNode = ({
     parent,
     readOnly,
 }: {
-    loc: number;
+    loc: NodeID;
     top: Top;
     inRich: boolean;
     ctx: RCtx;
@@ -200,7 +200,7 @@ const PLHPopover = ({ text }: { text: string }) => {
 
 function nodeStyle(
     ctx: RCtx,
-    loc: number,
+    loc: NodeID,
     readOnly: boolean | undefined,
     status: {
         cursors: import('/Users/jared/clone/exploration/j3/one-world/keyboard/utils').Cursor[];

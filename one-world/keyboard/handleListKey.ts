@@ -1,4 +1,4 @@
-import { Node } from '../shared/cnodes';
+import { Node, NodeID } from '../shared/cnodes';
 import { addNeighborAfter, addNeighborBefore, findParent, Flat, listKindForKeyKind } from './flatenate';
 import { handleTableSplit, handleTagCloser } from './handleIdKey';
 import { isTag } from './handleNav';
@@ -126,7 +126,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
     ];
 };
 
-export const splitListCell = (current: Node, cursor: ListCursor, blank: Node) => (cell: Node, top: Top, loc: number) => {
+export const splitListCell = (current: Node, cursor: ListCursor, blank: Node) => (cell: Node, top: Top, loc: NodeID) => {
     const flat = flatten(cell, top, undefined, 1);
     const nodes: UNodes = {};
     const neighbor: Flat = { type: 'sep', loc };

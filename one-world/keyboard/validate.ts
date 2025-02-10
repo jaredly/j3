@@ -1,4 +1,4 @@
-import { childLocs, isRich } from '../shared/cnodes';
+import { childLocs, isRich, NodeID } from '../shared/cnodes';
 import { isTag, richNode } from './handleNav';
 import { TestState } from './test-utils';
 import { parentLoc, Path, Top } from './utils';
@@ -24,7 +24,7 @@ const validatePath = (top: Top, path: Path) => {
 
 const validateNextLoc = (top: Top) => {
     Object.keys(top.nodes).forEach((loc) => {
-        if (top.nodes[+loc].loc !== +loc) {
+        if (top.nodes[+loc].loc !== loc) {
             throw new Error(`Node.loc doesn't match key ${+loc}`);
         }
         if (+loc >= top.nextLoc) {
@@ -33,7 +33,7 @@ const validateNextLoc = (top: Top) => {
     });
 };
 
-const validateNodes = (top: Top, id: number) => {
+const validateNodes = (top: Top, id: NodeID) => {
     const node = top.nodes[id];
 
     if (node.type === 'id' && (node.text === '') !== (node.ccls == null)) {

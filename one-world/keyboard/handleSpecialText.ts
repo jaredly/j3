@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { linksEqual, Style, stylesEqual, Text, TextSpan } from '../shared/cnodes';
+import { linksEqual, NodeID, Style, stylesEqual, Text, TextSpan } from '../shared/cnodes';
 import { Mods } from './handleShiftNav';
 import { KeyAction } from './keyActionToUpdate';
 import { ListCursor, Path, TextCursor, Top } from './utils';
@@ -74,7 +74,7 @@ export const keyMod = (key: string, mods: Mods): void | ((style: Style) => void)
 
 export type Spat = { cursor: number; index: number };
 
-export const specialTextMod = (node: Text<number>, left: Spat, right: Spat, mod: (style: Style) => void) => {
+export const specialTextMod = (node: Text<NodeID>, left: Spat, right: Spat, mod: (style: Style) => void) => {
     let off = 0;
     let scur: number | null = null;
     let ecur: { cursor: number; index: number } | null = null;
@@ -129,7 +129,7 @@ export const specialTextMod = (node: Text<number>, left: Spat, right: Spat, mod:
 };
 
 export const handleSpecialText = (
-    { node, path, cursor }: { node: Text<number>; path: Path; cursor: TextCursor | ListCursor },
+    { node, path, cursor }: { node: Text<NodeID>; path: Path; cursor: TextCursor | ListCursor },
     top: Top,
     key: string,
     mods: Mods,

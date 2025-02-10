@@ -1,4 +1,4 @@
-import { Id, Loc, TextSpan, ListKind, TableKind, RecNode, Style, Node } from '../shared/cnodes';
+import { Id, Loc, TextSpan, ListKind, TableKind, RecNode, Style, Node, NodeID } from '../shared/cnodes';
 
 // So, we need to provide a 'list of kwds' to be able to reject them from the `id` matcher
 
@@ -93,9 +93,9 @@ export type Ctx = {
     kwds: string[];
     comment?: Matcher<any>;
     strictIds?: boolean;
-    meta: Record<number, { kind?: string; placeholder?: string }>;
+    meta: Record<NodeID, { kind?: string; placeholder?: string }>;
     autocomplete?: {
-        loc: number;
+        loc: NodeID;
         concrete: AutoComplete[];
         kinds: (string | null)[];
     };

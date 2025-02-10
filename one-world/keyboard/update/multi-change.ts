@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { childLocs, fromRec, Node, Nodes, RecNodeT } from '../../shared/cnodes';
+import { childLocs, fromRec, Node, NodeID, Nodes, RecNodeT } from '../../shared/cnodes';
 import { applySelUp } from '../applyUpdate';
 import { selectEnd, selectStart } from '../handleNav';
 import { SelStart } from '../handleShiftNav';
@@ -116,7 +116,7 @@ export const handleDeleteTooMuch = (top: Top, start: SelStart, end: SelStart): J
             if (i2 === i1 + 1) {
                 const children = pnode.children.slice();
                 nextLoc = top.nextLoc;
-                const loc = nextLoc++;
+                const loc = nextLoc++ + '';
                 const two = children.splice(i1, 2, loc);
                 nodes[loc] = { type: 'list', kind: 'smooshed', children: two, loc };
                 nodes[pnode.loc] = { ...pnode, children };
@@ -129,21 +129,21 @@ export const handleDeleteTooMuch = (top: Top, start: SelStart, end: SelStart): J
     return { nodes, selection, nextLoc };
 };
 
-const copyDeep = (loc: number, top: Top, dest: Nodes) => {
+const copyDeep = (loc: NodeID, top: Top, dest: Nodes) => {
     if (dest[loc]) return; // already handled
     dest[loc] = top.nodes[loc];
     childLocs(top.nodes[loc]).forEach((child) => copyDeep(child, top, dest));
 };
 
-export type CopiedValues = { tree: RecNodeT<number>; single: boolean };
+export type CopiedValues = { tree: RecNodeT<NodeID>; single: boolean };
 
 export const pasteUpdate = (top: Top, path: Path, cursor: Cursor, values: CopiedValues): void | Update => {
     let nextLoc = top.nextLoc;
     const nodes: Nodes = {};
 
     const root = fromRec(values.tree, nodes, (l) => {
-        if (l == null || l < 0 || nodes[l] || top.nodes[l]) {
-            return nextLoc++;
+        if (l == null || l === '-1' || nodes[l] || top.nodes[l]) {
+            return nextLoc++ + '';
         }
         return l;
     });
@@ -236,7 +236,7 @@ export const handleCopyMulti = (state: TestState): void | CopiedValues => {
     if (!rnudge) neighbors.push({ path: right.path, hl: { type: 'full' } });
     const sorted = partitionNeighbors(neighbors, state.top, false);
 
-    const allParents: Record<number, true> = {};
+    const allParents: Record<NodeID, true> = {};
     sorted.forEach(({ path }) => path.children.forEach((loc) => (allParents[loc] = true)));
 
     const nodes: Nodes = {};
@@ -270,12 +270,12 @@ export const handleCopyMulti = (state: TestState): void | CopiedValues => {
     joinSmooshed(up, state.top);
     disolveSmooshed(up, state.top);
 
-    const tree = root<number>({ top: { ...state.top, nodes: updateNodes(state.top.nodes, up.nodes), root: up.root! } });
+    const tree = root<NodeID>({ top: { ...state.top, nodes: updateNodes(state.top.nodes, up.nodes), root: up.root! } });
     return { tree, single: left.key === right.key };
 };
 
 export const partitionNeighbors = (items: Neighbor[], top: Top, noSmoosh = true) => {
-    const byParent: Record<string, { path: Path; children: number[] }> = {};
+    const byParent: Record<string, { path: Path; children: NodeID[] }> = {};
     items.forEach((item) => {
         if (item.hl.type === 'full') {
             let path = item.path;

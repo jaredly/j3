@@ -1,17 +1,17 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, TextSpan } from '../shared/cnodes';
+import { Id, NodeID, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { getIdText, getTextText, IdCursor, Top } from './utils';
+import { IdCursor, Top } from './utils';
 
-export const spanText = (tmpText: Top['tmpText'], loc: number, end: { text?: string[]; index: number }, span: { text: string }) =>
-    getTextText(tmpText, loc, end.index) ?? end.text ?? splitGraphemes(span.text);
+export const spanText = (tmpText: Top['tmpText'], loc: NodeID, end: { text?: string[]; index: number }, span: { text: string }) =>
+    end.text ?? splitGraphemes(span.text);
 
-export const idText = (tmpText: Top['tmpText'], cursor: IdCursor | { text?: string[] }, node: { text: string; loc: number }) =>
-    getIdText(tmpText, node.loc) ?? splitGraphemes(node.text);
+export const idText = (tmpText: Top['tmpText'], cursor: IdCursor | { text?: string[] }, node: { text: string; loc: NodeID }) =>
+    splitGraphemes(node.text);
 // export const idString = (tmpText: Top['tmpText'], cursor: IdCursor | { text?: string[] }, loc: number, text: string) =>
 //     getIdText(tmpText, loc) ?? cursor.text ?? splitGraphemes(text);
 
-export const cursorSplit = (tmpText: Top['tmpText'], node: { text: string; loc: number }, cursor: IdCursor, start: number | undefined): Split => {
+export const cursorSplit = (tmpText: Top['tmpText'], node: { text: string; loc: NodeID }, cursor: IdCursor, start: number | undefined): Split => {
     const text = idText(tmpText, cursor, node);
 
     const { left, right } = cursorSides(cursor, start);

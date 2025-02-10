@@ -1,6 +1,6 @@
 import React from 'react';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { Id } from '../../shared/cnodes';
+import { Id, NodeID } from '../../shared/cnodes';
 import { IdCursor, Path, SelectionStatuses, selStart, TmpText } from '../utils';
 import { TextWithCursor, Zwd } from './cursor';
 import { cursorPositionInSpanForEvt, RCtx } from './RenderNode';
@@ -8,7 +8,7 @@ import { cursorPositionInSpanForEvt, RCtx } from './RenderNode';
 export const RenderId = (
     status: SelectionStatuses[''],
     readOnly: boolean | undefined,
-    node: Id<number>,
+    node: Id<NodeID>,
     tmpText: TmpText,
     style: React.CSSProperties | undefined,
     ref: (el: HTMLElement) => void,

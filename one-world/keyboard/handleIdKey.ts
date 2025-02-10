@@ -1,4 +1,4 @@
-import { Collection, Id, Node } from '../shared/cnodes';
+import { Collection, Id, Node, NodeID } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { cursorSplit, idText } from './cursorSplit';
 import { Flat, addNeighborAfter, addNeighborBefore, findParent, listKindForKeyKind } from './flatenate';
@@ -140,12 +140,12 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
 
 export const whatNeighbor = (what: KeyWhat): Flat => {
     return what.type === 'sep'
-        ? { type: 'sep', loc: -1, multiLine: what.newLine }
+        ? { type: 'sep', loc: '-1', multiLine: what.newLine }
         : what.type === 'space'
-        ? { type: 'space', loc: -1 }
+        ? { type: 'space', loc: '-1' }
         : what.type === 'string'
-        ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: -1 }
-        : { type: 'id', text: what.grem, loc: -1, ccls: what.ccls };
+        ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: '-1' }
+        : { type: 'id', text: what.grem, loc: '-1', ccls: what.ccls };
 };
 
 export const getSplit = (top: Top, path: Path, at: number | 'before' | 'after') => {
@@ -155,7 +155,7 @@ export const getSplit = (top: Top, path: Path, at: number | 'before' | 'after') 
     }
     if (node.type === 'list') {
         const pnode = top.nodes[parentLoc(path)];
-        const blank: Node = richNode(pnode) ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: -1 } : { type: 'id', text: '', loc: -1 };
+        const blank: Node = richNode(pnode) ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: '-1' } : { type: 'id', text: '', loc: '-1' };
         return splitListCell(node, { type: 'list', where: at === 'before' ? 'before' : 'after' }, blank);
     }
 };
@@ -164,7 +164,7 @@ export const handleTagCloser = (
     top: Top,
     node: Node,
     grem: string,
-    parent: void | { node: Collection<number>; path: Path },
+    parent: void | { node: Collection<NodeID>; path: Path },
     path: Path,
 ): void | KeyAction[] => {
     const grand = parentPath(parent ? parent.path : path);
@@ -210,13 +210,13 @@ export const handleTableSplit = (grem: string, config: Config, path: Path, top: 
 };
 
 export type SplitRes = {
-    result: { sloc: number | null; other: number[]; nodes: UNodes; forceMultiline: boolean | undefined; nextLoc: number };
+    result: { sloc: NodeID | null; other: NodeID[]; nodes: UNodes; forceMultiline: boolean | undefined; nextLoc: number };
     two: { items: Flat[]; selection: { node: Node; cursor: Cursor } };
 };
 
 export const splitIdCell =
     (current: Extract<Current, { type: 'id' }>) =>
-    (cell: Node, top: Top, loc: number): SplitRes => {
+    (cell: Node, top: Top, loc: NodeID): SplitRes => {
         const flat = flatten(cell, top, undefined, 1);
         const nodes: UNodes = {};
         const neighbor: Flat = { type: 'sep', loc };
@@ -237,7 +237,7 @@ export function addIdNeighbor({
     top,
 }: {
     neighbor: Flat;
-    current: { cursor: IdCursor; node: Id<number>; start?: number };
+    current: { cursor: IdCursor; node: Id<NodeID>; start?: number };
     // current: Id<number>;
     // cursor: IdCursor;
     flat: Flat[];
@@ -275,7 +275,7 @@ export function addIdNeighbor({
         }
         case 'between': {
             flat[at] = nodes[node.loc] = { ...node, text: split.left };
-            flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: split.right, loc: -1, ccls: split.right === '' ? undefined : node.ccls }));
+            flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: split.right, loc: '-1', ccls: split.right === '' ? undefined : node.ccls }));
             ncursor = { type: 'id', end: 0 };
             break;
         }
@@ -285,10 +285,10 @@ export function addIdNeighbor({
 
 export function flatNeighbor(kind: Kind, grem: string): Flat {
     return kind === 'sep'
-        ? { type: 'sep', loc: -1, multiLine: grem === '\n' }
+        ? { type: 'sep', loc: '-1', multiLine: grem === '\n' }
         : kind === 'space'
-        ? { type: 'space', loc: -1 }
+        ? { type: 'space', loc: '-1' }
         : kind === 'string'
-        ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: -1 }
-        : { type: 'id', text: grem, loc: -1, ccls: kind };
+        ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: '-1' }
+        : { type: 'id', text: grem, loc: '-1', ccls: kind };
 }

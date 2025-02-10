@@ -3,8 +3,9 @@ import { asTop, id, idc, spaced } from '../keyboard/test-utils';
 import { root } from '../keyboard/root';
 import { lastChild } from '../keyboard/utils';
 import { Src } from '../keyboard/handleShiftNav';
+import { NodeID } from '../shared/cnodes';
 
-const src = (idx: number, last = idx): Src => ({ left: [{ id: '', idx }], right: [{ id: '', idx: last }] });
+const src = (idx: number, last = idx): Src => ({ left: [{ id: '', idx: idx + '' }], right: [{ id: '', idx: last + '' }] });
 
 test('id', () => {
     const state = asTop(id('hi'), idc(0));

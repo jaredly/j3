@@ -1,9 +1,22 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { hasControls, isRich, ListKind, Node, TableKind, Text, TextSpan } from '../shared/cnodes';
+import { hasControls, isRich, ListKind, Node, NodeID, TableKind, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 // import { textCursorSides, textCursorSides2 } from './insertId';
 import { TestState } from './test-utils';
-import { Current, Cursor, findTableLoc, lastChild, NodeSelection, parentLoc, parentPath, Path, pathWithChildren, selStart, Top } from './utils';
+import {
+    Current,
+    Cursor,
+    findTableLoc,
+    lastChild,
+    NodeSelection,
+    parentLoc,
+    parentPath,
+    Path,
+    pathWithChildren,
+    selStart,
+    TextIndex,
+    Top,
+} from './utils';
 import { getCurrent } from './selections';
 import { SelStart } from './handleShiftNav';
 import { idText, spanText } from './cursorSplit';
@@ -237,7 +250,7 @@ export const handleNav = (key: 'ArrowLeft' | 'ArrowRight', state: TestState): Se
     }
 };
 
-export const sideEqual = (one: { cursor: number; index: number }, two: { cursor: number; index: number }) =>
+export const sideEqual = (one: { cursor: NodeID; index: TextIndex }, two: { cursor: NodeID; index: TextIndex }) =>
     one.cursor === two.cursor && one.index === two.index;
 
 export const navRight = (current: Current, state: TestState): SelStart | void => {
@@ -448,7 +461,7 @@ export const navLeft = (current: Current, state: TestState): SelStart | void => 
     }
 };
 
-export function spanEnd(last: TextSpan<number>, path: Path, index: number, top: Top, plus1: boolean) {
+export function spanEnd(last: TextSpan<NodeID>, path: Path, index: TextIndex, top: Top, plus1: boolean) {
     switch (last.type) {
         case 'text':
             return selStart(path, { type: 'text', end: { index, cursor: splitGraphemes(last.text).length - (plus1 ? 1 : 0) } });
@@ -462,7 +475,7 @@ export function spanEnd(last: TextSpan<number>, path: Path, index: number, top: 
     }
 }
 
-export const spanStart = (span: TextSpan<number>, index: number, path: Path, top: Top, plus1: boolean) => {
+export const spanStart = (span: TextSpan<NodeID>, index: TextIndex, path: Path, top: Top, plus1: boolean) => {
     if (span.type === 'text') {
         return selStart(path, { type: 'text', end: { index, cursor: plus1 ? 1 : 0 } });
     }

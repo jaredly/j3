@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { ListKind, Text, TextSpan, childLocs, stylesEqual } from '../shared/cnodes';
+import { ListKind, NodeID, Text, TextSpan, childLocs, stylesEqual } from '../shared/cnodes';
 import { spanText } from './cursorSplit';
 import { handleListKey } from './handleListKey';
 import { richNode } from './handleNav';
@@ -9,7 +9,7 @@ import { KeyAction, moveA } from './keyActionToUpdate';
 import { Config } from './test-utils';
 import { ListCursor, Path, TextCursor, Top, gparentLoc, lastChild, parentLoc, parentPath, selStart } from './utils';
 
-export const maybeJoin = (one?: TextSpan<number>, two?: TextSpan<number>) => {
+export const maybeJoin = (one?: TextSpan<NodeID>, two?: TextSpan<NodeID>) => {
     if (one?.type === 'text' && two?.type === 'text' && stylesEqual(one.style, two.style)) {
         return { joined: { ...one, text: one.text + two.text }, off: splitGraphemes(one.text).length };
     }
@@ -18,7 +18,7 @@ export const maybeJoin = (one?: TextSpan<number>, two?: TextSpan<number>) => {
 export const handleTextText = (
     cursor: TextCursor,
     sel: number | undefined,
-    current: Text<number>,
+    current: Text<NodeID>,
     grem: string,
     path: Path,
     top: Top,
@@ -69,7 +69,7 @@ export const handleTextText = (
     if (grem === ' ' && current.spans.length === 1 && left === text.length) {
         let parent = top.nodes[parentLoc(path)];
         if (richNode(parent)) {
-            let kind: ListKind<number> | null = null;
+            let kind: ListKind<NodeID> | null = null;
             if (text.length === 1 && text.join('') === '-') {
                 kind = { type: 'list', ordered: false };
             } else if (text.length === 3 && text.join('') === '[ ]') {

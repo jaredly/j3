@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, isRich } from '../../shared/cnodes';
+import { NodeID, Table, isRich } from '../../shared/cnodes';
 import { interleaveF } from '../interleave';
 import { ListWhere, Path, SelectionStatuses, Top } from '../utils';
 import { lightColor } from './colors';
@@ -10,7 +10,7 @@ import { posInList } from './selectionPos';
 export const RenderTable = (
     status: SelectionStatuses[''],
     readOnly: boolean | undefined,
-    node: Table<number>,
+    node: Table<NodeID>,
     style: React.CSSProperties | undefined,
     ref: (el: HTMLElement) => void,
     ctx: RCtx,

@@ -1,4 +1,4 @@
-import { Id } from '../../shared/cnodes';
+import { Id, NodeID } from '../../shared/cnodes';
 import { flatToUpdateNew } from '../rough';
 import { Top, Path, parentPath, lastChild, selStart } from '../utils';
 
@@ -7,7 +7,7 @@ export const setIdText = (top: Top, path: Path, text: string, end: number, ccls?
         const ppath = parentPath(path);
         const parent = top.nodes[lastChild(ppath)];
         if (parent?.type === 'list' && parent.kind === 'smooshed') {
-            let node = top.nodes[lastChild(path)] as Id<number>;
+            let node = top.nodes[lastChild(path)] as Id<NodeID>;
             node = { ...node, text: '', ccls: undefined };
             return flatToUpdateNew(
                 parent.children.map((loc) => (loc === node.loc ? node : top.nodes[loc])),

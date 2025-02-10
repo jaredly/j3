@@ -1,7 +1,7 @@
-import { Node } from '../shared/cnodes';
+import { Node, NodeID } from '../shared/cnodes';
 import { isTag } from './handleNav';
 
-export const replaceIn = (node: Node, old: number, ...locs: number[]): Node => {
+export const replaceIn = (node: Node, old: NodeID, ...locs: NodeID[]): Node => {
     if (node.type === 'id') {
         throw new Error(`no children of id`);
     }

@@ -43,7 +43,7 @@ my rich-text nodes.
 
 */
 
-export type NodeID = number;
+export type NodeID = string;
 
 export type Style = {
     format?: 'code';

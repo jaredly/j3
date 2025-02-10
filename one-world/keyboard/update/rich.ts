@@ -21,7 +21,7 @@ export const splitTextInRich = (top: Top, path: Path, at: Spat): void | Update =
     after[0] = { ...span, text: text.slice(at.cursor).join('') };
 
     let nextLoc = top.nextLoc;
-    const loc = nextLoc++;
+    const loc = nextLoc++ + '';
 
     const nodes: Nodes = {};
 
@@ -39,7 +39,7 @@ export const splitTextInRich = (top: Top, path: Path, at: Spat): void | Update =
         rows.splice(row + 1, 0, [loc, ...right]);
         if (!right.length) {
             for (let i = 1; i < rows[row].length; i++) {
-                const cloc = nextLoc++;
+                const cloc = nextLoc++ + '';
                 nodes[cloc] = { type: 'text', spans: [{ type: 'text', text: '' }], loc: cloc };
                 rows[row + 1].push(cloc);
             }
@@ -77,7 +77,7 @@ export const dedentOutOfRich = (top: Top, path: Path): void | Update => {
     let nextLoc = top.nextLoc;
     const nodes: Nodes = {};
     if (after.length) {
-        const loc = nextLoc++;
+        const loc = nextLoc++ + '';
         gchildren.splice(gat + 2, 0, loc);
         nodes[loc] = { ...parent, children: after, loc };
     }

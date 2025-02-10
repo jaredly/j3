@@ -1,8 +1,8 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Nodes, Id, Collection, Text, Node, TextSpan } from '../shared/cnodes';
+import { Nodes, Id, Collection, Text, Node, TextSpan, NodeID } from '../shared/cnodes';
 import { SelStart } from './handleShiftNav';
 
-export const spanLength = (span: TextSpan<unknown>, text: undefined | { index: number; text?: string[] }, index: number) =>
+export const spanLength = (span: TextSpan<unknown>, text: undefined | { index: TextIndex; text?: string[] }, index: TextIndex) =>
     index === text?.index && text?.text ? text.text.length : span.type === 'text' ? splitGraphemes(span.text).length : 1;
 
 // import { IRSelection } from "../shared/IR/intermediate";
@@ -44,7 +44,7 @@ export const parentPath = (path: Path): Path => ({
     ...path,
     children: path.children.slice(0, -1),
 });
-export const pathWithChildren = (path: Path, ...children: number[]) => ({
+export const pathWithChildren = (path: Path, ...children: NodeID[]) => ({
     ...path,
     children: path.children.concat(children),
 });
@@ -54,10 +54,12 @@ export type IdCursor = {
     end: number;
 };
 
+export type TextIndex = number;
+
 export type TextCursor = {
     type: 'text';
     end: {
-        index: number;
+        index: TextIndex;
         cursor: number;
         // text?: string[]
     };
@@ -69,8 +71,8 @@ export type ListCursor = { type: 'list'; where: ListWhere };
 export type Cursor = IdCursor | TextCursor | CollectionCursor;
 
 export type Path = {
-    root: { ids: number[]; top: string };
-    children: number[];
+    root: { ids: string[]; top: string };
+    children: NodeID[];
 };
 
 export const pathKey = (path: Path) => `${path.root.ids.join(',')};${path.root.top};${path.children.join(',')}`;
@@ -80,7 +82,7 @@ export const selStart = (path: Path, cursor: Cursor): NodeSelection['start'] => 
     key: pathKey(path),
 });
 
-export type PartialSel = { children: number[]; cursor: Cursor };
+export type PartialSel = { children: NodeID[]; cursor: Cursor };
 
 export const selectedPath = (sel: NodeSelection) => (sel.end ? null : sel.start.path);
 export const selectedLoc = (sel: NodeSelection) => {
@@ -99,13 +101,10 @@ export type NodeSelection = {
 
 export type TmpText = undefined | never; // Record<string, string[]>;
 
-export const getIdText = (tmp: TmpText, loc: number): string[] | undefined => undefined; // tmp[loc + ''];
-export const getTextText = (tmp: TmpText, loc: number, index: number): string[] | undefined => undefined; //  tmp[`${loc}:${index}`];
-
 // tmpText... on top? yeah ok seems like the right spot for it.
 export type Top = {
     nodes: Nodes;
-    root: number;
+    root: NodeID;
     nextLoc: number;
     tmpText?: TmpText;
 };
@@ -113,16 +112,16 @@ export type Top = {
 export const getNode = (path: Path, top: Top) => top.nodes[path.children[path.children.length - 1]];
 
 export type Current =
-    | { type: 'id'; node: Id<number>; cursor: IdCursor; start?: number; path: Path }
+    | { type: 'id'; node: Id<NodeID>; cursor: IdCursor; start?: number; path: Path }
     | {
           type: 'text';
-          node: Text<number>;
+          node: Text<NodeID>;
           cursor: TextCursor | ListCursor;
           path: Path;
       }
     | {
           type: 'list';
-          node: Collection<number>;
+          node: Collection<NodeID>;
           cursor: CollectionCursor;
           path: Path;
       };
@@ -218,8 +217,8 @@ export const move = (to: NodeSelection): SelUpdate => ({ type: 'move', to });
 export type SelUpdate =
     | { type: 'move'; to: NodeSelection }
     // | { type: 'reparent'; oldPath: Path; newPath: Path }
-    | { type: 'unparent'; loc: number } // remove from a parent list
-    | { type: 'addparent'; loc: number; parent: number }
+    | { type: 'unparent'; loc: NodeID } // remove from a parent list
+    | { type: 'addparent'; loc: NodeID; parent: NodeID }
     // | { type: 'to-sibling'; loc: number; dest: number; at: 'start' | 'end' }
     // | { type: 'unwrapList'; path: Path; left: SelStart; right: SelStart }
     // | { type: 'delete'; paths: Path[]; dest: SelStart }
@@ -228,16 +227,16 @@ export type SelUpdate =
     // rely on?
     // How about for a join? Again it would be the Right side that would be subsumed.
     // Assuming that from and to are siblings. things would break otherwise
-    | { type: 'id'; from: { loc: number; offset: number }; to: { loc: number; offset: number } };
+    | { type: 'id'; from: { loc: NodeID; offset: number }; to: { loc: NodeID; offset: number } };
 // | { type: 'id'; from: { path: Path; offset: number }; to: { path: Path; offset: number } };
 
 export type JustSelUpdate = Omit<Update, 'selection'> & { selection?: NodeSelection };
 
-export type UNodes = Record<number, Node | null>;
+export type UNodes = Record<NodeID, Node | null>;
 
 export type Update = {
     nodes: UNodes;
-    root?: number;
+    root?: NodeID;
     nextLoc?: number;
     selection?: NodeSelection | SelUpdate[];
     // tmpText?: Record<string, string[] | undefined>;
@@ -250,7 +249,7 @@ export const withPartial = (path: Path, sel?: PartialSel) =>
           }
         : undefined;
 
-export const findTableLoc = (rows: number[][], loc: number) => {
+export const findTableLoc = (rows: NodeID[][], loc: NodeID) => {
     for (let row = 0; row < rows.length; row++) {
         for (let col = 0; col < rows[row].length; col++) {
             if (rows[row][col] === loc) {

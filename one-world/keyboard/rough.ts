@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { childLocs, Id, isRich, Node, Nodes } from '../shared/cnodes';
+import { childLocs, Id, isRich, Node, NodeID, Nodes } from '../shared/cnodes';
 import { Flat } from './flatenate';
 import { richNode, spanEnd, spanStart } from './handleNav';
 import { SelStart } from './handleShiftNav';
@@ -38,7 +38,7 @@ export const flatten = (node: Node, top: Top, remap: Nodes = {}, depth: number =
 // TODO I think forceMultiline here is making things way too complicated.
 // can't we just look at the parent (from findParent) in the handleId key?
 // I guess that wouldn't handle the other places where flat/rough get called...
-export const rough = (flat: Flat[], top: Top, sel: Node, outer?: number) => {
+export const rough = (flat: Flat[], top: Top, sel: Node, outer?: NodeID) => {
     const { sloc, other, nodes, forceMultiline, nextLoc } = unflat(top, flat, sel);
 
     if (sloc == null) throw new Error(`sel node not encountered`);
@@ -69,9 +69,9 @@ export const rough = (flat: Flat[], top: Top, sel: Node, outer?: number) => {
 
 // type FNode = Omit<List<number>, 'type' | 'children'> & { type: 'flist'; children: (Node | FNode)[] };
 
-export const findPath = (root: number, nodes: Update['nodes'], needle: number): number[] | null => {
-    let found: number[] | null = null;
-    const traverse = (loc: number, path: number[]) => {
+export const findPath = (root: NodeID, nodes: Update['nodes'], needle: NodeID): NodeID[] | null => {
+    let found: NodeID[] | null = null;
+    const traverse = (loc: NodeID, path: NodeID[]) => {
         if (path.includes(loc)) throw new Error(`recursion?? ${loc} ${path}`);
         if (found != null) return;
         if (loc === needle) {
@@ -132,7 +132,7 @@ export const pruneEmptyIds = (flat: Flat[], selection: { node: Node; cursor: Cur
     return { items: res, selection };
 };
 
-const isNumberPair = (one: Id<number>, two: Id<number>) => {
+const isNumberPair = (one: Id<NodeID>, two: Id<NodeID>) => {
     return (one.text === '.' && two.text.match(/^[0-9]/)) || (two.text === '.' && one.text.match(/^[0-9]/));
 };
 
@@ -160,7 +160,7 @@ export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; curso
         ) {
             const ccls = item.ccls != null && prev.text === '.' ? item.ccls : prev.ccls;
             // mergerate
-            const base = prev.loc === -1 ? item : prev;
+            const base = prev.loc === '-1' ? item : prev;
             res[at] = { ...base, text: prev.text + item.text, ccls };
 
             // Update selections
@@ -168,11 +168,11 @@ export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; curso
                 selection = {
                     ...selection,
                     cursor: selection.cursor.type === 'id' ? { ...selection.cursor } : selection.cursor,
-                    node: res[at] as Id<number>,
+                    node: res[at] as Id<NodeID>,
                 };
             } else if (item === selection.node && selection.cursor.type === 'id') {
                 selection = {
-                    node: res[at] as Id<number>,
+                    node: res[at] as Id<NodeID>,
                     cursor: { ...selection.cursor, end: selection.cursor.end + splitGraphemes(prev.text).length },
                 };
             }
@@ -187,26 +187,26 @@ export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; curso
 export function unflat(top: Top, flat: Flat[], sel: Node) {
     const nodes: Update['nodes'] = {};
     let nextLoc = top.nextLoc;
-    let sloc: number | null = null;
+    let sloc: NodeID | null = null;
     let forceMultiline = undefined as undefined | boolean;
-    const other: number[] = [];
+    const other: NodeID[] = [];
     for (let i = 0; i < flat.length; i++) {
-        const children: number[] = [];
-        let ploc = -1;
+        const children: NodeID[] = [];
+        let ploc = '-1';
 
         for (; i < flat.length && flat[i].type !== 'sep'; i++) {
-            const schildren: number[] = [];
-            let loc = -1;
+            const schildren: NodeID[] = [];
+            let loc = '-1';
 
             for (; i < flat.length && flat[i].type !== 'space' && flat[i].type !== 'sep'; i++) {
-                if (loc === -1 && flat[i].type === 'smoosh' && !nodes[flat[i].loc]) {
+                if (loc === '-1' && flat[i].type === 'smoosh' && !nodes[flat[i].loc]) {
                     loc = flat[i].loc;
                     continue;
                 }
                 if (flat[i].type === 'smoosh') continue;
                 const node = flat[i] as Node;
-                if (node.loc === -1) {
-                    let nloc = nextLoc++;
+                if (node.loc === '-1') {
+                    let nloc = nextLoc++ + '';
                     nodes[nloc] = { ...node, loc: nloc };
                     schildren.push(nloc);
                     if (node === sel) {
@@ -224,8 +224,8 @@ export function unflat(top: Top, flat: Flat[], sel: Node) {
             if (schildren.length === 1) {
                 children.push(schildren[0]);
             } else {
-                if (loc === -1) {
-                    loc = nextLoc++;
+                if (loc === '-1') {
+                    loc = nextLoc++ + '';
                     nodes[loc] = { type: 'list', kind: 'smooshed', loc, children: schildren };
                 } else {
                     const parent = top.nodes[loc];
@@ -236,7 +236,7 @@ export function unflat(top: Top, flat: Flat[], sel: Node) {
             }
 
             // it's a space, and the loc hasnt been used yet
-            if (ploc === -1 && i < flat.length && flat[i].type === 'space' && !nodes[flat[i].loc]) {
+            if (ploc === '-1' && i < flat.length && flat[i].type === 'space' && !nodes[flat[i].loc]) {
                 ploc = flat[i].loc;
             }
 
@@ -251,8 +251,8 @@ export function unflat(top: Top, flat: Flat[], sel: Node) {
         if (children.length === 1) {
             other.push(children[0]);
         } else {
-            if (ploc === -1) {
-                const loc = nextLoc++;
+            if (ploc === '-1') {
+                const loc = nextLoc++ + '';
                 nodes[loc] = { type: 'list', kind: 'spaced', loc, children };
                 other.push(loc);
             } else {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { Text } from '../../shared/cnodes';
+import { NodeID, Text } from '../../shared/cnodes';
 import { asStyle } from '../../shared/shape';
 import { spanEnd, spanStart } from '../handleNav';
 import { SelectionStatuses, Path, ListWhere, TextCursor, selStart, Top } from '../utils';
@@ -11,7 +11,7 @@ import { RCtx, textColor, cursorPositionInSpanForEvt, RenderNode } from './Rende
 export const RenderText = (
     status: SelectionStatuses[''],
     readOnly: boolean | undefined,
-    node: Text<number>,
+    node: Text<NodeID>,
     style: React.CSSProperties | undefined,
     ref: (el: HTMLElement) => void,
     ctx: RCtx,

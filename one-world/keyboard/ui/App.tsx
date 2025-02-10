@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useReducer, useState } from
 import { useLatest } from '../../../web/custom/useLatest';
 import { Config, TestParser, TestState } from '../test-utils';
 
-import { Loc, RecNodeT, RichKind, Style } from '../../shared/cnodes';
+import { Loc, NodeID, RecNodeT, RichKind, Style } from '../../shared/cnodes';
 import { ParseResult, show } from '../../syntaxes/dsl';
 import * as dsl3 from '../../syntaxes/dsl3';
 import { nodeToXML, toXML, XML } from '../../syntaxes/xml';
@@ -131,7 +131,7 @@ export const App = ({ id }: { id: string }) => {
     const cursor = lastChild(state.selections[0].start.path);
     const parsed = parser.parse(rootNode, cursor);
     const errors = useMemo(() => {
-        const errors: Record<number, string> = {};
+        const errors: Record<NodeID, string> = {};
         parsed.bads.forEach((bad) => {
             if (bad.type !== 'missing') {
                 errors[bad.node.loc[0].idx] = bad.type === 'extra' ? 'Extra node in ' + show(bad.matcher) : 'Mismatch: ' + show(bad.matcher);
@@ -738,7 +738,7 @@ const useKeyFns = (
             getDataToCopy() {
                 const state = cstate.current;
                 const copied = state.selections.map((sel) => handleCopyMulti({ top: state.top, sel })).filter(Boolean) as {
-                    tree: RecNodeT<number>;
+                    tree: RecNodeT<NodeID>;
                 }[];
                 if (!copied.length) return null;
                 console.log(

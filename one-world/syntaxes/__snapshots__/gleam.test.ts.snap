@@ -14,7 +14,7 @@ exports[`long thing 1`] = `
                                      args[] <attribute>
                                               target <local name="nide"/>
                                               attribute <id text="s" ccls=0>
-                                                          loc[] <loc id="" idx=7/>
+                                                          loc[] <loc id="" idx="7"/>
                                                         </id>
                                             </attribute>
                                             <call>

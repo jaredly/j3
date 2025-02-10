@@ -1,7 +1,8 @@
+import { NodeID } from '../shared/cnodes';
 import { replaceIn } from './replaceIn';
 import { Top, Update } from './utils';
 
-export const replaceAt = (path: number[], top: Top, old: number, ...locs: number[]): Update => {
+export const replaceAt = (path: NodeID[], top: Top, old: NodeID, ...locs: NodeID[]): Update => {
     if (locs.length === 1 && old === locs[0]) return { nodes: {} };
     if (path.length === 0) {
         if (old !== top.root) {

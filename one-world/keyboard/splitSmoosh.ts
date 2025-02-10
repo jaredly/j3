@@ -76,7 +76,7 @@ Assumptions
 //     switch (cursor.where) {
 //         case 'start':
 //         case 'before': {
-//             const left = nextLoc++;
+//             const left = nextLoc++ + '';
 //             inserts.push(left, list.loc);
 //             nodes[left] = { type: 'id', text: '', loc: left };
 //             sel = {
@@ -87,7 +87,7 @@ Assumptions
 //         }
 //         case 'end':
 //         case 'after': {
-//             const right = nextLoc++;
+//             const right = nextLoc++ + '';
 //             inserts.push(list.loc, right);
 //             nodes[right] = { type: 'id', text: '', loc: right };
 //             sel = {
@@ -98,9 +98,9 @@ Assumptions
 //         }
 //         case 'inside': {
 //             if (list.type !== 'list') throw new Error(`inside, but not a list`);
-//             const left = nextLoc++;
-//             const wrap = nextLoc++;
-//             const loc = nextLoc++;
+//             const left = nextLoc++ + '';
+//             const wrap = nextLoc++ + '';
+//             const loc = nextLoc++ + '';
 //             return {
 //                 nodes: {
 //                     [left]: { type: 'id', text: '', loc: left },
@@ -137,7 +137,7 @@ Assumptions
 
 //     switch (cursor.where) {
 //         case 'before': {
-//             const left = nextLoc++;
+//             const left = nextLoc++ + '';
 //             inserts.push(left, list.loc);
 //             nodes[left] = { type: 'id', text: grem, loc: left, punct };
 //             sel = {
@@ -147,7 +147,7 @@ Assumptions
 //             break;
 //         }
 //         case 'after': {
-//             const right = nextLoc++;
+//             const right = nextLoc++ + '';
 //             inserts.push(list.loc, right);
 //             nodes[right] = { type: 'id', text: grem, loc: right, punct };
 //             sel = {
@@ -158,7 +158,7 @@ Assumptions
 //         }
 //         case 'inside':
 //             if (list.type !== 'list') throw new Error(`inside, but not a list`);
-//             const loc = nextLoc++;
+//             const loc = nextLoc++ + '';
 //             return {
 //                 nodes: {
 //                     [loc]: { type: 'id', text: grem, loc, punct },
@@ -206,7 +206,7 @@ Assumptions
 
 //     switch (split.type) {
 //         case 'before': {
-//             const left = nextLoc++;
+//             const left = nextLoc++ + '';
 //             inserts = [left, id.loc];
 //             nodes[left] = { type: 'id', text: '', loc: left };
 //             nodes[id.loc] = { ...id, text: split.text };
@@ -217,7 +217,7 @@ Assumptions
 //             break;
 //         }
 //         case 'after': {
-//             const right = nextLoc++;
+//             const right = nextLoc++ + '';
 //             inserts = [id.loc, right];
 //             nodes[right] = { type: 'id', text: '', loc: right };
 //             nodes[id.loc] = { ...id, text: split.text };
@@ -228,7 +228,7 @@ Assumptions
 //             break;
 //         }
 //         case 'between': {
-//             const right = nextLoc++;
+//             const right = nextLoc++ + '';
 //             inserts = [id.loc, right];
 //             nodes[id.loc] = { ...id, text: split.left };
 //             nodes[right] = { type: 'id', text: split.right, loc: right, punct: id.punct };
@@ -264,7 +264,7 @@ Assumptions
 
 //     switch (split.type) {
 //         case 'before': {
-//             const left = nextLoc++;
+//             const left = nextLoc++ + '';
 //             inserts.push(left, id.loc);
 //             nodes[left] = { type: 'id', text: grem, loc: left, punct };
 //             nodes[id.loc] = { ...id, text: split.text };
@@ -275,7 +275,7 @@ Assumptions
 //             break;
 //         }
 //         case 'after': {
-//             const right = nextLoc++;
+//             const right = nextLoc++ + '';
 //             inserts.push(id.loc, right);
 //             nodes[right] = { type: 'id', text: grem, loc: right, punct };
 //             nodes[id.loc] = { ...id, text: split.text };
@@ -286,8 +286,8 @@ Assumptions
 //             break;
 //         }
 //         case 'between': {
-//             const mid = nextLoc++;
-//             const right = nextLoc++;
+//             const mid = nextLoc++ + '';
+//             const right = nextLoc++ + '';
 //             inserts.push(id.loc, mid, right);
 //             nodes[id.loc] = { ...id, text: split.left };
 //             nodes[mid] = { type: 'id', text: grem, loc: mid, punct };

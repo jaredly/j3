@@ -1,4 +1,19 @@
-import { RecNodeT, Nodes, fromRec, childLocs, childNodes, Id, ListKind, RecText, TextSpan, TableKind, Style, IdRef, RecNode } from '../shared/cnodes';
+import {
+    RecNodeT,
+    Nodes,
+    fromRec,
+    childLocs,
+    childNodes,
+    Id,
+    ListKind,
+    RecText,
+    TextSpan,
+    TableKind,
+    Style,
+    IdRef,
+    RecNode,
+    NodeID,
+} from '../shared/cnodes';
 import { Ctx, ParseResult } from '../syntaxes/dsl';
 import { selEnd, Src } from './handleShiftNav';
 import { charClass } from './insertId';
@@ -10,30 +25,30 @@ export type TestState = {
 };
 export type TestParser = {
     config: Config;
-    parse(node: RecNode, cursor?: number): ParseResult<any>;
+    parse(node: RecNode, cursor?: NodeID): ParseResult<any>;
     spans(ast: any): Src[];
 };
 
 export const initTop: Top = {
     nextLoc: 1,
-    nodes: { [0]: { type: 'id', text: '', loc: 0 } },
-    root: 0,
+    nodes: { [0]: { type: 'id', text: '', loc: '0' } },
+    root: '0',
     // tmpText: {},
 };
 export const init: TestState = {
     top: initTop,
     sel: {
-        start: selStart({ root: { ids: [], top: '' }, children: [0] }, { type: 'id', end: 0 }),
+        start: selStart({ root: { ids: [], top: '' }, children: ['0'] }, { type: 'id', end: 0 }),
     },
 };
 
-export const asTopAndPath = (node: RecNodeT<boolean | number>): { top: Top; sel: number[]; sels: Record<number, number[]> } => {
+export const asTopAndPath = (node: RecNodeT<boolean | number>): { top: Top; sel: NodeID[]; sels: Record<number, NodeID[]> } => {
     const nodes: Nodes = {};
     let nextLoc = 0;
-    let sel: number[] = [];
-    const sels: Record<number, number[]> = {};
+    let sel: NodeID[] = [];
+    const sels: Record<number, NodeID[]> = {};
     const root = fromRec(node, nodes, (l, node, path) => {
-        const loc = nextLoc++;
+        const loc = nextLoc++ + '';
         if (l === true || l === 1) {
             sel = path.concat([loc]);
         } else if (typeof l === 'number') {
@@ -46,12 +61,12 @@ export const asTopAndPath = (node: RecNodeT<boolean | number>): { top: Top; sel:
 
 export type Sels = null | [number, Cursor] | [number, Cursor][];
 
-export const asTopAndLocs = (node: RecNodeT<number>): { top: Top; locs: Record<number, number[]> } => {
+export const asTopAndLocs = (node: RecNodeT<number>): { top: Top; locs: Record<number, NodeID[]> } => {
     const nodes: Nodes = {};
     let nextLoc = 0;
-    let locs: Record<number, number[]> = {};
+    let locs: Record<number, NodeID[]> = {};
     const rootLoc = fromRec(node, nodes, (l, node, path) => {
-        const loc = nextLoc++;
+        const loc = nextLoc++ + '';
         if (l != null) {
             if (locs[l]) throw new Error(`duplicate num ${l}`);
             locs[l] = path.concat([loc]);
@@ -66,7 +81,7 @@ export const asTopAndPaths = (node: RecNodeT<Sels>, root: Path['root']): { top: 
     let nextLoc = 0;
     let sels: Record<number, NodeSelection> = {};
     const rootLoc = fromRec(node, nodes, (l, node, path) => {
-        const loc = nextLoc++;
+        const loc = nextLoc++ + '';
         if (l != null) {
             if (Array.isArray(l[0])) {
                 (l as [number, Cursor][]).forEach(([num, cursor]) => {
@@ -113,8 +128,8 @@ export const asMultiTop = (node: RecNodeT<number>, cursor: Cursor): TestState =>
     };
 };
 
-export const atPath = (root: number, top: Top, path: number[]) => {
-    const res: number[] = [root];
+export const atPath = (root: NodeID, top: Top, path: number[]) => {
+    const res: NodeID[] = [root];
     path = path.slice();
     while (path.length) {
         root = childLocs(top.nodes[root])[path.shift()!];

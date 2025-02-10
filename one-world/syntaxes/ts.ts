@@ -1,6 +1,6 @@
 import { Src } from '../keyboard/handleShiftNav';
 import { js, TestParser, TestState } from '../keyboard/test-utils';
-import { Id, Loc, RecNode } from '../shared/cnodes';
+import { Id, Loc, NodeID, RecNode } from '../shared/cnodes';
 import { any, Ctx, id, idp, idt, kwd, list, Matcher, meta, mref, multi, named, opt, parse, sequence, switch_, table, text, tx } from './dsl';
 import {
     binops,
@@ -433,7 +433,7 @@ export const matchers = {
     fancy,
 };
 
-export const ctx = (cursor?: number): Ctx => ({
+export const ctx = (cursor?: NodeID): Ctx => ({
     matchers,
     kwds,
     comment: meta('comment', list('smooshed', sequence<any>([kwd('//', () => ({ type: 'comment' })), multi(any(idt), true, idt)], true, idt), idt)),

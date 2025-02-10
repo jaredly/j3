@@ -27,14 +27,14 @@ Game plan:
  */
 
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Collection, Id, List, Node } from '../shared/cnodes';
+import { Collection, Id, List, Node, NodeID } from '../shared/cnodes';
 import { Kind } from './insertId';
 import { Cursor, Path, Top, lastChild, parentPath } from './utils';
 
 export const listKindForKeyKind = (kind: Kind): 0 | 1 | 2 => (kind === 'sep' ? OTHER : kind === 'space' ? SPACED : SMOOSH);
 
 // TODO add like rsmoosh and lsmoosh, to track the locs of the smooshes
-export type Flat = Node | { type: 'space'; loc: number } | { type: 'smoosh'; loc: number } | { type: 'sep'; loc: number; multiLine?: boolean };
+export type Flat = Node | { type: 'space'; loc: NodeID } | { type: 'smoosh'; loc: NodeID } | { type: 'sep'; loc: NodeID; multiLine?: boolean };
 
 /*
 kind:
@@ -50,7 +50,7 @@ const SMOOSH = 0;
 const SPACED = 1;
 const OTHER = 2;
 
-export const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node: Collection<number>; path: Path } => {
+export const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node: Collection<NodeID>; path: Path } => {
     const loc = lastChild(path);
     if (loc == null) return;
     const node = top.nodes[loc];
@@ -69,7 +69,7 @@ export const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node
     return { node, path };
 };
 
-type FlatParent = { type: 'new'; kind: Kind; current: Node } | { type: 'existing'; node: List<number>; path: Path };
+type FlatParent = { type: 'new'; kind: Kind; current: Node } | { type: 'existing'; node: List<NodeID>; path: Path };
 
 export const isBlank = (node?: Flat) => node && node.type === 'id' && node.text === '';
 
@@ -79,13 +79,13 @@ export function addNeighborAfter(
     neighbor: Flat,
     sel: Node,
     ncursor: Cursor,
-    blank: Node = { type: 'id', text: '', loc: -1 },
+    blank: Node = { type: 'id', text: '', loc: '-1' },
 ) {
     if (at < flat.length - 1 && flat[at + 1].type === 'space' && neighbor.type === 'space' && isBlank(flat[at + 2])) {
         sel = flat[at + 2] as Node;
         ncursor = sel.type === 'id' ? { type: 'id', end: 0 } : { type: 'list', where: 'before' };
     } else if (at < flat.length - 1 && flat[at + 1].type === 'id') {
-        sel = flat[at + 1] as Id<number>;
+        sel = flat[at + 1] as Id<NodeID>;
         ncursor = { type: 'id', end: 0 };
         flat.splice(at + 1, 0, neighbor);
     } else if (neighbor.type === 'id') {
@@ -112,7 +112,7 @@ export function addNeighborBefore(
     neighbor: Flat,
     sel: Node,
     ncursor: Cursor,
-    blank: Node = { type: 'id', text: '', loc: -1 },
+    blank: Node = { type: 'id', text: '', loc: '-1' },
 ) {
     if ((at !== 0 && flat[at - 1].type === 'id') || (at === 0 && neighbor.type === 'id')) {
         flat.splice(at, 0, neighbor);

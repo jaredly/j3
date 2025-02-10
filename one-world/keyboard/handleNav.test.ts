@@ -1,6 +1,6 @@
 // let's test some operations
 
-import { RecNodeT } from '../shared/cnodes';
+import { NodeID, RecNodeT } from '../shared/cnodes';
 import { applySel, applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleNav, selectEnd, selectStart } from './handleNav';
@@ -228,7 +228,7 @@ test('left/right out of list', () => {
 });
 
 // MARK: Select Start
-const pc = (children: number[]): Path => ({ root: { ids: [], top: '' }, children });
+const pc = (children: NodeID[]): Path => ({ root: { ids: [], top: '' }, children });
 
 test('select start, id', () => {
     const { top, sel } = asTopAndPath(id('hello', true));
@@ -258,10 +258,10 @@ test('round start/end', () => {
 
 test('spaced start/end', () => {
     const { top, sel } = asTopAndPath(spaced([id('hello')], true));
-    expect(selectEnd(pc(sel), top)).toEqual(selStart(pathWithChildren(pc(sel), 1), { type: 'id', end: 5 }));
-    expect(selectStart(pc(sel), top)).toEqual(selStart(pathWithChildren(pc(sel), 1), { type: 'id', end: 0 }));
-    expect(selectEnd(pc(sel), top, true)).toEqual(selStart(pathWithChildren(pc(sel), 1), { type: 'id', end: 4 }));
-    expect(selectStart(pc(sel), top, true)).toEqual(selStart(pathWithChildren(pc(sel), 1), { type: 'id', end: 1 }));
+    expect(selectEnd(pc(sel), top)).toEqual(selStart(pathWithChildren(pc(sel), '1'), { type: 'id', end: 5 }));
+    expect(selectStart(pc(sel), top)).toEqual(selStart(pathWithChildren(pc(sel), '1'), { type: 'id', end: 0 }));
+    expect(selectEnd(pc(sel), top, true)).toEqual(selStart(pathWithChildren(pc(sel), '1'), { type: 'id', end: 4 }));
+    expect(selectStart(pc(sel), top, true)).toEqual(selStart(pathWithChildren(pc(sel), '1'), { type: 'id', end: 1 }));
 });
 
 test('tablee', () => {

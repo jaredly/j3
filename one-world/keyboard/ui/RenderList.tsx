@@ -1,5 +1,5 @@
 import React from 'react';
-import { List, isRich } from '../../shared/cnodes';
+import { List, NodeID, isRich } from '../../shared/cnodes';
 import { selUpdate } from '../update/updaters';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
@@ -12,7 +12,7 @@ import { posInList } from './selectionPos';
 export const RenderList = (
     status: SelectionStatuses[''],
     readOnly: boolean | undefined,
-    node: List<number>,
+    node: List<NodeID>,
     style: React.CSSProperties | undefined,
     ref: (el: HTMLElement) => void,
     ctx: RCtx,

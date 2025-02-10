@@ -1,7 +1,7 @@
 import equal from 'fast-deep-equal';
 import { isTag } from '../keyboard/handleNav';
 import { js, TestParser } from '../keyboard/test-utils';
-import { Id, ListKind, Loc, RecNode, TableKind, Text, TextSpan } from '../shared/cnodes';
+import { Id, ListKind, Loc, NodeID, RecNode, TableKind, Text, TextSpan } from '../shared/cnodes';
 import { MatchParent } from './dsl';
 import {
     binops,
@@ -50,9 +50,9 @@ export type Ctx = {
     rules: Record<string, Rule<any>>;
     scope?: null | Record<string, any>;
     kwds: string[];
-    meta: Record<number, { kind?: string; placeholder?: string }>;
+    meta: Record<NodeID, { kind?: string; placeholder?: string }>;
     autocomplete?: {
-        loc: number;
+        loc: NodeID;
         concrete: AutoComplete[];
         kinds: (string | null)[];
     };

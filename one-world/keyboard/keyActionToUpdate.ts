@@ -16,7 +16,7 @@ import { joinInList } from './update/list';
 import { textDelete } from './update/text';
 import { Cursor, lastChild, Path, Update } from './utils';
 import { CopiedValues, handleDeleteTooMuch, pasteUpdate } from './update/multi-change';
-import { ListKind, RecNodeT, Style, TextSpan } from '../shared/cnodes';
+import { ListKind, NodeID, RecNodeT, Style, TextSpan } from '../shared/cnodes';
 import { handleIdWrap, handleInsertList, wrapUpdate } from './handleWrap';
 import { addSpan } from './update/text';
 import { dedentOutOfRich, splitTextInRich } from './update/rich';
@@ -129,8 +129,8 @@ export type KeyAction =
     | { type: 'add-span'; path: Path; span: TextSpan<RecNodeT<boolean>>; index: number; cursor: number | Cursor; within?: number }
     | { type: 'text-format'; format: Partial<Style>; path: Path; left: Spat; right: Spat; select?: 'before' | 'after' | 'cover' }
     // some other things
-    | { type: 'join-list'; path: Path; child: { loc: number; cursor: Cursor } }
-    | { type: 'join-table'; path: Path; child: { loc: number; cursor: Cursor }; at: { row: number; col: number } }
+    | { type: 'join-list'; path: Path; child: { loc: NodeID; cursor: Cursor } }
+    | { type: 'join-table'; path: Path; child: { loc: NodeID; cursor: Cursor }; at: { row: number; col: number } }
     // Selections
     | { type: 'paste'; path: Path; cursor: Cursor; values: CopiedValues }
     | { type: 'move'; sel: SelStart; end?: SelStart }
@@ -142,6 +142,6 @@ export type KeyAction =
     // things I minght want to ... consolidate or something ... idk
     | { type: 'set-id-text'; path: Path; text: string; end: number; ccls?: number }
     | { type: 'text-delete'; path: Path; left: Spat; right: Spat }
-    | { type: 'toggle-multiline'; loc: number };
+    | { type: 'toggle-multiline'; loc: NodeID };
 
 export const moveA = (sel?: SelStart | void | null): KeyAction[] => (sel ? [{ type: 'move', sel }] : []);

@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { TextSpan, RecNodeT, Nodes, fromRec, Style, isRich } from '../../shared/cnodes';
+import { TextSpan, RecNodeT, Nodes, fromRec, Style, isRich, NodeID } from '../../shared/cnodes';
 import { spanLength } from '../handleDelete';
 import { spanStart, spanEnd } from '../handleNav';
 import { SelStart, toggleFormat } from '../handleShiftNav';
@@ -108,13 +108,13 @@ export const addSpan = (
     let sel: SelStart;
 
     let nextLoc = undefined as undefined | number;
-    let span: TextSpan<number>;
+    let span: TextSpan<NodeID>;
 
     if (recSpan.type === 'embed') {
         nextLoc = top.nextLoc;
-        let selPath: number[] = [];
+        let selPath: NodeID[] = [];
         const root = fromRec(recSpan.item, nodes, (loc, __, path) => {
-            const nl = nextLoc!++;
+            const nl = nextLoc!++ + '';
             if (loc === true) {
                 selPath = path.concat([nl]);
             }

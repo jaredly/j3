@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { List, ListKind, Node, Nodes } from '../shared/cnodes';
+import { List, ListKind, Node, NodeID, Nodes } from '../shared/cnodes';
 import { findParent } from './flatenate';
 import { selectStart } from './handleNav';
 import { SelStart } from './handleShiftNav';
@@ -24,7 +24,7 @@ export const wrapKind = (key: string): ListKind<any> | void => {
     }
 };
 
-export const closerKind = (key: string): ListKind<number> | void => {
+export const closerKind = (key: string): ListKind<NodeID> | void => {
     switch (key) {
         case ')':
             return 'round';
@@ -47,20 +47,20 @@ export const handleInsertList = (top: Top, path: Path, pos: 'before' | 'after' |
         if (node.type === 'list' || node.type === 'table') {
             return {
                 nodes: {
-                    [top.nextLoc]: { type: 'list', kind, children: [], loc: top.nextLoc },
-                    [node.loc]: node.type === 'list' ? { ...node, children: [top.nextLoc] } : { ...node, rows: [[top.nextLoc]] },
+                    [top.nextLoc + '']: { type: 'list', kind, children: [], loc: top.nextLoc + '' },
+                    [node.loc]: node.type === 'list' ? { ...node, children: [top.nextLoc + ''] } : { ...node, rows: [[top.nextLoc + '']] },
                 },
-                selection: { start: selStart(pathWithChildren(path, top.nextLoc), { type: 'list', where: 'inside' }) },
+                selection: { start: selStart(pathWithChildren(path, top.nextLoc + ''), { type: 'list', where: 'inside' }) },
                 nextLoc: top.nextLoc + 1,
             };
         }
     }
 
     let nextLoc = top.nextLoc;
-    const loc = nextLoc++;
+    const loc = nextLoc++ + '';
     const parent = findParent(0, parentPath(path), top);
     const flat = parent ? flatten(parent.node, top) : [node];
-    const nlist: List<number> = { type: 'list', children: [], kind, loc };
+    const nlist: List<NodeID> = { type: 'list', children: [], kind, loc };
     const nodes: Nodes = { [loc]: nlist };
     let sel: Node = nlist;
     let ncursor: Cursor = { type: 'list', where: 'inside' };
@@ -78,7 +78,7 @@ export const handleInsertList = (top: Top, path: Path, pos: 'before' | 'after' |
     );
 };
 
-export const handleIdWrap = (top: Top, path: Path, left: number, right: number, kind: ListKind<number>): Update | void => {
+export const handleIdWrap = (top: Top, path: Path, left: number, right: number, kind: ListKind<NodeID>): Update | void => {
     const node = top.nodes[lastChild(path)];
     if (node.type !== 'id') return;
     const text = splitGraphemes(node.text);
@@ -93,16 +93,16 @@ export const handleIdWrap = (top: Top, path: Path, left: number, right: number, 
 
     // in the middle or the end
     let nextLoc = top.nextLoc;
-    const loc = nextLoc++;
+    const loc = nextLoc++ + '';
     const parent = findParent(0, parentPath(path), top);
     const flat = parent ? flatten(parent.node, top) : [node];
-    const nlist: List<number> = { type: 'list', children: [], kind, loc };
+    const nlist: List<NodeID> = { type: 'list', children: [], kind, loc };
     const nodes: Nodes = { [loc]: nlist };
     let sel: Node = nlist;
     let ncursor: Cursor = { type: 'list', where: 'inside' };
     if (mid.length) {
         if (left > 0) {
-            const rid = nextLoc++;
+            const rid = nextLoc++ + '';
             nodes[rid] = { type: 'id', text: mid.join(''), loc: rid, ccls: node.ccls };
             nlist.children.push(rid);
         } else {
@@ -122,7 +122,7 @@ export const handleIdWrap = (top: Top, path: Path, left: number, right: number, 
     flat.splice(at + 1, 0, nlist);
 
     if (end.length) {
-        const eid = nextLoc++;
+        const eid = nextLoc++ + '';
         nodes[eid] = { type: 'id', text: end.join(''), loc: eid, ccls: node.ccls };
         flat.splice(at + 2, 0, nodes[eid]);
     }
@@ -143,7 +143,7 @@ export const handleIdWrap = (top: Top, path: Path, left: number, right: number, 
     );
 };
 
-const findListParent = (kind: ListKind<number>, path: Path, top: Top) => {
+const findListParent = (kind: ListKind<NodeID>, path: Path, top: Top) => {
     for (let i = path.children.length - 1; i >= 0; i--) {
         const node = top.nodes[path.children[i]];
         if (node.type === 'list' && node.kind === kind) {
@@ -216,14 +216,14 @@ export const wrapUpdate = (top: Top, path: Path, min: number, max: number, kind:
     const node = top.nodes[lastChild(path)];
     if (node.type !== 'list') return;
     const children = node.children.slice();
-    const loc = nextLoc++;
+    const loc = nextLoc++ + '';
 
     const taken = children.splice(min, max - min + 1, loc);
     nodes[node.loc] = { ...node, children };
 
     let start: SelStart;
     if (node.kind === 'spaced' || node.kind === 'smooshed') {
-        const inner = nextLoc++;
+        const inner = nextLoc++ + '';
         nodes[loc] = { type: 'list', kind, children: [inner], loc };
         nodes[inner] = { type: 'list', kind: node.kind, children: taken, loc: inner };
         const got = selectStart(pathWithChildren(path, loc, inner, taken[0]), top);
@@ -263,7 +263,7 @@ export const handleWraps = (state: TestState, kind: ListKind<any>): KeyAction[] 
 //         if (idxs[0] === -1) return;
 //         const min = idxs[0];
 //         const max = idxs[idxs.length - 1];
-//         const loc = nextLoc++;
+//         const loc = nextLoc++ + '';
 
 //         const taken = children.splice(min, max - min + 1, loc);
 //         nodes[node.loc] = { ...node, children };
@@ -318,9 +318,9 @@ export const handleWrap = (state: TestState, key: string): KeyAction[] | void =>
     }
 };
 
-export function wrapNode(top: Top, path: Path, node: Node, kind: ListKind<number>) {
+export function wrapNode(top: Top, path: Path, node: Node, kind: ListKind<NodeID>) {
     let nextLoc = top.nextLoc;
-    const loc = nextLoc++;
+    const loc = nextLoc++ + '';
     const up = replaceAt(path.children.slice(0, -1), top, node.loc, loc);
     up.nextLoc = nextLoc;
     up.nodes[loc] = { type: 'list', kind, children: [node.loc], loc };

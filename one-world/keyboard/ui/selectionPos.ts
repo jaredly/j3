@@ -6,6 +6,7 @@ import { getCurrent } from '../selections';
 import { goLeft, goRight, handleNav, isTag, selectEnd, selectStart } from '../handleNav';
 import { SelStart } from '../handleShiftNav';
 import { idText, spanText } from '../cursorSplit';
+import { NodeID } from '../../shared/cnodes';
 
 const CLOSE = 10;
 
@@ -58,7 +59,7 @@ const boxAt = (box: DOMRect): CPos => ({ left: box.left, top: box.top, height: b
 // OK I broke down and did. I think its the right call.
 export const selectionPos = (
     sel: SelStart,
-    refs: Record<number, HTMLSpanElement>,
+    refs: Record<NodeID, HTMLSpanElement>,
     top: Top,
 ): { left: number; top: number; height: number } | null => {
     const cur = getCurrent({ start: sel }, top);

@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { List, Node, childLocs } from '../shared/cnodes';
+import { List, Node, NodeID, childLocs } from '../shared/cnodes';
 import { isTag, selectEnd, selectStart } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import {
@@ -302,7 +302,7 @@ export const orderSelections = (one: SelStart, two: SelStart, top: Top): Selecti
     return statuses;
 };
 
-const checkSmooshy = (path: Path, top: Top, statuses: SelectionStatuses): false | List<number> => {
+const checkSmooshy = (path: Path, top: Top, statuses: SelectionStatuses): false | List<NodeID> => {
     const node = top.nodes[lastChild(path)];
     if (node && hasNoBraces(node)) {
         const f = node.children[0];
@@ -337,7 +337,7 @@ const higlightSmooshy = (path: Path, top: Top, statuses: SelectionStatuses) => {
     higlightSmooshy(parentPath(path), top, statuses);
 };
 
-const hasNoBraces = (node: Node): node is List<number> => {
+const hasNoBraces = (node: Node): node is List<NodeID> => {
     return node.type === 'list' && (node.kind === 'smooshed' || node.kind === 'spaced');
 };
 

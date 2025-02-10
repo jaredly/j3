@@ -1,6 +1,6 @@
 import equal from 'fast-deep-equal';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { childLocs, Loc, Node, Style, Text } from '../shared/cnodes';
+import { childLocs, Loc, Node, NodeID, Style, Text } from '../shared/cnodes';
 import { idText } from './cursorSplit';
 import { goLateral, handleNav, selectEnd, selectStart } from './handleNav';
 import { handleSpecialText, keyFormat } from './handleSpecialText';
@@ -200,7 +200,7 @@ export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSele
     return goLateral(path, top, shift, true);
 };
 
-const wordNext = (node: Text<number>, left: boolean, index: number, cursor: number, grems?: string[]): { index: number; cursor: number } | null => {
+const wordNext = (node: Text<NodeID>, left: boolean, index: number, cursor: number, grems?: string[]): { index: number; cursor: number } | null => {
     const span = node.spans[index];
 
     if (left) {
@@ -315,8 +315,8 @@ export const handleSpecial = (state: TestState, key: string, mods: Mods): void |
 };
 
 export const allPaths = (top: Top) => {
-    const paths: Record<number, Path> = {};
-    const add = (id: number, parent: Path) => {
+    const paths: Record<NodeID, Path> = {};
+    const add = (id: NodeID, parent: Path) => {
         const path = pathWithChildren(parent, id);
         paths[id] = path;
 
@@ -360,6 +360,6 @@ export const multiSelChildren = (sel: NodeSelection, top: Top) => {
     // return { parent, children: locs.slice(left, right + 1) };
 };
 
-export const multiSelKeys = (parent: Path, children: number[]) => {
+export const multiSelKeys = (parent: Path, children: NodeID[]) => {
     return children.map((child) => pathKey(pathWithChildren(parent, child)));
 };
