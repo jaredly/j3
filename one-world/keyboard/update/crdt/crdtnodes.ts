@@ -2,7 +2,7 @@
 
 import { Id, List, ListKind, Node, NodeID } from '../../../shared/cnodes';
 import { LRW } from './crdt';
-import { serde, SerDe } from './serde';
+import { canDeserialize, Registry, serde, SerDe } from './serde';
 
 // MARK: Graph
 
@@ -31,7 +31,7 @@ type GetEdge = <T extends MNode<any>>(id: string, attr: string) => { edge: Edge;
 // MARK: Node Auxiliaries
 
 @serde
-class MListTag implements MNode<Extract<ListKind<NodeID>, { type: 'tag' }>>, SerDe<'list:tag'> {
+export class MListTag implements MNode<Extract<ListKind<NodeID>, { type: 'tag' }>>, SerDe<'list:tag'> {
     id: string;
     static kind = 'list:tag';
     kind = 'list:tag' as const;
@@ -71,7 +71,7 @@ class MListTag implements MNode<Extract<ListKind<NodeID>, { type: 'tag' }>>, Ser
 // that was an easy one. (inserting a new span at the start of a text shouldn't rewrite the whole rest of the thing.)
 
 @serde
-class MCons<T> implements MNode<MNode<T>[]>, SerDe<'cons'> {
+export class MCons<T> implements MNode<MNode<T>[]>, SerDe<'cons'> {
     id: string;
     static kind = 'cons';
     kind = 'cons' as const;
@@ -108,7 +108,7 @@ class MCons<T> implements MNode<MNode<T>[]>, SerDe<'cons'> {
 interface MCNode<T extends Node> extends MNode<T> {}
 
 @serde
-class MId implements MCNode<Id<string>>, SerDe<'id'> {
+export class MId implements MCNode<Id<string>>, SerDe<'id'> {
     kind = 'id' as const;
     static kind = 'id';
     id: string;
@@ -127,22 +127,19 @@ class MId implements MCNode<Id<string>>, SerDe<'id'> {
     toJSON() {
         return { kind: this.kind, value: { id: this.id, plain: this.plain.toJSON() } };
     }
-    static fromJSON(data: any) {
+    static fromJSON(data: any, registry: Registry) {
         if (typeof data.id !== 'string') return null;
-        if (
-            typeof data.plain !== 'object' ||
-            typeof data.plain.ts !== 'string' ||
-            typeof data.plain.value !== 'object' ||
-            typeof data.plain.value.text !== 'string' ||
-            typeof data.plain.value.ccls !== 'number'
-        )
+        if (typeof data.plain !== 'object' || typeof data.plain.kind !== 'string') {
             return null;
-        return new MId(data.id, data.plain.value, data.plain.ts);
+        }
+        const plain: typeof MId.prototype.plain = registry[data.plain.kind].fromJSON(data.plain.value, registry);
+        if (plain == null) return null;
+        return new MId(data.id, plain.value, plain.ts);
     }
 }
 
 @serde
-class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
+export class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
     id: string;
     static kind = 'list';
     kind = 'list' as const;
@@ -175,9 +172,12 @@ class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
     toJSON() {
         return { kind: this.kind, value: { id: this.id, plain: this.plain.toJSON() } };
     }
-    static fromJSON(data: any) {
+    static fromJSON(data: any, registry: Registry) {
         if (typeof data.id !== 'string') return null;
-        if (typeof data.plain !== 'object' || typeof data.plain.ts !== 'string' || data.plain.value === undefined) return null;
-        return new MList(data.id, data.plain.value, data.plain.ts);
+        const praw = data.plain;
+        if (!canDeserialize(praw)) return null;
+        const plain: typeof MList.prototype.plain = registry[praw.kind].fromJSON(praw.value, registry);
+        if (plain == null) return null;
+        return new MList(data.id, plain.value, plain.ts);
     }
 }

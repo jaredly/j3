@@ -10,6 +10,9 @@ type SerDeClass<T extends SerDe<K>, K extends string> = {
     fromJSON(data: any, registery: Registry): T | null;
 };
 
+type Dable = { kind: string; value: any };
+export const canDeserialize = (v: any): v is Dable => typeof v === 'object' && v && typeof v.kind === 'string' && 'value' in v;
+
 export type Registry = Record<string, SerDeClass<any, any>>;
 
 const registry: Registry = {};
@@ -25,7 +28,7 @@ export const serialize = <K extends string>(v: SerDe<K>) => {
 
 export const deserialize = <K extends string>(v: string): SerDe<K> => {
     const data = JSON.parse(v);
-    if (!data || typeof data.kind !== 'string' || typeof data.value !== 'object') throw new Error(`invalid data, cannot deserialize: ${v}`);
+    if (!data || typeof data.kind !== 'string' || data.value === undefined) throw new Error(`invalid data, cannot deserialize: ${v}`);
     if (!registry[data.kind]) throw new Error(`kind not registered: ${data.kind}`);
     return registry[data.kind].fromJSON(data.value, registry);
 };

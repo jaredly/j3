@@ -5,10 +5,11 @@ interface CRDT {
     merge(other: ThisType<this>): ThisType<this>;
 }
 
+@serde
 export class GMap<T extends CRDT & SerDe<any>> implements CRDT, SerDe<'GMAP'> {
     static kind = 'GMAP';
-    kind = 'GMAP' as const;
-    map: Record<string, T>;
+    readonly kind = 'GMAP' as const;
+    readonly map: Record<string, T>;
 
     constructor(map: Record<string, T>) {
         this.map = map;
@@ -50,9 +51,9 @@ export class GMap<T extends CRDT & SerDe<any>> implements CRDT, SerDe<'GMAP'> {
 @serde
 export class LRW<T> implements CRDT, SerDe<'LRW'> {
     static kind = 'LRW';
-    kind = 'LRW' as const;
-    value: T;
-    ts: string;
+    readonly kind = 'LRW' as const;
+    readonly value: T;
+    readonly ts: string;
 
     constructor(value: T, ts: string) {
         this.value = value;
