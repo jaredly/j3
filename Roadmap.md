@@ -1,4 +1,15 @@
 
+# CRDT Thinkings
+
+- need a way to serialize / deserialize my classes
+  maybe decorators?
+- go simple, just IDs and Lists to start
+  - convert KeyActions into CRDTUpdates[]
+    - ignore the ones I'm not supporting yet
+- undo stack, do the mergings
+
+
+
 # We find ourselves, once again, at the beginning of things
 
 and specifically with a decision about topnodes, and docnodes, and ... durable identity.
@@ -62,8 +73,15 @@ in not-real-time, and sequester the incoming changes to their own document for m
 So, next big change, we gotta make Mapped nodes have string locs instead of numeric ones.
 this will probably break some things.
 
-- [ ] LOC as String
+- [x] LOC as String
 - [ ] SpanIndex as String
+- [ ] tag attribute "zerod out" as an empty ID
+  waiiit. why am I pigeonholing this.
+  couldn't it just be ... like a. (spaced). and if you want to represent things in a certain way, you could?
+  hm. I guess I'm imagining I would render it as like the normal inline tags. but that would require a whole other thing.
+  I guess I'm just like having an opinion, that the tags should be a table.
+  BUT we could do: a table with /no rows/ in this case doesn't get displayed? <div>yeah</div>. and if you /space/ into it,
+  then we do a special thing. I guess that's ok? It's no more special cased than we're currently doing, right?
 - [ ] Control Index as String
 
 
