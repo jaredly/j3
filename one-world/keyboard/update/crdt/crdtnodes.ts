@@ -1,34 +1,48 @@
 // interface CanDoThings { }
 
 import { Id, List, ListKind, Node, NodeID } from '../../../shared/cnodes';
+import { CUpdate, insertNodes, replaceEdges } from '../../keyActionToCRDTUpdate';
+import { MNode, GetEdge, Edge } from './cgraph';
 import { LRW } from './crdt';
 import { canDeserialize, Registry, serde, SerDe } from './serde';
 
-// MARK: Graph
-
-// type FancyGraph<T> = {
-//     root: string,
-//     edges: Record<string, {from: string, attr: string, to: string, dead: boolean}>,
-//     nodes: Record<string, T>,
-// }
-
-interface Edge {
-    id: string;
-    fromid: string;
-    attr: string;
-    toid: string;
-}
-
-interface MNode<T> {
-    id: string;
-    kind: string;
-    plain?: LRW<any>;
-    construct(getEdges: GetEdge): T | null;
-}
-
-type GetEdge = <T extends MNode<any>>(id: string, attr: string) => { edge: Edge; end: T };
-
 // MARK: Node Auxiliaries
+
+@serde
+export class MListKind implements MNode<ListKind<NodeID>>, SerDe<'list:kind'> {
+    id: string;
+    static kind = 'list:kind';
+    kind = 'list:kind' as const;
+    plain: LRW<Extract<ListKind<NodeID>, string>>;
+    outs = [];
+
+    constructor(id: string, kind: Extract<ListKind<NodeID>, string>, ts: string) {
+        this.id = id;
+        this.plain = new LRW(kind, ts);
+    }
+
+    construct(getEdge: GetEdge): ListKind<string> | null {
+        return this.plain.value;
+    }
+
+    // trivial
+    merge(other: MListKind): MListKind {
+        if (other.id !== this.id || other.kind !== this.kind) throw new Error(`not the same id list`);
+        return other.plain.ts > this.plain.ts ? other : this;
+    }
+
+    toJSON() {
+        return { kind: this.kind, value: { id: this.id, plain: this.plain.toJSON() } };
+    }
+
+    static fromJSON(data: any, registry: Registry) {
+        if (typeof data !== 'object' || typeof data.id !== 'string') return null;
+        const raw = data.plain;
+        if (!canDeserialize(raw)) return null;
+        const plain: typeof MListKind.prototype.plain = registry[raw.kind].fromJSON(raw.value, registry);
+        return plain ? new MListKind(data, plain.value, plain.ts) : null;
+    }
+}
 
 @serde
 export class MListTag implements MNode<Extract<ListKind<NodeID>, { type: 'tag' }>>, SerDe<'list:tag'> {
@@ -36,16 +50,31 @@ export class MListTag implements MNode<Extract<ListKind<NodeID>, { type: 'tag' }
     static kind = 'list:tag';
     kind = 'list:tag' as const;
     plain = undefined;
+    outs = ['tag', 'attributes'];
 
     constructor(id: string) {
         this.id = id;
     }
 
-    construct(getEdges: GetEdge): Extract<ListKind<NodeID>, { type: 'tag' }> | null {
-        const tag = getEdges<MNode<Node>>(this.id, 'tag');
-        const attributes = getEdges<MNode<Node>>(this.id, 'attributes');
+    static newTagEdge(ts: string, sourceId: string, destId: string) {
+        return new Edge(ts, { id: sourceId, attr: 'tag' }, destId);
+    }
+
+    static newAttributesEdge(ts: string, sourceId: string, destId: string) {
+        return new Edge(ts, { id: sourceId, attr: 'attributes' }, destId);
+    }
+
+    construct(getEdge: GetEdge): Extract<ListKind<NodeID>, { type: 'tag' }> | null {
+        const tag = getEdge<MNode<Node>>(this.id, 'tag');
+        const attributes = getEdge<MNode<Node>>(this.id, 'attributes');
         if (tag == null || attributes == null) return null;
         return { type: 'tag', node: tag.end.id, attributes: attributes.end.id };
+    }
+
+    // trivial
+    merge(other: MListTag): MListTag {
+        if (other.id !== this.id || other.kind !== this.kind) throw new Error(`not the same id list`);
+        return other;
     }
 
     toJSON() {
@@ -71,19 +100,66 @@ export class MListTag implements MNode<Extract<ListKind<NodeID>, { type: 'tag' }
 // that was an easy one. (inserting a new span at the start of a text shouldn't rewrite the whole rest of the thing.)
 
 @serde
-export class MCons<T> implements MNode<MNode<T>[]>, SerDe<'cons'> {
+export class MNil implements MNode<{ type: 'nil' }>, SerDe<'nil'> {
     id: string;
-    static kind = 'cons';
-    kind = 'cons' as const;
+    static kind = 'nil';
+    kind = 'nil' as const;
     plain = undefined;
+    outs = [];
 
     constructor(id: string) {
         this.id = id;
     }
 
+    construct(getEdge: GetEdge) {
+        return { type: 'nil' as const };
+    }
+
+    // trivial
+    merge(other: MNil): MNil {
+        if (other.id !== this.id || other.kind !== this.kind) throw new Error(`not the same id list`);
+        return other;
+    }
+
+    toJSON() {
+        return { kind: this.kind, value: this.id };
+    }
+
+    static fromJSON(data: any) {
+        if (typeof data !== 'string') return null;
+        return new MNil(data);
+    }
+}
+
+@serde
+export class MCons<T> implements MNode<MNode<T>[]>, SerDe<'cons'> {
+    id: string;
+    static kind = 'cons';
+    kind = 'cons' as const;
+    plain = undefined;
+    outs = ['head', 'tail'];
+
+    constructor(id: string) {
+        this.id = id;
+    }
+
+    // trivial
+    merge(other: MCons<T>): MCons<T> {
+        if (other.id !== this.id || other.kind !== this.kind) throw new Error(`not the same id list`);
+        return other;
+    }
+
+    getHeadEdge(getEdge: GetEdge): GotEdge<MNode<T>> {
+        return getEdge<MNode<T>>(this.id, 'head');
+    }
+
+    getTailEdge(getEdge: GetEdge): GotEdge<MCons<T> | MNode<T>> {
+        return getEdge<MCons<T> | MNode<T>>(this.id, 'tail');
+    }
+
     construct(getEdge: GetEdge): MNode<T>[] | null {
-        const head = getEdge<MNode<T>>(this.id, 'head');
-        const tail = getEdge<MCons<T> | MNode<T>>(this.id, 'tail');
+        const head = this.getHeadEdge(getEdge);
+        const tail = this.getTailEdge(getEdge);
         if (!head || !tail) return null;
 
         if (!(tail.end instanceof MCons)) {
@@ -112,11 +188,25 @@ export class MId implements MCNode<Id<string>>, SerDe<'id'> {
     kind = 'id' as const;
     static kind = 'id';
     id: string;
+    outs = [];
     plain: LRW<{ text: string; ccls: number }>;
 
     constructor(id: string, plain: { text: string; ccls: number }, ts: string) {
         this.id = id;
         this.plain = new LRW(plain, ts);
+    }
+
+    merge(other: MId): MId {
+        if (other.id !== this.id || other.kind !== this.kind) throw new Error(`not the same id list`);
+        const plain = this.plain.merge(other.plain);
+        return new MId(this.id, plain.value, plain.ts);
+    }
+
+    setText(text: string, ccls: number | undefined, ts: string): MId {
+        if (ccls != null && this.plain.value.ccls != null && ccls !== this.plain.value.ccls) {
+            throw new Error(`incompatible character classes`);
+        }
+        return new MId(this.id, { text, ccls: text.length === 0 ? -1 : ccls ?? this.plain.value.ccls }, ts);
     }
 
     construct(): Id<string> {
@@ -138,11 +228,14 @@ export class MId implements MCNode<Id<string>>, SerDe<'id'> {
     }
 }
 
+type GotEdge<T> = { edge: Edge; end: T; alts?: string[] };
+
 @serde
 export class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
     id: string;
     static kind = 'list';
     kind = 'list' as const;
+    outs = ['kind', 'children'];
     plain: LRW<boolean | null>;
 
     constructor(id: string, multi: boolean | null, ts: string) {
@@ -150,28 +243,81 @@ export class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
         this.plain = new LRW(multi ?? null, ts);
     }
 
-    construct(getEdge: GetEdge): List<NodeID> | null {
-        const kind = getEdge<MNode<ListKind<NodeID>>>(this.id, 'kind');
-        const child = getEdge<MNode<Node> | MCons<MNode<Node>>>(this.id, 'children');
-        if (!kind || !child) return null;
-        const kval = kind.end.construct(getEdge);
-        if (kval == null) return null;
+    edges(ts: () => string, attrs: { kind: string; children: string }) {
+        return [this.newKindEdge(ts, attrs.kind), new Edge(ts(), { id: this.id, attr: 'children' }, attrs.children)];
+    }
 
-        let children: string[];
+    static newKindEdge(ts: () => string, id: string, kindId: string) {
+        return new Edge(ts(), { id: id, attr: 'kind' }, kindId);
+    }
+
+    newKindEdge(ts: () => string, kindId: string) {
+        return new Edge(ts(), { id: this.id, attr: 'kind' }, kindId);
+    }
+
+    getKind(getEdge: GetEdge): ListKind<NodeID> | null {
+        const kind = this.getKindEdge(getEdge);
+        return kind?.end.construct(getEdge) ?? null;
+    }
+
+    getChildren(getEdge: GetEdge): NodeID[] | null {
+        const child = getEdge<MNode<Node> | MCons<MNode<Node>>>(this.id, 'children');
         if (child.end instanceof MCons) {
             const res = child.end.construct(getEdge);
             if (res == null) return null;
-            children = res.map((n) => n.id);
+            return res.map((n) => n.id);
         } else {
-            children = [child.end.id];
+            return [child.end.id];
         }
+    }
 
-        return { type: 'list', kind: kval, children, loc: this.id };
+    replaceChild(getEdge: GetEdge, ts: () => string, at: number, loc: NodeID) {}
+
+    removeChild(getEdge: GetEdge, at: number, ts: () => string): null | CUpdate[] {
+        type Child = MCons<Node> | MNode<Node>;
+
+        let edge: GotEdge<Child> | null = this.getChildEdge(getEdge);
+        if (!edge) return null;
+        for (let i = 0; i < at; i++) {
+            const node: Child = edge.end;
+            if (!(node instanceof MCons)) {
+                return null;
+            }
+            edge = node.getTailEdge(getEdge);
+        }
+        if (edge.end instanceof MCons) {
+            return [replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, edge.end.getTailEdge(getEdge).end.id))];
+        }
+        const nts = ts();
+        return [insertNodes([new MNil(nts)], []), replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, nts))];
+    }
+
+    getKindEdge(getEdge: GetEdge): GotEdge<MNode<ListKind<NodeID>>> | null {
+        return getEdge<MNode<ListKind<NodeID>>>(this.id, 'kind');
+    }
+
+    getChildEdge(getEdge: GetEdge): GotEdge<MNode<Node> | MCons<Node>> | null {
+        return getEdge<MNode<Node> | MCons<Node>>(this.id, 'children');
+    }
+
+    merge(other: MList): MList {
+        if (other.id !== this.id || other.kind !== this.kind) throw new Error(`not the same id list`);
+        const plain = this.plain.merge(other.plain);
+        return new MList(this.id, plain.value, plain.ts);
+    }
+
+    construct(getEdge: GetEdge): List<NodeID> | null {
+        const kind = this.getKind(getEdge);
+        const children = this.getChildren(getEdge);
+        if (!kind || !children) return null;
+
+        return { type: 'list', kind, children, loc: this.id };
     }
 
     toJSON() {
         return { kind: this.kind, value: { id: this.id, plain: this.plain.toJSON() } };
     }
+
     static fromJSON(data: any, registry: Registry) {
         if (typeof data.id !== 'string') return null;
         const praw = data.plain;

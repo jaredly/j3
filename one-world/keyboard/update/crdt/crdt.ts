@@ -1,6 +1,6 @@
 import { Registry, serde, SerDe } from './serde';
 
-interface CRDT {
+export interface CRDT {
     kind: string;
     merge(other: ThisType<this>): ThisType<this>;
 }

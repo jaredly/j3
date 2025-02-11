@@ -8,6 +8,13 @@
     - ignore the ones I'm not supporting yet
 - undo stack, do the mergings
 
+yay ok so serde is working I think. and the crdts make sense to me.
+so.
+first pass, I think we pretend that conflicts can't happen.
+second pass, we change our CNode representations to include indicators
+for conflicts.
+sound good? yeah.
+
 
 
 # We find ourselves, once again, at the beginning of things
