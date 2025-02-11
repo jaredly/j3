@@ -1,13 +1,13 @@
-import { serde, SerDe } from './serde';
+import { Registry, serde, SerDe } from './serde';
 
 interface CRDT {
     kind: string;
     merge(other: ThisType<this>): ThisType<this>;
 }
 
-export class GMap<T extends CRDT & SerDe> implements CRDT, SerDe {
+export class GMap<T extends CRDT & SerDe<any>> implements CRDT, SerDe<'GMAP'> {
     static kind = 'GMAP';
-    kind = 'GMAP';
+    kind = 'GMAP' as const;
     map: Record<string, T>;
 
     constructor(map: Record<string, T>) {
@@ -31,20 +31,26 @@ export class GMap<T extends CRDT & SerDe> implements CRDT, SerDe {
         Object.entries(this.map).forEach(([k, v]) => {
             map[k] = v.toJSON();
         });
-        return { map };
+        return { kind: this.kind, value: map };
     }
 
-    static fromJSON(data: any) {
-        if (!data || typeof data.map !== 'object') return null;
-        // AGH this won't do the instantiation. of the things.
-        return new GMap(data.map);
+    static fromJSON(value: any, registry: Registry) {
+        if (!value || typeof value !== 'object') return null;
+        const map: Record<string, any> = {};
+        Object.entries(value).forEach(([k, v]) => {
+            if (!v || typeof v !== 'object' || !('kind' in v) || !('value' in v) || typeof v.kind !== 'string') throw new Error(`not kinded`);
+            const res = registry[v.kind].fromJSON(v.value, registry);
+            if (res === null) throw new Error(`unable to deserialize sub item`);
+            map[k] = res;
+        });
+        return new GMap(map);
     }
 }
 
 @serde
-export class LRW<T> implements CRDT, SerDe {
+export class LRW<T> implements CRDT, SerDe<'LRW'> {
     static kind = 'LRW';
-    kind = 'LRW';
+    kind = 'LRW' as const;
     value: T;
     ts: string;
 
@@ -58,7 +64,7 @@ export class LRW<T> implements CRDT, SerDe {
     }
 
     toJSON() {
-        return { value: this.value, ts: this.ts };
+        return { kind: this.kind, value: { value: this.value, ts: this.ts } };
     }
 
     static fromJSON(data: any) {

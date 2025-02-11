@@ -31,10 +31,10 @@ type GetEdge = <T extends MNode<any>>(id: string, attr: string) => { edge: Edge;
 // MARK: Node Auxiliaries
 
 @serde
-class MListTag implements MNode<Extract<ListKind<NodeID>, { type: 'tag' }>>, SerDe {
+class MListTag implements MNode<Extract<ListKind<NodeID>, { type: 'tag' }>>, SerDe<'list:tag'> {
     id: string;
     static kind = 'list:tag';
-    kind = 'list:tag';
+    kind = 'list:tag' as const;
     plain = undefined;
 
     constructor(id: string) {
@@ -49,11 +49,11 @@ class MListTag implements MNode<Extract<ListKind<NodeID>, { type: 'tag' }>>, Ser
     }
 
     toJSON() {
-        return { id: this.id };
+        return { kind: this.kind, value: this.id };
     }
     static fromJSON(data: any) {
-        if (typeof data.id !== 'string') return null;
-        return new MListTag(data.id);
+        if (typeof data !== 'string') return null;
+        return new MListTag(data);
     }
 }
 
@@ -71,10 +71,10 @@ class MListTag implements MNode<Extract<ListKind<NodeID>, { type: 'tag' }>>, Ser
 // that was an easy one. (inserting a new span at the start of a text shouldn't rewrite the whole rest of the thing.)
 
 @serde
-class MCons<T> implements MNode<MNode<T>[]>, SerDe {
+class MCons<T> implements MNode<MNode<T>[]>, SerDe<'cons'> {
     id: string;
     static kind = 'cons';
-    kind = 'cons';
+    kind = 'cons' as const;
     plain = undefined;
 
     constructor(id: string) {
@@ -95,11 +95,11 @@ class MCons<T> implements MNode<MNode<T>[]>, SerDe {
     }
 
     toJSON() {
-        return { id: this.id };
+        return { kind: this.kind, value: this.id };
     }
     static fromJSON(data: any) {
-        if (typeof data.id !== 'string') return null;
-        return new MCons(data.id);
+        if (typeof data !== 'string') return null;
+        return new MCons(data);
     }
 }
 
@@ -108,8 +108,8 @@ class MCons<T> implements MNode<MNode<T>[]>, SerDe {
 interface MCNode<T extends Node> extends MNode<T> {}
 
 @serde
-class MId implements MCNode<Id<string>>, SerDe {
-    kind = 'id';
+class MId implements MCNode<Id<string>>, SerDe<'id'> {
+    kind = 'id' as const;
     static kind = 'id';
     id: string;
     plain: LRW<{ text: string; ccls: number }>;
@@ -125,7 +125,7 @@ class MId implements MCNode<Id<string>>, SerDe {
     }
 
     toJSON() {
-        return { id: this.id, plain: this.plain };
+        return { kind: this.kind, value: { id: this.id, plain: this.plain.toJSON() } };
     }
     static fromJSON(data: any) {
         if (typeof data.id !== 'string') return null;
@@ -142,10 +142,10 @@ class MId implements MCNode<Id<string>>, SerDe {
 }
 
 @serde
-class MList implements MCNode<List<NodeID>>, SerDe {
+class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
     id: string;
     static kind = 'list';
-    kind = 'list';
+    kind = 'list' as const;
     plain: LRW<boolean | null>;
 
     constructor(id: string, multi: boolean | null, ts: string) {
@@ -173,7 +173,7 @@ class MList implements MCNode<List<NodeID>>, SerDe {
     }
 
     toJSON() {
-        return { id: this.id, plain: this.plain.toJSON() };
+        return { kind: this.kind, value: { id: this.id, plain: this.plain.toJSON() } };
     }
     static fromJSON(data: any) {
         if (typeof data.id !== 'string') return null;
@@ -181,6 +181,3 @@ class MList implements MCNode<List<NodeID>>, SerDe {
         return new MList(data.id, data.plain.value, data.plain.ts);
     }
 }
-
-// type Edge = {id: string, fromid: string, attr: string, toid: string}
-// type Node = {id: string, kind: string, plain: LRWMap}
