@@ -12,7 +12,10 @@ export type CTState = { ctop: CTop; top: Top; sel: NodeSelection };
 
 export const ticker = () => {
     let i = 0;
-    return () => (i++).toString().padStart(3, '0');
+    return () => {
+        if (i >= 999) throw new Error('no ahh');
+        return (i++).toString().padStart(3, '0');
+    };
 };
 
 export const ccheck = (state: CTState, exp: RecNodeT<boolean | number | null>, cursor: Cursor, endCursor?: Cursor) => {

@@ -328,24 +328,49 @@ export class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
         }
     }
 
-    replaceChild(getEdge: GetEdge, ts: () => string, at: number, loc: NodeID) {
+    replaceChild(getEdge: GetEdge, ts: () => string, at: number | string, ...locs: NodeID[]) {
         type Child = MCons<Node> | MNode<Node>;
 
         let edge: GotEdge<Child> | null = this.getChildEdge(getEdge);
         if (!edge) return null;
-        for (let i = 0; i < at; i++) {
-            const node: Child = edge.end;
-            if (!(node instanceof MCons)) {
-                return null;
+        if (typeof at === 'number') {
+            for (let i = 0; i < at; i++) {
+                const node: Child = edge.end;
+                if (!(node instanceof MCons)) {
+                    return null;
+                }
+                edge = node.getTailEdge(getEdge);
             }
-            edge = node.getTailEdge(getEdge);
+        } else {
+            while (true) {
+                const node: Child = edge.end;
+                if (!(node instanceof MCons)) {
+                    if (node.id === at) {
+                        break;
+                    }
+                    return null;
+                }
+                const head = node.getHeadEdge(getEdge);
+                if (head.edge.dest === at) break;
+                edge = node.getTailEdge(getEdge);
+            }
         }
         if (edge.end instanceof MCons) {
             const hedge = edge.end.getHeadEdge(getEdge);
-            return [replaceEdges([hedge.edge.del(ts())], new Edge(ts(), hedge.edge.source, loc))];
+            const tedge = edge.end.getTailEdge(getEdge);
+            const rops = locs.length > 1 ? insertArrayOp(ts, locs.slice(1).concat(edge.end.getTailEdge(getEdge).end.id)) : null;
+            return [
+                ...(rops ? [rops.op] : []),
+                replaceEdges([hedge.edge.del(ts())], hedge.edge.to(ts, locs[0])),
+                ...(rops ? [replaceEdges([tedge.edge.del(ts())], tedge.edge.to(ts, rops.head))] : []),
+            ];
             // return [replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, edge.end.getTailEdge(getEdge).end.id))];
         }
-        return [replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, loc))];
+        const rops = locs.length > 1 ? insertArrayOp(ts, locs) : null;
+        // if (locs.length === 1) {
+        //     return [replaceEdges([edge.edge.del(ts())], edge.edge.to(ts, locs[0]))];
+        // }
+        return [...(rops ? [rops.op] : []), replaceEdges([edge.edge.del(ts())], edge.edge.to(ts, rops ? rops.head : locs[0]))];
         // const nts = ts();
         // return [insertNodes([new MNil(nts)], []), replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, nts))];
     }

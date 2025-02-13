@@ -80,8 +80,8 @@ test('trwrap2', () => {
     ccheck(state, square([round([id('', true)]), id('a')]), idc(0));
 });
 
-test.only('gotta spance', () => {
-    const state = initial(id('hi', true), idc(2));
-    op(state, keyUpdate(state, ' ', {}));
-    ccheck(state, spaced([id('hi'), id('', true)]), idc(0));
+test('gotta spance', () => {
+    const state = initial(round([id('hi', true)]), idc(2));
+    op(state, keyUpdate(state, ',', {}));
+    ccheck(state, round([id('hi'), id('', true)]), idc(0));
 });

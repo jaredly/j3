@@ -10,12 +10,12 @@ id-wrap
 */
 
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { ListKind, Node, NodeID } from '../shared/cnodes';
+import { ListKind, Node, NodeID, RecNodeT } from '../shared/cnodes';
 import { isTag } from './handleNav';
 import { KeyAction, KeyWhat } from './keyActionToUpdate';
 import { CGraph, CGraphOp, Edge, MNode, rootEdge } from './update/crdt/cgraph';
-import { MCons, MId, MList, MListKind, MListTag, MNil } from './update/crdt/crdtnodes';
-import { lastChild, move, parentLoc, parentPath, Path, pathWithChildren, selStart, SelUpdate, Top } from './utils';
+import { MCons, MId, MList, MListKind, MListTag, MNil, MOp } from './update/crdt/crdtnodes';
+import { Cursor, lastChild, move, parentLoc, parentPath, Path, pathWithChildren, selStart, SelUpdate, Top } from './utils';
 
 export type MNodes = MId | MList | MNil | MCons<Node> | MListKind | MListTag;
 
@@ -226,8 +226,55 @@ export const c_handleInsertList = (top: CTop, path: Path, pos: 'before' | 'after
     return [];
 };
 
+type PartialSel = { children: string[]; cursor: Cursor };
+
+export const splitIn = (
+    top: CTop,
+    path: Path,
+    old: string,
+    nodes: string[],
+    kind: 'smooshed' | 'spaced' | 'list' | 'row' | 'col',
+    sel?: PartialSel,
+): CUpdate[] | null => {
+    const node = top.graph.nodes[lastChild(path)];
+    if (node instanceof MList) {
+        const lkind = node.getKind(top.graph.getEdge);
+        if (!lkind) return [];
+        const matches = kind === 'smooshed' || kind === 'spaced' ? lkind === kind : lkind !== 'smooshed' && lkind !== 'spaced';
+        if (matches) {
+            const ops = node.replaceChild(top.graph.getEdge, top.ts, old, ...nodes);
+            return ops
+                ? [...ops, ...(sel ? [{ type: 'move' as const, to: { start: selStart(pathWithChildren(path, ...sel.children), sel.cursor) } }] : [])]
+                : null;
+        }
+        throw new Error('nop');
+    } else {
+        // TODO Table
+        return [];
+    }
+};
+
 export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after' | number, what: KeyWhat) => {
-    throw new Error('not');
+    const parent = parentPath(path);
+    const self = lastChild(path);
+    const nid = top.ts();
+    const newThing =
+        what.type === 'string'
+            ? insertNodes([new MId(nid, { text: 'STRING', ccls: 0 })], [])
+            : insertNodes([new MId(nid, what.type === 'text' ? { text: what.grem, ccls: what.ccls } : { text: '' })], []);
+    // if (typeof pos === 'number') {
+    //     throw new Error('no' + pos);
+    // }
+    const splop = splitIn(
+        top,
+        parent,
+        self,
+        pos === 'before' ? [nid, self] : [self, nid],
+        what.type === 'sep' ? 'list' : what.type === 'space' ? 'spaced' : 'smooshed',
+        pos !== 'before' ? { children: [nid], cursor: { type: 'id', end: 0 } } : undefined,
+    );
+    if (!splop) return;
+    return [newThing, ...splop];
 };
 
 export const c_replaceAt = (path: NodeID[], top: CTop, old: NodeID, ...locs: NodeID[]): CUpdate[] => {

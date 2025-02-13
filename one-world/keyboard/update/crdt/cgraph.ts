@@ -38,6 +38,10 @@ export class Edge implements CRDT, SerDe<'edge'> {
         return `Edge {${this.id}, ${this.source.id}:${this.source.attr} -> ${this.dest}${this.deleted ? ' DEL' : ''}}`;
     }
 
+    to(ts: () => string, dest: string) {
+        return new Edge(ts(), this.source, dest);
+    }
+
     del(ts: string): Edge {
         return new Edge(this.id, this.source, this.dest, ts);
     }

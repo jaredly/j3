@@ -145,10 +145,10 @@ const updateTop = (state: CTState, ups: CUpdate[]) => {
 export const op = (state: CTState, updates: KeyAction[] | void, debug = false) => {
     if (!updates) return;
     const ups = updates.map((up) => keyActionToUpdate(state.ctop, up) ?? []).flat();
-    if (debug) console.log(ups.map((up) => up.type + ' : ' + JSON.stringify(up)).join('\n'));
-    if (debug) console.log(showXMLs(graphToXMLs(state.ctop.graph)));
+    if (debug) console.log('\n# UPDATES\n' + ups.map((up) => up.type + ' : ' + JSON.stringify(up)).join('\n'));
+    if (debug) console.log('\n# PRE GRAPH\n' + showXMLs(graphToXMLs(state.ctop.graph)));
     state.ctop.graph = state.ctop.graph.merge_ops(justOps(ups));
-    if (debug) console.log(showXMLs(graphToXMLs(state.ctop.graph)));
+    if (debug) console.log('\n# POST GRAPH\n' + showXMLs(graphToXMLs(state.ctop.graph)));
     justUps(ups).forEach((up) => {
         state.sel = applySelUp(state.sel, up);
     });
