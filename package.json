@@ -67,13 +67,16 @@
         "@types/react-dom": "^18.0.10",
         "@vitejs/plugin-react": "^3.1.0",
         "@xterm/xterm": "^5.5.0",
+        "ansi-escapes": "^7.0.0",
         "ansis": "^3.3.1",
         "better-sqlite3": "^11.5.0",
         "blakejs": "^1.2.1",
         "buffer": "^6.0.3",
+        "canvas": "^3.1.0",
         "clipboardy": "^4.0.0",
         "codejar": "4.2.0",
         "d3": "^7.8.5",
+        "d3-node": "^4.0.1",
         "dayjs": "^1.11.7",
         "dotenv": "^16.4.5",
         "drizzle-orm": "0.31.0",
@@ -99,5 +102,10 @@
         "victormono": "^1.5.6",
         "vite": "^4.0.4",
         "wa-sqlite": "github:rhashimoto/wa-sqlite#breaking-changes"
+    },
+    "pnpm": {
+        "onlyBuiltDependencies": [
+            "canvas"
+        ]
     }
 }

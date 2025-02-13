@@ -1,8 +1,8 @@
 // interface CanDoThings { }
 
 import { Id, List, ListKind, Node, NodeID } from '../../../shared/cnodes';
-import { CUpdate, insertNodes, replaceEdges } from '../../keyActionToCRDTUpdate';
-import { MNode, GetEdge, Edge } from './cgraph';
+import { CUpdate, insertArrayOp, insertNodes, replaceEdges } from '../../keyActionToCRDTUpdate';
+import { MNode, GetEdge, Edge, CGraphOp } from './cgraph';
 import { LRW } from './crdt';
 import { canDeserialize, Registry, serde, SerDe } from './serde';
 
@@ -23,6 +23,10 @@ export class MListKind implements MNode<ListKind<NodeID>>, SerDe<'list:kind'> {
 
     construct(getEdge: GetEdge): ListKind<string> | null {
         return this.plain.value;
+    }
+
+    static insert(ts: () => string, id: string, kind: Extract<ListKind<NodeID>, string>): MOp {
+        return insertNodes([new MListKind(id, kind, ts())], []);
     }
 
     // trivial
@@ -64,11 +68,24 @@ export class MListTag implements MNode<Extract<ListKind<NodeID>, { type: 'tag' }
         return new Edge(ts, { id: sourceId, attr: 'attributes' }, destId);
     }
 
+    static insert(ts: () => string, id: string, kind: Extract<ListKind<NodeID>, { type: 'tag' }>): MOp {
+        const edges = [MListTag.newTagEdge(ts(), id, kind.node)];
+        const nodes: MNodes[] = [new MListTag(id)];
+        if (kind.attributes) {
+            edges.push(MListTag.newAttributesEdge(ts(), id, kind.attributes));
+        } else {
+            const nil = new MNil(ts());
+            nodes.push(nil);
+            edges.push(MListTag.newAttributesEdge(ts(), id, nil.id));
+        }
+        return insertNodes(nodes, edges);
+    }
+
     construct(getEdge: GetEdge): Extract<ListKind<NodeID>, { type: 'tag' }> | null {
         const tag = getEdge<MNode<Node>>(this.id, 'tag');
         const attributes = getEdge<MNode<Node>>(this.id, 'attributes');
         if (tag == null || attributes == null) return null;
-        return { type: 'tag', node: tag.end.id, attributes: attributes.end.id };
+        return { type: 'tag', node: tag.end.id, attributes: attributes.end.kind === MNil.kind ? undefined : attributes.end.id };
     }
 
     // trivial
@@ -183,15 +200,18 @@ export class MCons<T> implements MNode<MNode<T>[]>, SerDe<'cons'> {
 
 interface MCNode<T extends Node> extends MNode<T> {}
 
+export type MNodes = MId | MList | MNil | MCons<Node> | MListKind | MListTag;
+export type MOp = CGraphOp<MNodes>;
+
 @serde
 export class MId implements MCNode<Id<string>>, SerDe<'id'> {
     kind = 'id' as const;
     static kind = 'id';
     id: string;
     outs = [];
-    plain: LRW<{ text: string; ccls: number }>;
+    plain: LRW<{ text: string; ccls?: number }>;
 
-    constructor(id: string, plain: { text: string; ccls: number }, ts: string) {
+    constructor(id: string, plain: { text: string; ccls?: number }, ts: string = id) {
         this.id = id;
         this.plain = new LRW(plain, ts);
     }
@@ -202,11 +222,15 @@ export class MId implements MCNode<Id<string>>, SerDe<'id'> {
         return new MId(this.id, plain.value, plain.ts);
     }
 
+    static insert(ts: () => string, id: Id<NodeID>): MOp {
+        return insertNodes([new MId(id.loc, { text: id.text, ccls: id.ccls }, ts())], []);
+    }
+
     setText(text: string, ccls: number | undefined, ts: string): MId {
         if (ccls != null && this.plain.value.ccls != null && ccls !== this.plain.value.ccls) {
             throw new Error(`incompatible character classes`);
         }
-        return new MId(this.id, { text, ccls: text.length === 0 ? -1 : ccls ?? this.plain.value.ccls }, ts);
+        return new MId(this.id, { text, ccls: text.length === 0 ? undefined : ccls ?? this.plain.value.ccls }, ts);
     }
 
     construct(): Id<string> {
@@ -228,7 +252,17 @@ export class MId implements MCNode<Id<string>>, SerDe<'id'> {
     }
 }
 
-type GotEdge<T> = { edge: Edge; end: T; alts?: string[] };
+type GotEdge<T> = { edge: Edge; end: T; alts?: Edge[] };
+
+const insertKind = (ts: () => string, id: string, kind: ListKind<NodeID>): MOp => {
+    if (typeof kind === 'string') {
+        return MListKind.insert(ts, id, kind);
+    }
+    if (kind.type === 'tag') {
+        return MListTag.insert(ts, id, kind);
+    }
+    throw new Error('nother kind not yett');
+};
 
 @serde
 export class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
@@ -245,6 +279,25 @@ export class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
 
     edges(ts: () => string, attrs: { kind: string; children: string }) {
         return [this.newKindEdge(ts, attrs.kind), new Edge(ts(), { id: this.id, attr: 'children' }, attrs.children)];
+    }
+
+    static insert(ts: () => string, list: List<NodeID>): MOp[] {
+        const kid = ts();
+
+        const { head: child, op } = insertArrayOp(ts, list.children);
+
+        return [
+            op,
+            insertKind(ts, kid, list.kind),
+            insertNodes(
+                [new MList(list.loc, list.forceMultiline ?? null, ts())],
+                [MList.newKindEdge(ts, list.loc, kid), MList.newChildrenEdge(ts, list.loc, child)],
+            ),
+        ];
+    }
+
+    static newChildrenEdge(ts: () => string, id: string, dest: string) {
+        return new Edge(ts(), { id: id, attr: 'children' }, dest);
     }
 
     static newKindEdge(ts: () => string, id: string, kindId: string) {

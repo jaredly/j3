@@ -21,7 +21,7 @@ import { getCurrent } from './selections';
 import { SelStart } from './handleShiftNav';
 import { idText, spanText } from './cursorSplit';
 
-export const isTag = (kind: ListKind<any> | TableKind) => typeof kind !== 'string' && kind.type === 'tag';
+export const isTag = <T>(kind: ListKind<T> | TableKind) => typeof kind !== 'string' && kind.type === 'tag';
 
 export const selectStart = (path: Path, top: Top, plus1 = false, tab = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);

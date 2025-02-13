@@ -12,12 +12,12 @@ id-wrap
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { ListKind, Node, NodeID } from '../shared/cnodes';
 import { isTag } from './handleNav';
-import { KeyWhat } from './keyActionToUpdate';
-import { CGraph, CGraphOp, Edge, MNode } from './update/crdt/cgraph';
+import { KeyAction, KeyWhat } from './keyActionToUpdate';
+import { CGraph, CGraphOp, Edge, MNode, rootEdge } from './update/crdt/cgraph';
 import { MCons, MId, MList, MListKind, MListTag, MNil } from './update/crdt/crdtnodes';
-import { lastChild, parentLoc, parentPath, Path, pathWithChildren, selStart, SelUpdate, Top } from './utils';
+import { lastChild, move, parentLoc, parentPath, Path, pathWithChildren, selStart, SelUpdate, Top } from './utils';
 
-type MNodes = MId | MList | MNil | MCons<Node> | MListKind | MListTag;
+export type MNodes = MId | MList | MNil | MCons<Node> | MListKind | MListTag;
 
 // type CRDTUpdate = {
 // }
@@ -29,6 +29,87 @@ export type CTop = {
 type CTNode = CTop['graph']['nodes'][''];
 
 export type CUpdate = CGraphOp<MNodes> | SelUpdate;
+
+export const keyActionToUpdate = (top: CTop, action: KeyAction): CUpdate[] | void => {
+    switch (action.type) {
+        // case 'join-table':
+        //     return joinTable(top, action.path, top.nodes[action.child.loc], action.child.cursor, action.at);
+        // case 'remove-span':
+        //     return removeSpan(top, action.path, action.index);
+        // case 'unwrap':
+        //     return unwrap(action.path, top);
+        case 'move':
+            return [action.end ? move({ end: action.end, start: action.sel }) : move({ start: action.sel })];
+        // case 'sel-expand':
+        //     return { nodes: {}, selection: { start: sel.start, end: action.sel } };
+        // case 'remove-self':
+        //     return removeSelf(top, { path: action.path, node: top.nodes[lastChild(action.path)] });
+        // case 'join-list':
+        //     return joinInList(top, action.path, action.child);
+        // case 'toggle-multiline': {
+        //     const node = top.nodes[action.loc];
+        //     if (node.type === 'list' || node.type === 'table') {
+        //         return { nodes: { [node.loc]: { ...node, forceMultiline: !node.forceMultiline } } };
+        //     }
+        //     return;
+        // }
+        case 'set-id-text':
+            return c_setIdText(top, action.path, action.text, action.end, action.ccls);
+        // case 'set-text-text': {
+        //     return c_setTextText(top, action.path, action.text, action.index, action.end);
+        // }
+        // case 'text-delete':
+        //     return c_textDelete(top, action.path, action.left, action.right);
+        // case 'multi-delete': {
+        //     const up = c_handleDeleteTooMuch(top, action.start, action.end);
+        //     if (up) {
+        //         c_rebalanceSmooshed(up, top);
+        //         c_joinSmooshed(up, top);
+        //         c_disolveSmooshed(up, top);
+        //     }
+        //     return up;
+        // }
+        // case 'join-text':
+        //     return c_handleJoinText(top, action.path);
+        // case 'text-format':
+        //     return c_handleTextFormat(top, action.path, action.format, action.left, action.right, action.select);
+        // case 'wrap':
+        //     return c_wrapUpdate(top, action.path, action.min, action.max, action.kind);
+        case 'id-wrap':
+            return c_handleIdWrap(top, action.path, action.left, action.right, action.kind);
+        case 'insert-list':
+            return c_handleInsertList(top, action.path, action.pos, action.kind);
+        // case 'add-span':
+        //     return c_addSpan(top, action.path, action.span, action.index, action.cursor, action.within);
+        // case 'dedent-out-of-rich':
+        //     return c_dedentOutOfRich(top, action.path);
+        // case 'split-text-in-rich':
+        //     return c_splitTextInRich(top, action.path, action.at);
+        // case 'tag-set-attributes':
+        //     return c_tagSetAttributes(top, action.path, action.table, action.cursor);
+        case 'insert-text':
+            return c_handleInsertText(top, action.path, action.pos, action.what);
+        // case 'replace-self':
+        //     return c_replaceSelf(top, action.path, action.node, action.cursor);
+        // case 'table-split':
+        //     if (action.rowMulti != null) {
+        //         return c_splitTableRow(top, action.path, action.tablePath, action.at, action.rowMulti);
+        //     } else {
+        //         return c_splitTableCol(top, action.path, action.tablePath, action.at);
+        //     }
+        // case 'control-toggle':
+        //     return c_controlToggle(top, action.path, action.index);
+        // case 'add-inside':
+        //     return c_addInside(top, action.path, action.children, action.cursor);
+        // case 'paste':
+        //     return c_pasteUpdate(top, action.path, action.cursor, action.values);
+    }
+    throw new Error(`no action ${action.type}`);
+};
+
+export function insertRoot(nodes: MNodes[], edges: Edge[], ts: string): CGraphOp<MNodes>[] {
+    return [{ type: 'cgraph:add-nodes', edges, nodes }, replaceEdges([], rootEdge(ts, nodes[0].id))];
+}
 
 export function insertNodes(nodes: MNodes[], edges: Edge[]): CGraphOp<MNodes> {
     return { type: 'cgraph:add-nodes', edges, nodes };
@@ -60,18 +141,25 @@ export const c_setIdText = (top: CTop, path: Path, text: string, end: number, cc
     return [updateNode(node.setText(text, ccls, top.ts())), { type: 'move', to: { start: selStart(path, { type: 'id', end }) } }];
 };
 
-const insertArray = (top: CTop, nodes: CTNode[], edges: Edge[], children: string[]) => {
+export const insertArrayOp = (ts: () => string, items: string[]) => {
+    const nodes: CTNode[] = [];
+    const edges: Edge[] = [];
+    const head = insertArray(ts, nodes, edges, items);
+    return { head, op: insertNodes(nodes, edges) };
+};
+
+export const insertArray = (ts: () => string, nodes: CTNode[], edges: Edge[], children: string[]) => {
     if (!children.length) {
-        const id = top.ts();
+        const id = ts();
         nodes.push(new MNil(id));
         return id;
     }
     let head = children[children.length - 1];
     for (let i = children.length - 2; i >= 0; i--) {
-        const id = top.ts();
+        const id = ts();
         nodes.push(new MCons<Node>(id));
-        edges.push(new Edge(top.ts(), { id, attr: 'tail' }, head));
-        edges.push(new Edge(top.ts(), { id, attr: 'head' }, children[i]));
+        edges.push(new Edge(ts(), { id, attr: 'tail' }, head));
+        edges.push(new Edge(ts(), { id, attr: 'head' }, children[i]));
         head = id;
     }
     return head;
@@ -81,7 +169,7 @@ const insertList = (top: CTop, id: string, kind: ListKind<NodeID>, children: Nod
     const nodes: CTNode[] = [];
     const edges: Edge[] = [];
 
-    const childId = insertArray(top, nodes, edges, children);
+    const childId = insertArray(top.ts, nodes, edges, children);
     const kid = top.ts();
 
     const lst = new MList(id, false, top.ts());
@@ -109,6 +197,9 @@ const insertList = (top: CTop, id: string, kind: ListKind<NodeID>, children: Nod
 
     return insertNodes(nodes, edges);
 };
+
+export const justUps = (ops: CUpdate[]) =>
+    ops.filter((c) => c.type !== 'cgraph:add-nodes' && c.type !== 'cgraph:node' && c.type !== 'cgraph:replace-edges');
 
 export const justOps = (ops: CUpdate[]) =>
     ops.filter((c) => c.type === 'cgraph:add-nodes' || c.type === 'cgraph:node' || c.type === 'cgraph:replace-edges');
@@ -141,13 +232,13 @@ export const c_replaceAt = (path: NodeID[], top: CTop, old: NodeID, ...locs: Nod
     if (locs.length === 1 && old === locs[0]) return [];
     if (path.length === 0) {
         const root = top.graph.getEdge('root', 'root');
-        if (old !== root.end.id) {
-            throw new Error(`expected ${old} to be root of top, but found ${root.end.id}`);
-        }
+        // if (old !== root.end.id) {
+        //     throw new Error(`expected ${old} to be root of top, but found ${root.end.id}`);
+        // }
         if (locs.length !== 1) {
             throw new Error(`cant multi-replace at the toplevel ... not yet`);
         }
-        return [replaceEdges([root.edge.del(top.ts())], top.graph.rootEdge(top.ts(), locs[0]))];
+        return [replaceEdges([root.edge.del(top.ts()), ...(root.alts?.map((e) => e.del(top.ts())) ?? [])], rootEdge(top.ts(), locs[0]))];
     }
 
     // const ploc = path[path.length - 1];

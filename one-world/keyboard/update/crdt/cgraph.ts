@@ -34,6 +34,10 @@ export class Edge implements CRDT, SerDe<'edge'> {
         this.deleted = deleted;
     }
 
+    toString() {
+        return `Edge {${this.id}, ${this.source.id}:${this.source.attr} -> ${this.dest}${this.deleted ? ' DEL' : ''}}`;
+    }
+
     del(ts: string): Edge {
         return new Edge(this.id, this.source, this.dest, ts);
     }
@@ -75,7 +79,7 @@ export interface MNode<T> extends CRDT {
     construct(getEdge: GetEdge): T | null;
 }
 
-export type GetEdge = <T extends MNode<any>>(id: string, attr: string) => { edge: Edge; end: T; alts?: string[] };
+export type GetEdge = <T extends MNode<any>>(id: string, attr: string) => { edge: Edge; end: T; alts?: Edge[] };
 
 // MARK: Graph
 // type FancyGraph<T> = {
@@ -91,6 +95,10 @@ export type CGraphOp<T> =
     | { type: 'cgraph:node'; node: T };
 // NOTE: to set the initial root node, you do a replace-edges with empty replacement edges
 
+export function rootEdge(ts: string, nid: string) {
+    return new Edge(ts, { id: 'root', attr: 'root' }, nid);
+}
+
 @serde
 export class CGraph<T extends MNode<V> & CRDT & SerDe<any>, V> implements CRDT, SerDe<'cgraph'> {
     static kind = 'cgraph';
@@ -105,10 +113,6 @@ export class CGraph<T extends MNode<V> & CRDT & SerDe<any>, V> implements CRDT, 
         this.nodes = nodes;
         this.edgeFrom = {};
         Object.values(edges).forEach((edge) => this.cacheEdge(edge));
-    }
-
-    rootEdge(ts: string, nid: string) {
-        return new Edge(ts, { id: 'root', attr: 'root' }, nid);
     }
 
     private cacheEdge(edge: Edge) {
@@ -151,13 +155,13 @@ export class CGraph<T extends MNode<V> & CRDT & SerDe<any>, V> implements CRDT, 
         const edge = matching[0];
         const node = this.nodes[edge.dest];
         if (!node) throw new Error(`edge points to nonexistant node`);
-        return { edge, end: node as V1, alts: matching.length > 1 ? matching.slice(1).map((e) => e.id) : null };
+        return { edge, end: node as V1, alts: matching.length > 1 ? matching.slice(1) : null };
     };
 
     getEdge = this._getEdge as GetEdge;
 
     // validateeeee the ops pls
-    static valid_op(op: CGraphOp<MNode<any>>) {
+    valid_op(op: CGraphOp<MNode<any>>, nodes: typeof this.nodes) {
         switch (op.type) {
             case 'cgraph:node':
                 return true;
@@ -172,11 +176,16 @@ export class CGraph<T extends MNode<V> & CRDT & SerDe<any>, V> implements CRDT, 
                         throw new Error(`edge outside of nodes provided ${edge.source.id}`);
                         // return false;
                     }
+                    if (!nides.includes(edge.dest) && !nodes[edge.dest]) {
+                        console.log(op);
+                        throw new Error(`edge dest ${edge.dest} doesnt exist in nodes provided or nodes that already exist`);
+                    }
                 }
                 for (let node of op.nodes) {
                     for (let attr of node.outs) {
                         if (!sources[`${node.id} ${attr}`]) {
-                            // return false
+                            console.log(op.edges);
+                            console.log(op.nodes);
                             throw new Error(`no attr ${attr} given for node ${node.id}`);
                         }
                     }
@@ -204,7 +213,7 @@ export class CGraph<T extends MNode<V> & CRDT & SerDe<any>, V> implements CRDT, 
         const edges = { ...this.edges };
         const nodes = { ...this.nodes };
         ops.forEach((op) => {
-            if (!CGraph.valid_op(op)) {
+            if (!this.valid_op(op, nodes)) {
                 throw new Error(`invalid op!!`);
             }
             switch (op.type) {

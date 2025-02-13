@@ -151,10 +151,10 @@ export const selPathN = <T>(exp: RecNodeT<T>, needle: T) => {
     return found;
 };
 
-export const selPaths = (exp: RecNodeT<number | boolean>) => {
+export const selPaths = (exp: RecNodeT<number | boolean | null>): { main: number[]; paths: Record<number, number[]> } => {
     const paths: Record<number, number[]> = {};
     let main: number[] | null = null;
-    const visit = (node: RecNodeT<number | boolean>, path: number[]) => {
+    const visit = (node: RecNodeT<number | boolean | null>, path: number[]) => {
         if (node.loc === true || node.loc === 1) {
             if (main != null) throw new Error(`multiple nodes marked as selected`);
             main = path;

@@ -369,3 +369,38 @@ export const fromRec = <Loc>(
             return loc;
     }
 };
+
+export const mapLocs = <From, To>(node: RecNodeT<From>, get: (l: From, node: RecNodeT<From>, path: To[]) => To, path: To[] = []): RecNodeT<To> => {
+    const loc = get(node.loc, node, path);
+    const inner = path.concat([loc]);
+    switch (node.type) {
+        case 'id':
+            return { ...node, loc };
+        case 'text':
+            return {
+                ...node,
+                loc,
+                spans: node.spans.map((span) => (span.type === 'embed' ? { ...span, item: mapLocs(span.item, get, inner) } : span)),
+            };
+        case 'list':
+            return {
+                ...node,
+                loc,
+                kind:
+                    typeof node.kind !== 'string' && node.kind.type === 'tag'
+                        ? {
+                              ...node.kind,
+                              node: mapLocs(node.kind.node, get, inner),
+                              attributes: node.kind.attributes != null ? mapLocs(node.kind.attributes, get, inner) : undefined,
+                          }
+                        : node.kind,
+                children: node.children.map((id) => mapLocs(id, get, inner)),
+            };
+        case 'table':
+            return {
+                ...node,
+                loc,
+                rows: node.rows.map((row) => row.map((id) => mapLocs(id, get, inner))),
+            };
+    }
+};
