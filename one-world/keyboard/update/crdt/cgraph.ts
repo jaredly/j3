@@ -106,7 +106,7 @@ export class CGraph<T extends MNode<V> & CRDT & SerDe<any>, V> implements CRDT, 
 
     readonly edges: Record<string, Edge>;
     readonly nodes: Record<string, T>;
-    private edgeFrom: Record<string, string[]>;
+    edgeFrom: Record<string, string[]>;
 
     constructor(edges: typeof this.edges, nodes: typeof this.nodes) {
         this.edges = edges;
