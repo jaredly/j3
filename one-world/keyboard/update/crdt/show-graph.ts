@@ -35,7 +35,7 @@ export const showXMLs = (xmls: Record<string, XML>) => {
             (xml) =>
                 `${xml.id}. ${xml.json.kind} : ${JSON.stringify(xml.json.value)}` +
                 Object.entries(xml.edges)
-                    .map(([attr, edges]) => `\n  ${attr}: ${edges.map((e) => `${e.id}:${e.dest}` + (e.del ? '/D' : '')).join('; ')}`)
+                    .map(([attr, edges]) => `\n  ${attr}: ${edges.map((e) => `${e.dest}(${e.id})` + (e.del ? '/D' : '')).join('; ')}`)
                     .join(''),
         )
         .join('\n');

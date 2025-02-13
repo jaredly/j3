@@ -5,7 +5,8 @@ import { isTag } from './handleNav';
 import { CTop, CUpdate, justOps, justUps, keyActionToUpdate, replaceEdges } from './keyActionToCRDTUpdate';
 import { KeyAction } from './keyActionToUpdate';
 import { CGraph, rootEdge } from './update/crdt/cgraph';
-import { MOp, MId, MList } from './update/crdt/crdtnodes';
+import { MOp, MId, MList, MCons, MListKind, MListTag, isMain } from './update/crdt/crdtnodes';
+import { graphToXMLs, showXMLs } from './update/crdt/show-graph';
 import { Cursor, NodeSelection, Path, selStart, Top } from './utils';
 
 // NOTE: these ids better be different y'all
@@ -96,9 +97,24 @@ const asTop = (ctop: CTop) => {
     return top;
 };
 
-const touchedNodes = (ups: CUpdate[]): string[] => {
+const touchedNodes = (ups: CUpdate[], graph: CTState['ctop']['graph']): string[] => {
     const touched: string[] = [];
-    const add = (i: string) => (touched.includes(i) ? null : touched.push(i));
+    const add = (i: string, seen: string[] = []) => {
+        if (i === 'root') {
+            if (!touched.includes(i)) touched.push(i);
+            return;
+        }
+        if (seen.includes(i)) return;
+        const node = graph.nodes[i];
+        if (!isMain(node)) {
+            const cseen = seen.concat([i]);
+            graph.edgeTo[node.id]?.forEach((eid) => {
+                add(graph.edges[eid].source.id, cseen);
+            });
+            return;
+        }
+        if (!touched.includes(i)) touched.push(i);
+    };
     justOps(ups).forEach((up) => {
         switch (up.type) {
             case 'cgraph:add-nodes':
@@ -116,19 +132,23 @@ const touchedNodes = (ups: CUpdate[]): string[] => {
 };
 
 const updateTop = (state: CTState, ups: CUpdate[]) => {
-    touchedNodes(ups).forEach((id) => {
+    touchedNodes(ups, state.ctop.graph).forEach((id) => {
         if (id === 'root') {
             state.top.root = state.ctop.graph.getRoot().id;
             return;
         }
         state.top.nodes[id] = state.ctop.graph.getNode(id) as Node;
+        // console.log('up', id, state.top.nodes[id]);
     });
 };
 
-export const op = (state: CTState, updates: KeyAction[] | void) => {
+export const op = (state: CTState, updates: KeyAction[] | void, debug = false) => {
     if (!updates) return;
     const ups = updates.map((up) => keyActionToUpdate(state.ctop, up) ?? []).flat();
+    if (debug) console.log(ups.map((up) => up.type + ' : ' + JSON.stringify(up)).join('\n'));
+    if (debug) console.log(showXMLs(graphToXMLs(state.ctop.graph)));
     state.ctop.graph = state.ctop.graph.merge_ops(justOps(ups));
+    if (debug) console.log(showXMLs(graphToXMLs(state.ctop.graph)));
     justUps(ups).forEach((up) => {
         state.sel = applySelUp(state.sel, up);
     });

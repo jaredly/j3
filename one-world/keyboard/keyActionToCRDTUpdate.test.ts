@@ -1,7 +1,7 @@
 import { ccheck, ticker } from './crdt-check.test';
 import { full, initial, op, pathWith } from './ctdt-test-utils';
 import { c_handleInsertList, c_setIdText, CTop, insertRoot, justOps } from './keyActionToCRDTUpdate';
-import { id, idc, list, round } from './test-utils';
+import { id, idc, list, round, square } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 import { CGraph } from './update/crdt/cgraph';
 import { MId } from './update/crdt/crdtnodes';
@@ -60,4 +60,22 @@ test('a wrap', () => {
     const state = initial(id('', true), idc(0));
     op(state, keyUpdate(state, '(', {}));
     ccheck(state, round([id('', true)]), idc(0));
+});
+
+test('b wrap', () => {
+    const state = initial(square([id('', true)]), idc(0));
+    op(state, keyUpdate(state, '(', {}));
+    ccheck(state, square([round([id('', true)])]), idc(0));
+});
+
+test('trwrap', () => {
+    const state = initial(square([id('a'), id('', true)]), idc(0));
+    op(state, keyUpdate(state, '(', {}));
+    ccheck(state, square([id('a'), round([id('', true)])]), idc(0));
+});
+
+test('trwrap2', () => {
+    const state = initial(square([id('', true), id('a')]), idc(0));
+    op(state, keyUpdate(state, '(', {}));
+    ccheck(state, square([round([id('', true)]), id('a')]), idc(0));
 });

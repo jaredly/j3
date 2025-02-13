@@ -201,6 +201,10 @@ export class MCons<T> implements MNode<MNode<T>[]>, SerDe<'cons'> {
 interface MCNode<T extends Node> extends MNode<T> {}
 
 export type MNodes = MId | MList | MNil | MCons<Node> | MListKind | MListTag;
+
+export type MMain = MId | MList;
+export const isMain = (node: MNodes): node is MMain => node instanceof MId || node instanceof MList;
+
 export type MOp = CGraphOp<MNodes>;
 
 @serde
@@ -324,7 +328,27 @@ export class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
         }
     }
 
-    replaceChild(getEdge: GetEdge, ts: () => string, at: number, loc: NodeID) {}
+    replaceChild(getEdge: GetEdge, ts: () => string, at: number, loc: NodeID) {
+        type Child = MCons<Node> | MNode<Node>;
+
+        let edge: GotEdge<Child> | null = this.getChildEdge(getEdge);
+        if (!edge) return null;
+        for (let i = 0; i < at; i++) {
+            const node: Child = edge.end;
+            if (!(node instanceof MCons)) {
+                return null;
+            }
+            edge = node.getTailEdge(getEdge);
+        }
+        if (edge.end instanceof MCons) {
+            const hedge = edge.end.getHeadEdge(getEdge);
+            return [replaceEdges([hedge.edge.del(ts())], new Edge(ts(), hedge.edge.source, loc))];
+            // return [replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, edge.end.getTailEdge(getEdge).end.id))];
+        }
+        return [replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, loc))];
+        // const nts = ts();
+        // return [insertNodes([new MNil(nts)], []), replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, nts))];
+    }
 
     removeChild(getEdge: GetEdge, at: number, ts: () => string): null | CUpdate[] {
         type Child = MCons<Node> | MNode<Node>;

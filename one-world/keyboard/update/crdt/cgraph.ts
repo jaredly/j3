@@ -106,12 +106,14 @@ export class CGraph<T extends MNode<V> & CRDT & SerDe<any>, V> implements CRDT, 
 
     readonly edges: Record<string, Edge>;
     readonly nodes: Record<string, T>;
-    edgeFrom: Record<string, string[]>;
+    edgeFrom: Record<string, string[]>; // '{nodeid} {attr}': edgeid[] <- have that node as the source
+    edgeTo: Record<string, string[]>; // '{nodeid}': edgeid[] <- have that node as the dest
 
     constructor(edges: typeof this.edges, nodes: typeof this.nodes) {
         this.edges = edges;
         this.nodes = nodes;
         this.edgeFrom = {};
+        this.edgeTo = {};
         Object.values(edges).forEach((edge) => this.cacheEdge(edge));
     }
 
@@ -121,6 +123,11 @@ export class CGraph<T extends MNode<V> & CRDT & SerDe<any>, V> implements CRDT, 
             this.edgeFrom[k] = [edge.id];
         } else if (!this.edgeFrom[k].includes(edge.id)) {
             this.edgeFrom[k].push(edge.id);
+        }
+        if (!this.edgeTo[edge.dest]) {
+            this.edgeTo[edge.dest] = [edge.id];
+        } else if (!this.edgeTo[edge.dest].includes(edge.id)) {
+            this.edgeTo[edge.dest].push(edge.id);
         }
     }
 

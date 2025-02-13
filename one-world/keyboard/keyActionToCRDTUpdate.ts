@@ -302,11 +302,14 @@ export const c_replaceIn = (top: CTop, node: MNode<any>, old: NodeID, ...locs: N
             // children.splice(at, 1);
             // return { ...node, children };
         }
-        children[at] = locs[0];
-        for (let i = 1; i < locs.length; i++) {
-            children.splice(at + i, 0, locs[i]);
+        if (locs.length === 1) {
+            return node.replaceChild(top.graph.getEdge, top.ts, at, locs[0]) ?? [];
         }
-        return { ...node, children };
+        // children[at] = locs[0];
+        // for (let i = 1; i < locs.length; i++) {
+        //     children.splice(at + i, 0, locs[i]);
+        // }
+        // return { ...node, children };
     }
 
     // if (node.type === 'table') {
