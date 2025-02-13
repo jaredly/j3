@@ -226,7 +226,9 @@ export const c_handleInsertList = (top: CTop, path: Path, pos: 'before' | 'after
     return [];
 };
 
-export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after' | number, what: KeyWhat) => {};
+export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after' | number, what: KeyWhat) => {
+    throw new Error('not');
+};
 
 export const c_replaceAt = (path: NodeID[], top: CTop, old: NodeID, ...locs: NodeID[]): CUpdate[] => {
     if (locs.length === 1 && old === locs[0]) return [];

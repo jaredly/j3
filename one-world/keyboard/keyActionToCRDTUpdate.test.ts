@@ -1,7 +1,7 @@
 import { ccheck, ticker } from './crdt-check.test';
 import { full, initial, op, pathWith } from './ctdt-test-utils';
 import { c_handleInsertList, c_setIdText, CTop, insertRoot, justOps } from './keyActionToCRDTUpdate';
-import { id, idc, list, round, square } from './test-utils';
+import { id, idc, list, round, spaced, square } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 import { CGraph } from './update/crdt/cgraph';
 import { MId } from './update/crdt/crdtnodes';
@@ -78,4 +78,10 @@ test('trwrap2', () => {
     const state = initial(square([id('', true), id('a')]), idc(0));
     op(state, keyUpdate(state, '(', {}));
     ccheck(state, square([round([id('', true)]), id('a')]), idc(0));
+});
+
+test.only('gotta spance', () => {
+    const state = initial(id('hi', true), idc(2));
+    op(state, keyUpdate(state, ' ', {}));
+    ccheck(state, spaced([id('hi'), id('', true)]), idc(0));
 });

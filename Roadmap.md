@@ -19,6 +19,9 @@ sound good? yeah.
 
 Alright, we have very very bare bones.
 I guess I should check coverage
+nice ok that was useful.
+
+nowww to do the "list smooshing"?
 
 
 
