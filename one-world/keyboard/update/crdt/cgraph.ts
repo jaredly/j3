@@ -138,6 +138,7 @@ export class CGraph<T extends MNode<V> & CRDT & SerDe<any>, V> implements CRDT, 
 
     getNode<V1 extends V>(id: string): V1 | null {
         const node = this.nodes[id] as MNode<V1>;
+        if (!node) throw new Error(`no node ${id}`);
         return node.construct(this.getEdge);
     }
 

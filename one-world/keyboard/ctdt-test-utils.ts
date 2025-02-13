@@ -117,6 +117,10 @@ const touchedNodes = (ups: CUpdate[]): string[] => {
 
 const updateTop = (state: CTState, ups: CUpdate[]) => {
     touchedNodes(ups).forEach((id) => {
+        if (id === 'root') {
+            state.top.root = state.ctop.graph.getRoot().id;
+            return;
+        }
         state.top.nodes[id] = state.ctop.graph.getNode(id) as Node;
     });
 };

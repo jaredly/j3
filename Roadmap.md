@@ -15,6 +15,11 @@ second pass, we change our CNode representations to include indicators
 for conflicts.
 sound good? yeah.
 
+###
+
+Alright, we have very very bare bones.
+I guess I should check coverage
+
 
 
 # We find ourselves, once again, at the beginning of things

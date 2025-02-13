@@ -1,4 +1,3 @@
-import { shape } from '../shared/shape';
 import { ccheck, ticker } from './crdt-check.test';
 import { full, initial, op, pathWith } from './ctdt-test-utils';
 import { c_handleInsertList, c_setIdText, CTop, insertRoot, justOps } from './keyActionToCRDTUpdate';
@@ -39,20 +38,26 @@ test('doing some key actions now', () => {
     expect(full(state.ctop)).toEqual(id('hel', '000'));
 });
 
-test('what bout with like an initial thing', () => {
+test('one letter', () => {
     const state = initial(id('', true), idc(0));
     op(state, keyUpdate(state, 'n', {}));
     ccheck(state, id('n', true), idc(1));
 });
 
-test('what bout with like an initial thing', () => {
+test('two letters', () => {
     const state = initial(round([id('a', true)]), idc(0));
     op(state, keyUpdate(state, 'n', {}));
     ccheck(state, round([id('na', true)]), idc(1));
 });
 
-test('what bout with like an initial thing', () => {
+test('three letters', () => {
     const state = initial(round([id('ha'), id('ho', true)]), idc(2));
     op(state, keyUpdate(state, 'n', {}));
     ccheck(state, round([id('ha'), id('hon', true)]), idc(3));
+});
+
+test('a wrap', () => {
+    const state = initial(id('', true), idc(0));
+    op(state, keyUpdate(state, '(', {}));
+    ccheck(state, round([id('', true)]), idc(0));
 });

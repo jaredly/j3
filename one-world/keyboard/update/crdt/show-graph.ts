@@ -6,6 +6,15 @@ type XML = { id: string; json: { kind: string; value: any }; edges: Record<strin
 
 export const graphToXMLs = (graph: CGraph<MNode<any> & CRDT & SerDe<any>, any>) => {
     const xmls: Record<string, XML> = {};
+    xmls.root = {
+        id: '<root>',
+        json: { kind: '<root>', value: '' },
+        edges: {
+            root: graph.edgeFrom['root root']?.map((edge) => {
+                return { id: edge, dest: graph.edges[edge].dest, del: graph.edges[edge].deleted ? true : undefined };
+            }),
+        },
+    };
     Object.values(graph.nodes).forEach((node) => {
         const xml: XML = { id: node.id, json: node.toJSON(), edges: {} };
         node.outs.forEach((attr) => {
