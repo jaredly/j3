@@ -30,7 +30,7 @@ type CTNode = CTop['graph']['nodes'][''];
 
 export type CUpdate = CGraphOp<MNodes> | SelUpdate;
 
-export const keyActionToUpdate = (top: CTop, action: KeyAction): CUpdate[] | void => {
+export const keyActionToUpdate = (top: CTop, action: KeyAction): CUpdate[] | void | null => {
     switch (action.type) {
         // case 'join-table':
         //     return joinTable(top, action.path, top.nodes[action.child.loc], action.child.cursor, action.at);
@@ -228,11 +228,58 @@ export const c_handleInsertList = (top: CTop, path: Path, pos: 'before' | 'after
 
 type PartialSel = { children: string[]; cursor: Cursor };
 
+// The item at /at/ is going to be dropped
+export const splitList = (top: CTop, node: MList, at: string, left: string, right: string) => {
+    // it will be relevant to know whether the left or right was wrapped.
+    const kind = node.getKind(top.graph.getEdge);
+    const dissolvable = kind === 'smooshed' || kind === 'spaced';
+    const child = node.childAt(top.graph.getEdge, at);
+    if (!child || !kind) return null;
+    if (!dissolvable) {
+        const ops: MOp[] = [];
+        ops.push(replaceEdges([child.edge.edge.del(top.ts())], child.edge.edge.to(top.ts, left)));
+        const nid = top.ts();
+        if (child.edge.end instanceof MCons) {
+            const hedge = child.edge.end.getHeadEdge(top.graph.getEdge);
+            ops.push(replaceEdges([hedge.edge.del(top.ts())], hedge.edge.to(top.ts, right)), insertList(top, nid, kind, [child.edge.end.id]));
+        } else {
+            ops.push(insertList(top, nid, kind, [right]));
+        }
+        return { left: node.id, right: nid, ops };
+    }
+    throw new Error('ned to handle dissolving');
+    // child.first // whatt
+    // dissolvable // hrmms
+
+    // child?.edge
+    // child?.end
+};
+
+export const replaceInSmooshed = (top: CTop, path: Path, old: string, nodes: string[], sel?: PartialSel): CUpdate[] | null => {
+    const node = top.graph.nodes[lastChild(path)];
+    if (node instanceof MList) {
+        const lkind = node.getKind(top.graph.getEdge);
+        if (lkind === 'smooshed') {
+            const ops = node.replaceChild(top.graph.getEdge, top.ts, old, ...nodes);
+            return ops
+                ? [...ops, ...(sel ? [{ type: 'move' as const, to: { start: selStart(pathWithChildren(path, ...sel.children), sel.cursor) } }] : [])]
+                : null;
+        }
+    }
+    const nid = top.ts();
+    return [
+        insertList(top, nid, 'smooshed', nodes),
+        ...c_replaceAt(path.children, top, old, nid),
+        ...(sel ? [{ type: 'move' as const, to: { start: selStart(pathWithChildren(path, nid, ...sel.children), sel.cursor) } }] : []),
+    ];
+};
+
 export const splitIn = (
     top: CTop,
     path: Path,
     old: string,
-    nodes: string[],
+    left: string,
+    right: string,
     kind: 'smooshed' | 'spaced' | 'list' | 'row' | 'col',
     sel?: PartialSel,
 ): CUpdate[] | null => {
@@ -242,11 +289,21 @@ export const splitIn = (
         if (!lkind) return [];
         const matches = kind === 'smooshed' || kind === 'spaced' ? lkind === kind : lkind !== 'smooshed' && lkind !== 'spaced';
         if (matches) {
-            const ops = node.replaceChild(top.graph.getEdge, top.ts, old, ...nodes);
+            const ops = node.replaceChild(top.graph.getEdge, top.ts, old, left, right);
             return ops
                 ? [...ops, ...(sel ? [{ type: 'move' as const, to: { start: selStart(pathWithChildren(path, ...sel.children), sel.cursor) } }] : [])]
                 : null;
         }
+
+        if (kind === 'smooshed') {
+            return replaceInSmooshed(top, path, old, [left, right], sel);
+        }
+        if (kind === 'spaced' && lkind !== 'smooshed') {
+            throw new Error('wrap in spaced');
+        }
+
+        const edge = node.childAt(top.graph.getEdge, old);
+
         throw new Error('nop');
     } else {
         // TODO Table
@@ -254,27 +311,80 @@ export const splitIn = (
     }
 };
 
-export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after' | number, what: KeyWhat) => {
+export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after' | number, what: KeyWhat): CUpdate[] | null => {
     const parent = parentPath(path);
     const self = lastChild(path);
     const nid = top.ts();
+    const ops: MOp[] = [];
+    let current = top.graph.nodes[self];
+
+    let left: string;
+    let right: string;
+    let moveSel = false;
+    let rightText = what.type === 'text' ? { text: what.grem, ccls: what.ccls } : { text: '' };
+
+    if (typeof pos === 'number') {
+        if (current instanceof MId) {
+            const grems = splitGraphemes(current.plain.value.text);
+            if (grems.length <= pos) {
+                left = self;
+                right = nid;
+                moveSel = true;
+            } else if (pos === 0) {
+                left = nid;
+                right = self;
+            } else {
+                moveSel = true;
+                const pre = grems.slice(0, pos);
+                const post = grems.slice(pos).join('');
+                ops.push(updateNode(current.setText(pre.join(''), undefined, top.ts())));
+                if (what.type === 'text') {
+                    const postId = top.ts();
+                    ops.push(insertNodes([new MId(postId, { text: post, ccls: current.plain.value.ccls })], []));
+                    // OK this is the only case where we don't have EXACTLY 2 newids, and
+                    // it shouldn't be handled by splitin.
+                    // SO I'll do it speartely.
+                    const rep = replaceInSmooshed(top, parent, self, [self, nid, postId], { children: [nid], cursor: { type: 'id', end: 0 } });
+                    return rep ? [...ops, insertNodes([new MId(nid, rightText)], []), ...rep] : null;
+                } else {
+                    rightText = { text: post, ccls: current.plain.value.ccls };
+                    left = self;
+                    right = nid;
+                }
+            }
+        } else {
+            // we're doing "inside a list" anddddd idk
+            throw new Error('nop');
+        }
+    } else if (pos === 'before') {
+        left = nid;
+        right = self;
+    } else {
+        left = self;
+        right = nid;
+        moveSel = true;
+    }
+
+    if (what.type === 'text') {
+        const newThing = insertNodes([new MId(nid, { text: what.grem, ccls: what.ccls })], []);
+        const rep = replaceInSmooshed(top, parent, self, [left, right], { children: [nid], cursor: { type: 'id', end: 0 } });
+        return rep ? [...ops, newThing, ...rep] : null;
+    }
+
     const newThing =
-        what.type === 'string'
-            ? insertNodes([new MId(nid, { text: 'STRING', ccls: 0 })], [])
-            : insertNodes([new MId(nid, what.type === 'text' ? { text: what.grem, ccls: what.ccls } : { text: '' })], []);
-    // if (typeof pos === 'number') {
-    //     throw new Error('no' + pos);
-    // }
+        what.type === 'string' ? insertNodes([new MId(nid, { text: 'STRING', ccls: 0 })], []) : insertNodes([new MId(nid, rightText)], []);
+
     const splop = splitIn(
         top,
         parent,
         self,
-        pos === 'before' ? [nid, self] : [self, nid],
+        left,
+        right,
         what.type === 'sep' ? 'list' : what.type === 'space' ? 'spaced' : 'smooshed',
-        pos !== 'before' ? { children: [nid], cursor: { type: 'id', end: 0 } } : undefined,
+        moveSel ? { children: [nid], cursor: { type: 'id', end: 0 } } : undefined,
     );
-    if (!splop) return;
-    return [newThing, ...splop];
+    if (!splop) return null;
+    return [...ops, newThing, ...splop];
 };
 
 export const c_replaceAt = (path: NodeID[], top: CTop, old: NodeID, ...locs: NodeID[]): CUpdate[] => {
@@ -290,10 +400,7 @@ export const c_replaceAt = (path: NodeID[], top: CTop, old: NodeID, ...locs: Nod
         return [replaceEdges([root.edge.del(top.ts()), ...(root.alts?.map((e) => e.del(top.ts())) ?? [])], rootEdge(top.ts(), locs[0]))];
     }
 
-    // const ploc = path[path.length - 1];
-    // const pnode = top.nodes[ploc];
     return c_replaceIn(top, top.graph.nodes[path[path.length - 1]], old, ...locs);
-    // return [];
 };
 
 export const c_replaceIn = (top: CTop, node: MNode<any>, old: NodeID, ...locs: NodeID[]): CUpdate[] => {

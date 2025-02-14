@@ -33,22 +33,15 @@ const rebuild = bounce(10, () => {
         });
 });
 
-const ignore = [
-    '.git/',
-    'node_modules/',
-    '.ow-data/',
-    '.cli.sess',
-    'worker.js',
-    'run.js',
-];
+const ignore = ['.git/', 'node_modules/', '.ow-data/', '.cli.sess', 'worker.js', 'run.js'];
 
 watch('.', { recursive: true }, (event, filename) => {
-    if (ignore.some((n) => filename.startsWith(n))) {
+    if (ignore.some((n) => filename!.startsWith(n))) {
         // ignore
         return;
     }
-    if (filename.match(/\.tsx?$/)) {
-        edited.push(filename);
+    if (filename!.match(/\.tsx?$/)) {
+        edited.push(filename!);
         rebuild();
     } else {
         console.log('ignore', filename);

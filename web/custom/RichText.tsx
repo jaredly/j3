@@ -123,11 +123,7 @@ export const RichText = ({
             spellCheck={isFocused}
             onKeyDown={(evt: React.KeyboardEvent) => {
                 // console.log('key down', evt.key, editor.document);
-                if (
-                    evt.key === 'Backspace' &&
-                    editor.document.length === 1 &&
-                    (editor.document[0].content as any[]).length === 0
-                ) {
+                if (evt.key === 'Backspace' && editor.document.length === 1 && (editor.document[0].content as any[]).length === 0) {
                     store.dispatch({
                         type: 'key',
                         key: 'Backspace',
@@ -147,7 +143,7 @@ export const RichText = ({
                 }
                 // if (editor.document)
             }}
-            placeholder="..."
+            // placeholder="..."
             onFocus={() => {
                 // console.log('got focus yall');
                 // editor.getSelection()
@@ -159,8 +155,7 @@ export const RichText = ({
                                 {
                                     type: 'rich-text',
                                     idx,
-                                    sel: editor.getTextCursorPosition().block
-                                        .id,
+                                    sel: editor.getTextCursorPosition().block.id,
                                 },
                             ]),
                         },

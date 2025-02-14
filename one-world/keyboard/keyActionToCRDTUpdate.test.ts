@@ -1,7 +1,7 @@
 import { ccheck, ticker } from './crdt-check.test';
 import { full, initial, op, pathWith } from './ctdt-test-utils';
 import { c_handleInsertList, c_setIdText, CTop, insertRoot, justOps } from './keyActionToCRDTUpdate';
-import { id, idc, list, round, spaced, square } from './test-utils';
+import { id, idc, list, round, smoosh, spaced, square } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 import { CGraph } from './update/crdt/cgraph';
 import { MId } from './update/crdt/crdtnodes';
@@ -85,3 +85,51 @@ test('gotta spance', () => {
     op(state, keyUpdate(state, ',', {}));
     ccheck(state, round([id('hi'), id('', true)]), idc(0));
 });
+
+test('gotta starp', () => {
+    const state = initial(round([id('hi', true)]), idc(0));
+    op(state, keyUpdate(state, ',', {}));
+    ccheck(state, round([id(''), id('hi', true)]), idc(0));
+});
+
+test('gotta midp', () => {
+    const state = initial(round([id('hilo', true)]), idc(2));
+    op(state, keyUpdate(state, ',', {}));
+    ccheck(state, round([id('hi'), id('lo', true)]), idc(0));
+});
+
+test('gotta starp', () => {
+    const state = initial(round([id('hi', true)]), idc(0));
+    op(state, keyUpdate(state, ',', {}));
+    ccheck(state, round([id(''), id('hi', true)]), idc(0));
+});
+
+test('gotta smoop', () => {
+    const state = initial(smoosh([id('hi', true)]), idc(2));
+    op(state, keyUpdate(state, '.', {}));
+    ccheck(state, smoosh([id('hi'), id('.', true)]), idc(0));
+});
+
+test('gotta smoop mid', () => {
+    const state = initial(smoosh([id('hilo', true)]), idc(2));
+    op(state, keyUpdate(state, '.', {}));
+    ccheck(state, smoosh([id('hi'), id('.', true), id('lo')]), idc(0));
+});
+
+test('new smoop', () => {
+    const state = initial(id('hilo', true), idc(2));
+    op(state, keyUpdate(state, '.', {}));
+    ccheck(state, smoosh([id('hi'), id('.', true), id('lo')]), idc(0));
+});
+
+test.skip('splitIn two layer', () => {
+    const state = initial(round([spaced([id('hi', true), id('lo')])]), idc(2));
+    op(state, keyUpdate(state, ',', {}));
+    ccheck(state, round([id('hi'), id('lo', true)]), idc(0));
+});
+
+// test('after slist', () => {
+//     const state = initial(round([spaced([id('hi', true), id('lo')])]), idc(2));
+//     op(state, keyUpdate(state, ',', {}));
+//     ccheck(state, round([id('hi'), id('lo', true), ]), idc(0));
+// });
