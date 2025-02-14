@@ -1,7 +1,7 @@
 import { ccheck, ticker } from './crdt-check.test';
 import { full, initial, op, pathWith } from './ctdt-test-utils';
 import { c_handleInsertList, c_setIdText, CTop, insertRoot, justOps } from './keyActionToCRDTUpdate';
-import { id, idc, list, round, smoosh, spaced, square } from './test-utils';
+import { id, idc, list, listc, round, smoosh, spaced, square, text } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 import { CGraph } from './update/crdt/cgraph';
 import { MId } from './update/crdt/crdtnodes';
@@ -107,7 +107,7 @@ test('gotta starp', () => {
 test('gotta smoop', () => {
     const state = initial(smoosh([id('hi', true)]), idc(2));
     op(state, keyUpdate(state, '.', {}));
-    ccheck(state, smoosh([id('hi'), id('.', true)]), idc(0));
+    ccheck(state, smoosh([id('hi'), id('.', true)]), idc(1));
 });
 
 test('gotta smoop mid', () => {
@@ -122,14 +122,50 @@ test('new smoop', () => {
     ccheck(state, smoosh([id('hi'), id('.', true), id('lo')]), idc(0));
 });
 
-test.skip('splitIn two layer', () => {
-    const state = initial(round([spaced([id('hi', true), id('lo')])]), idc(2));
-    op(state, keyUpdate(state, ',', {}));
-    ccheck(state, round([id('hi'), id('lo', true)]), idc(0));
+test('smoos hto space', () => {
+    const state = initial(round([smoosh([id('+'), id('hilo', true), id('.')])]), idc(2));
+    op(state, keyUpdate(state, ' ', {}));
+    ccheck(state, round([spaced([smoosh([id('+'), id('hi')]), smoosh([id('lo', true), id('.')])])]), idc(0));
 });
 
-// test('after slist', () => {
-//     const state = initial(round([spaced([id('hi', true), id('lo')])]), idc(2));
-//     op(state, keyUpdate(state, ',', {}));
-//     ccheck(state, round([id('hi'), id('lo', true), ]), idc(0));
-// });
+test('splitIn two layer', () => {
+    const state = initial(round([spaced([id('hi', true), id('lo')])]), idc(2));
+    op(state, keyUpdate(state, ',', {}));
+    ccheck(state, round([id('hi'), spaced([id('', true), id('lo')])]), idc(0));
+});
+
+test('split single smoosh', () => {
+    const state = initial(round([smoosh([id('hi', true)])]), idc(2));
+    op(state, keyUpdate(state, ' ', {}));
+    ccheck(state, round([spaced([id('hi'), id('', true)])]), idc(0));
+});
+
+test('split single smoosh top', () => {
+    const state = initial(smoosh([id('hi', true)]), idc(2));
+    op(state, keyUpdate(state, ' ', {}));
+    ccheck(state, spaced([id('hi'), id('', true)]), idc(0));
+});
+
+test('a text', () => {
+    const state = initial(id('hi', true), idc(2));
+    op(state, keyUpdate(state, '"', {}));
+    ccheck(state, smoosh([id('hi'), text([], true)]), listc('inside'));
+});
+
+test('smoosh list', () => {
+    const state = initial(round([], true), listc('after'));
+    op(state, keyUpdate(state, '.', {}));
+    ccheck(state, smoosh([round([]), id('.', true)]), idc(1));
+});
+
+test('smoosh list beofre', () => {
+    const state = initial(round([], true), listc('before'));
+    op(state, keyUpdate(state, '.', {}));
+    ccheck(state, smoosh([id('.', true), round([])]), idc(1));
+});
+
+test.skip('list inside', () => {
+    const state = initial(round([], true), listc('inside'));
+    op(state, keyUpdate(state, '.', {}));
+    ccheck(state, round([id('.', true)]), idc(1));
+});

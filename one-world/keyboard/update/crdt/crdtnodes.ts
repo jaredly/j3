@@ -200,10 +200,10 @@ export class MCons<T extends MNode<any>> implements MNode<T[]>, SerDe<'cons'> {
 
 interface MCNode<T extends Node> extends MNode<T> {}
 
-export type MNodes = MId | MList | MNil | MCons<MNode<Node>> | MListKind | MListTag;
+export type MNodes = MId | MList | MNil | MCons<MNode<Node>> | MListKind | MListTag | MTextEmbed | MTextText | MText;
 
-export type MMain = MId | MList;
-export const isMain = (node: MNodes): node is MMain => node instanceof MId || node instanceof MList;
+export type MMain = MId | MList | MText;
+export const isMain = (node: MNodes): node is MMain => node instanceof MId || node instanceof MList || node instanceof MText;
 
 export type MOp = CGraphOp<MNodes>;
 
@@ -269,21 +269,49 @@ const insertKind = (ts: () => string, id: string, kind: ListKind<NodeID>): MOp =
 };
 
 @serde
-class MTTPlain implements CRDT, SerDe<'MTTPlain'> {
-    static kind = 'MTTPlain';
-    readonly kind = 'MTTPlain' as const;
-    text: LRW<string>;
+class TextMeta implements CRDT, SerDe<'TextMeta'> {
+    static kind = 'TextMeta';
+    readonly kind = 'TextMeta' as const;
     link: LRW<null | Link>;
     style: LRW<null | Style>;
 
-    constructor(text: LRW<string>, link: LRW<null | Link>, style: LRW<null | Style>) {
-        this.text = text;
+    constructor(link: LRW<null | Link>, style: LRW<null | Style>) {
         this.link = link;
         this.style = style;
     }
 
+    merge(other: TextMeta): TextMeta {
+        return new TextMeta(this.link.merge(other.link), this.style.merge(other.style));
+    }
+
+    toJSON() {
+        return { kind: this.kind, value: { link: this.link.toJSON(), style: this.style.toJSON() } };
+    }
+
+    static fromJSON(value: any, registry: Registry) {
+        if (!value || typeof value !== 'object') return null;
+        const { link, style } = value;
+        if (!canDeserialize(link) || !canDeserialize(style)) return null;
+        const lv = registry[link.kind].fromJSON(link.value, registry);
+        const sv = registry[style.kind].fromJSON(style.value, registry);
+        return new TextMeta(lv, sv);
+    }
+}
+
+@serde
+class MTTPlain implements CRDT, SerDe<'MTTPlain'> {
+    static kind = 'MTTPlain';
+    readonly kind = 'MTTPlain' as const;
+    text: LRW<string>;
+    meta: TextMeta;
+
+    constructor(text: LRW<string>, meta: TextMeta) {
+        this.text = text;
+        this.meta = meta;
+    }
+
     merge(other: MTTPlain): MTTPlain {
-        return new MTTPlain(this.text.merge(other.text), this.link.merge(other.link), this.style.merge(other.style));
+        return new MTTPlain(this.text.merge(other.text), this.meta.merge(other.meta));
     }
 
     toJSON() {
@@ -291,45 +319,51 @@ class MTTPlain implements CRDT, SerDe<'MTTPlain'> {
             kind: this.kind,
             value: {
                 text: this.text.toJSON(),
-                link: this.link.toJSON(),
-                style: this.style.toJSON(),
+                meta: this.meta.toJSON(),
             },
         };
     }
 
     static fromJSON(value: any, registry: Registry) {
         if (!value || typeof value !== 'object') return null;
-        const { text, link, style } = value;
-        if (!canDeserialize(text) || !canDeserialize(link) || !canDeserialize(style)) return null;
+        const { text, meta } = value;
+        if (!canDeserialize(text) || !canDeserialize(meta)) return null;
         const tv = registry[text.kind].fromJSON(text.value, registry);
-        const lv = registry[link.kind].fromJSON(link.value, registry);
-        const sv = registry[style.kind].fromJSON(style.value, registry);
-        return new MTTPlain(tv, lv, sv);
+        const lv = registry[meta.kind].fromJSON(meta.value, registry);
+        return new MTTPlain(tv, lv);
     }
 }
 
 @serde
-export class MTextText implements MNode<Extract<TextSpan<NodeID>, { type: 'text' }>>, SerDe<'text:text'> {
+export class MTextEmbed implements MNode<Extract<TextSpan<NodeID>, { type: 'embed' }>>, SerDe<'text:embed'> {
     id: string;
-    static kind = 'text:text';
-    kind = 'text:text' as const;
+    static kind = 'text:embed';
+    kind = 'text:embed' as const;
     outs = [];
-    plain: MTTPlain;
+    plain: TextMeta;
 
-    constructor(id: string, text: LRW<string>, link: LRW<null | Link>, style: LRW<null | Style>) {
+    constructor(id: string, meta: TextMeta) {
         this.id = id;
-        this.plain = new MTTPlain(text, link, style);
+        this.plain = meta;
     }
 
-    merge(other: MTextText): MTextText {
+    merge(other: MTextEmbed): MTextEmbed {
         if (other.id !== this.id) throw new Error(`not the same id text`);
         const t = this.plain.merge(other.plain);
-        return new MTextText(this.id, t.text, t.link, t.style);
+        return new MTextEmbed(this.id, t);
     }
 
-    construct(getEdge: GetEdge): Extract<TextSpan<NodeID>, { type: 'text' }> | null {
-        const { text, link, style } = this.plain;
-        return { type: 'text', text: text.value, link: link.value ?? undefined, style: style.value ?? undefined };
+    construct(getEdge: GetEdge): Extract<TextSpan<NodeID>, { type: 'embed' }> | null {
+        const edge = this.getItemEdge(getEdge);
+        return { type: 'embed', item: edge.end.id, link: this.plain.link.value ?? undefined, style: this.plain.style.value ?? undefined };
+    }
+
+    static newItemEdge(id: string, dest: string, ts: string) {
+        return new Edge(ts, { id, attr: 'item' }, dest);
+    }
+
+    getItemEdge(getEdge: GetEdge) {
+        return getEdge<MNodes>(this.id, 'item');
     }
 
     toJSON() {
@@ -342,14 +376,74 @@ export class MTextText implements MNode<Extract<TextSpan<NodeID>, { type: 'text'
         if (!canDeserialize(praw)) return null;
         const plain: MTTPlain | null = registry[praw.kind].fromJSON(praw.value, registry);
         if (plain == null) return null;
-        return new MTextText(data.id, plain.text, plain.link, plain.style);
+        return new MTextEmbed(data.id, plain.meta);
+    }
+}
+
+@serde
+export class MTextText implements MNode<Extract<TextSpan<NodeID>, { type: 'text' }>>, SerDe<'text:text'> {
+    id: string;
+    static kind = 'text:text';
+    kind = 'text:text' as const;
+    outs = [];
+    plain: MTTPlain;
+
+    constructor(id: string, text: LRW<string>, meta: TextMeta) {
+        this.id = id;
+        this.plain = new MTTPlain(text, meta);
+    }
+
+    merge(other: MTextText): MTextText {
+        if (other.id !== this.id) throw new Error(`not the same id text`);
+        const t = this.plain.merge(other.plain);
+        return new MTextText(this.id, t.text, t.meta);
+    }
+
+    construct(getEdge: GetEdge): Extract<TextSpan<NodeID>, { type: 'text' }> | null {
+        const { text, meta } = this.plain;
+        return { type: 'text', text: text.value, link: meta.link.value ?? undefined, style: meta.style.value ?? undefined };
+    }
+
+    toJSON() {
+        return { kind: this.kind, value: { id: this.id, plain: this.plain.toJSON() } };
+    }
+
+    static fromJSON(data: any, registry: Registry) {
+        if (typeof data.id !== 'string') return null;
+        const praw = data.plain;
+        if (!canDeserialize(praw)) return null;
+        const plain: MTTPlain | null = registry[praw.kind].fromJSON(praw.value, registry);
+        if (plain == null) return null;
+        return new MTextText(data.id, plain.text, plain.meta);
     }
 }
 
 type MTextSpan = MTextText; // | others
 
-export const insertText = (top: CTop, id: string, spans: TextSpan<NodeID>[]) => {
-    throw new Error('no');
+export const insertTextSpan = (top: CTop, id: string, span: TextSpan<NodeID>): MOp => {
+    if (span.type === 'embed') {
+        return insertNodes(
+            [new MTextEmbed(id, new TextMeta(new LRW(span.link ?? null, id), new LRW(span.style ?? null, id)))],
+            [MTextEmbed.newItemEdge(id, span.item, top.ts())],
+        );
+    }
+    if (span.type === 'text') {
+        return insertNodes([new MTextText(id, new LRW(span.text, id), new TextMeta(new LRW(null, id), new LRW(null, id)))], []);
+    }
+    throw new Error(`text span type not supported ${span.type}`);
+};
+
+export const insertText = (top: CTop, id: string, spans: TextSpan<NodeID>[]): MOp[] => {
+    const ops: MOp[] = [];
+    const ids = spans.map((span) => {
+        const id = top.ts();
+        ops.push(insertTextSpan(top, id, span));
+        return id;
+    });
+    const mspans = insertArrayOp(top.ts, ids);
+    ops.push(mspans.op);
+    ops.push(insertNodes([new MText(id)], [MText.newSpansEdge(id, mspans.head, top.ts())]));
+    return ops;
 };
 
 @serde
@@ -373,12 +467,18 @@ export class MText implements MCNode<Text<NodeID>>, SerDe<'text'> {
         return getEdge<MTextSpan | MCons<MTextSpan>>(this.id, 'spans');
     }
 
+    static newSpansEdge(id: string, dest: string, ts: string) {
+        return new Edge(ts, { id, attr: 'spans' }, dest);
+    }
+
     getSpans(getEdge: GetEdge): MTextSpan[] | null {
         const child = this.getSpansEdge(getEdge);
         if (child.end instanceof MCons) {
             const res = child.end.construct(getEdge);
             if (res == null) return null;
             return res;
+        } else if (child.end instanceof MNil) {
+            return [];
         } else {
             return [child.end];
         }
@@ -456,6 +556,8 @@ export class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
             const res = child.end.construct(getEdge);
             if (res == null) return null;
             return res.map((n) => n.id);
+        } else if (child.end instanceof MNil) {
+            return [];
         } else {
             return [child.end.id];
         }
