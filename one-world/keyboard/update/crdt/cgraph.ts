@@ -78,7 +78,7 @@ export class Edge implements CRDT, SerDe<'edge'> {
 export interface MNode<T> extends CRDT {
     id: string;
     kind: string;
-    plain?: LRW<any>;
+    plain?: CRDT;
     outs: string[];
     construct(getEdge: GetEdge): T | null;
 }

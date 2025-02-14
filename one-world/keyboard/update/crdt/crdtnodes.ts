@@ -1,9 +1,9 @@
 // interface CanDoThings { }
 
-import { Id, List, ListKind, Node, NodeID } from '../../../shared/cnodes';
-import { CUpdate, insertArrayOp, insertNodes, replaceEdges } from '../../keyActionToCRDTUpdate';
+import { Id, Link, List, ListKind, Node, NodeID, Style, Text, TextSpan } from '../../../shared/cnodes';
+import { CTop, CUpdate, insertArrayOp, insertNodes, replaceEdges } from '../../keyActionToCRDTUpdate';
 import { MNode, GetEdge, Edge, CGraphOp } from './cgraph';
-import { LRW } from './crdt';
+import { CRDT, GMap, LRW } from './crdt';
 import { canDeserialize, Registry, serde, SerDe } from './serde';
 
 // MARK: Node Auxiliaries
@@ -149,7 +149,7 @@ export class MNil implements MNode<{ type: 'nil' }>, SerDe<'nil'> {
 }
 
 @serde
-export class MCons<T> implements MNode<MNode<T>[]>, SerDe<'cons'> {
+export class MCons<T extends MNode<any>> implements MNode<T[]>, SerDe<'cons'> {
     id: string;
     static kind = 'cons';
     kind = 'cons' as const;
@@ -166,21 +166,21 @@ export class MCons<T> implements MNode<MNode<T>[]>, SerDe<'cons'> {
         return other;
     }
 
-    getHeadEdge(getEdge: GetEdge): GotEdge<MNode<T>> {
-        return getEdge<MNode<T>>(this.id, 'head');
+    getHeadEdge(getEdge: GetEdge): GotEdge<T> {
+        return getEdge<T>(this.id, 'head');
     }
 
-    getTailEdge(getEdge: GetEdge): GotEdge<MCons<T> | MNode<T>> {
-        return getEdge<MCons<T> | MNode<T>>(this.id, 'tail');
+    getTailEdge(getEdge: GetEdge): GotEdge<MCons<T> | T> {
+        return getEdge<MCons<T> | T>(this.id, 'tail');
     }
 
-    construct(getEdge: GetEdge): MNode<T>[] | null {
+    construct(getEdge: GetEdge): T[] | null {
         const head = this.getHeadEdge(getEdge);
         const tail = this.getTailEdge(getEdge);
         if (!head || !tail) return null;
 
         if (!(tail.end instanceof MCons)) {
-            return [head.end, tail.end as MNode<T>];
+            return [head.end, tail.end as T];
         }
         const tval = tail.end.construct(getEdge);
         if (tval == null) return null;
@@ -200,7 +200,7 @@ export class MCons<T> implements MNode<MNode<T>[]>, SerDe<'cons'> {
 
 interface MCNode<T extends Node> extends MNode<T> {}
 
-export type MNodes = MId | MList | MNil | MCons<Node> | MListKind | MListTag;
+export type MNodes = MId | MList | MNil | MCons<MNode<Node>> | MListKind | MListTag;
 
 export type MMain = MId | MList;
 export const isMain = (node: MNodes): node is MMain => node instanceof MId || node instanceof MList;
@@ -269,6 +269,139 @@ const insertKind = (ts: () => string, id: string, kind: ListKind<NodeID>): MOp =
 };
 
 @serde
+class MTTPlain implements CRDT, SerDe<'MTTPlain'> {
+    static kind = 'MTTPlain';
+    readonly kind = 'MTTPlain' as const;
+    text: LRW<string>;
+    link: LRW<null | Link>;
+    style: LRW<null | Style>;
+
+    constructor(text: LRW<string>, link: LRW<null | Link>, style: LRW<null | Style>) {
+        this.text = text;
+        this.link = link;
+        this.style = style;
+    }
+
+    merge(other: MTTPlain): MTTPlain {
+        return new MTTPlain(this.text.merge(other.text), this.link.merge(other.link), this.style.merge(other.style));
+    }
+
+    toJSON() {
+        return {
+            kind: this.kind,
+            value: {
+                text: this.text.toJSON(),
+                link: this.link.toJSON(),
+                style: this.style.toJSON(),
+            },
+        };
+    }
+
+    static fromJSON(value: any, registry: Registry) {
+        if (!value || typeof value !== 'object') return null;
+        const { text, link, style } = value;
+        if (!canDeserialize(text) || !canDeserialize(link) || !canDeserialize(style)) return null;
+        const tv = registry[text.kind].fromJSON(text.value, registry);
+        const lv = registry[link.kind].fromJSON(link.value, registry);
+        const sv = registry[style.kind].fromJSON(style.value, registry);
+        return new MTTPlain(tv, lv, sv);
+    }
+}
+
+@serde
+export class MTextText implements MNode<Extract<TextSpan<NodeID>, { type: 'text' }>>, SerDe<'text:text'> {
+    id: string;
+    static kind = 'text:text';
+    kind = 'text:text' as const;
+    outs = [];
+    plain: MTTPlain;
+
+    constructor(id: string, text: LRW<string>, link: LRW<null | Link>, style: LRW<null | Style>) {
+        this.id = id;
+        this.plain = new MTTPlain(text, link, style);
+    }
+
+    merge(other: MTextText): MTextText {
+        if (other.id !== this.id) throw new Error(`not the same id text`);
+        const t = this.plain.merge(other.plain);
+        return new MTextText(this.id, t.text, t.link, t.style);
+    }
+
+    construct(getEdge: GetEdge): Extract<TextSpan<NodeID>, { type: 'text' }> | null {
+        const { text, link, style } = this.plain;
+        return { type: 'text', text: text.value, link: link.value ?? undefined, style: style.value ?? undefined };
+    }
+
+    toJSON() {
+        return { kind: this.kind, value: { id: this.id, plain: this.plain.toJSON() } };
+    }
+
+    static fromJSON(data: any, registry: Registry) {
+        if (typeof data.id !== 'string') return null;
+        const praw = data.plain;
+        if (!canDeserialize(praw)) return null;
+        const plain: MTTPlain | null = registry[praw.kind].fromJSON(praw.value, registry);
+        if (plain == null) return null;
+        return new MTextText(data.id, plain.text, plain.link, plain.style);
+    }
+}
+
+type MTextSpan = MTextText; // | others
+
+export const insertText = (top: CTop, id: string, spans: TextSpan<NodeID>[]) => {
+    throw new Error('no');
+};
+
+@serde
+export class MText implements MCNode<Text<NodeID>>, SerDe<'text'> {
+    id: string;
+    static kind = 'text';
+    kind = 'text' as const;
+    outs = ['spans'];
+    plain = undefined;
+
+    constructor(id: string) {
+        this.id = id;
+    }
+
+    merge(other: MList): MText {
+        if (other.id !== this.id) throw new Error(`not the same id text`);
+        return new MText(this.id);
+    }
+
+    getSpansEdge(getEdge: GetEdge): GotEdge<MTextSpan | MCons<MTextSpan>> {
+        return getEdge<MTextSpan | MCons<MTextSpan>>(this.id, 'spans');
+    }
+
+    getSpans(getEdge: GetEdge): MTextSpan[] | null {
+        const child = this.getSpansEdge(getEdge);
+        if (child.end instanceof MCons) {
+            const res = child.end.construct(getEdge);
+            if (res == null) return null;
+            return res;
+        } else {
+            return [child.end];
+        }
+    }
+
+    construct(getEdge: GetEdge): Text<NodeID> | null {
+        const spans = this.getSpans(getEdge)?.map((span) => span.construct(getEdge));
+        if (!spans || spans.some((s) => !s)) return null;
+
+        return { type: 'text', spans: spans as TextSpan<NodeID>[], loc: this.id };
+    }
+
+    toJSON() {
+        return { kind: this.kind, value: this.id };
+    }
+
+    static fromJSON(data: any, registry: Registry) {
+        if (typeof data !== 'string') return null;
+        return new MText(data);
+    }
+}
+
+@serde
 export class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
     id: string;
     static kind = 'list';
@@ -329,7 +462,7 @@ export class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
     }
 
     childAt(getEdge: GetEdge, at: number | string) {
-        type Child = MCons<Node> | MNode<Node>;
+        type Child = MCons<MNode<Node>> | MNode<Node>;
 
         let edge: GotEdge<Child> | null = this.getChildEdge(getEdge);
         const first = edge;
@@ -360,29 +493,6 @@ export class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
         return { edge, first: edge === first };
     }
 
-    // splitChildren(getEdge: GetEdge, ts: () => string, at: number | string) {
-    //     const edge = this.childAt(getEdge, at);
-    //     if (!edge) return null;
-    //     if (edge.end instanceof MCons) {
-    //         const hedge = edge.end.getHeadEdge(getEdge);
-    //         const tedge = edge.end.getTailEdge(getEdge);
-    //         const rops = locs.length > 1 ? insertArrayOp(ts, locs.slice(1).concat(edge.end.getTailEdge(getEdge).end.id)) : null;
-    //         return [
-    //             ...(rops ? [rops.op] : []),
-    //             replaceEdges([hedge.edge.del(ts())], hedge.edge.to(ts, locs[0])),
-    //             ...(rops ? [replaceEdges([tedge.edge.del(ts())], tedge.edge.to(ts, rops.head))] : []),
-    //         ];
-    //         // return [replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, edge.end.getTailEdge(getEdge).end.id))];
-    //     }
-    //     const rops = locs.length > 1 ? insertArrayOp(ts, locs) : null;
-    //     // if (locs.length === 1) {
-    //     //     return [replaceEdges([edge.edge.del(ts())], edge.edge.to(ts, locs[0]))];
-    //     // }
-    //     return [...(rops ? [rops.op] : []), replaceEdges([edge.edge.del(ts())], edge.edge.to(ts, rops ? rops.head : locs[0]))];
-    //     // const nts = ts();
-    //     // return [insertNodes([new MNil(nts)], []), replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, nts))];
-    // }
-
     replaceChild(getEdge: GetEdge, ts: () => string, at: number | string, ...locs: NodeID[]) {
         if (locs.length === 0) throw new Error(`need at list one child to replace`);
         const child = this.childAt(getEdge, at);
@@ -410,7 +520,7 @@ export class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
     }
 
     removeChild(getEdge: GetEdge, at: number, ts: () => string): null | CUpdate[] {
-        type Child = MCons<Node> | MNode<Node>;
+        type Child = MCons<MNode<Node>> | MNode<Node>;
 
         let edge: GotEdge<Child> | null = this.getChildEdge(getEdge);
         if (!edge) return null;
@@ -432,8 +542,8 @@ export class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
         return getEdge<MNode<ListKind<NodeID>>>(this.id, 'kind');
     }
 
-    getChildEdge(getEdge: GetEdge): GotEdge<MNode<Node> | MCons<Node>> | null {
-        return getEdge<MNode<Node> | MCons<Node>>(this.id, 'children');
+    getChildEdge(getEdge: GetEdge): GotEdge<MNode<Node> | MCons<MNode<Node>>> | null {
+        return getEdge<MNode<Node> | MCons<MNode<Node>>>(this.id, 'children');
     }
 
     merge(other: MList): MList {

@@ -14,10 +14,10 @@ import { ListKind, Node, NodeID, RecNodeT } from '../shared/cnodes';
 import { isTag } from './handleNav';
 import { KeyAction, KeyWhat } from './keyActionToUpdate';
 import { CGraph, CGraphOp, Edge, MNode, rootEdge } from './update/crdt/cgraph';
-import { MCons, MId, MList, MListKind, MListTag, MNil, MOp } from './update/crdt/crdtnodes';
+import { insertText, MCons, MId, MList, MListKind, MListTag, MNil, MOp } from './update/crdt/crdtnodes';
 import { Cursor, lastChild, move, parentLoc, parentPath, Path, pathWithChildren, selStart, SelUpdate, Top } from './utils';
 
-export type MNodes = MId | MList | MNil | MCons<Node> | MListKind | MListTag;
+export type MNodes = MId | MList | MNil | MCons<MNode<Node>> | MListKind | MListTag;
 
 // type CRDTUpdate = {
 // }
@@ -157,7 +157,7 @@ export const insertArray = (ts: () => string, nodes: CTNode[], edges: Edge[], ch
     let head = children[children.length - 1];
     for (let i = children.length - 2; i >= 0; i--) {
         const id = ts();
-        nodes.push(new MCons<Node>(id));
+        nodes.push(new MCons<MNode<Node>>(id));
         edges.push(new Edge(ts(), { id, attr: 'tail' }, head));
         edges.push(new Edge(ts(), { id, attr: 'head' }, children[i]));
         head = id;
@@ -365,14 +365,13 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
         moveSel = true;
     }
 
-    if (what.type === 'text') {
-        const newThing = insertNodes([new MId(nid, { text: what.grem, ccls: what.ccls })], []);
+    if (what.type === 'text' || what.type === 'string') {
+        const newThing = what.type === 'text' ? insertNodes([new MId(nid, { text: what.grem, ccls: what.ccls })], []) : insertText(top, nid, []);
         const rep = replaceInSmooshed(top, parent, self, [left, right], { children: [nid], cursor: { type: 'id', end: 0 } });
         return rep ? [...ops, newThing, ...rep] : null;
     }
 
-    const newThing =
-        what.type === 'string' ? insertNodes([new MId(nid, { text: 'STRING', ccls: 0 })], []) : insertNodes([new MId(nid, rightText)], []);
+    const newThing = insertNodes([new MId(nid, rightText)], []);
 
     const splop = splitIn(
         top,
