@@ -10,7 +10,7 @@ id-wrap
 */
 
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { ListKind, Node, NodeID, RecNodeT, TextSpan } from '../shared/cnodes';
+import { fromRec, ListKind, Node, NodeID, Nodes, RecNodeT, TextSpan } from '../shared/cnodes';
 import { isTag } from './handleNav';
 import { KeyAction, KeyWhat } from './keyActionToUpdate';
 import { CGraph, CGraphOp, Edge, MNode, rootEdge } from './update/crdt/cgraph';
@@ -97,12 +97,66 @@ export const keyActionToUpdate = (top: CTop, action: KeyAction): CUpdate[] | voi
         //     }
         // case 'control-toggle':
         //     return c_controlToggle(top, action.path, action.index);
-        // case 'add-inside':
-        //     return c_addInside(top, action.path, action.children, action.cursor);
+        case 'add-inside':
+            return c_addInside(top, action.path, action.children, action.cursor);
         // case 'paste':
         //     return c_pasteUpdate(top, action.path, action.cursor, action.values);
     }
     throw new Error(`no action ${action.type}`);
+};
+
+export const insertRecNodes = (top: CTop, items: RecNodeT<boolean>[]) => {
+    let selPath: NodeID[] = [];
+    const nodes: Nodes = {};
+    const roots = items.map((child) =>
+        fromRec(child, nodes, (loc, __, path) => {
+            const nl = top.ts();
+            if (loc === true) {
+                selPath = path.concat([nl]);
+            }
+            return nl;
+        }),
+    );
+
+    if (selPath.length === 0) throw new Error(`nothing selected in node to add`);
+
+    const ops = Object.values(nodes).flatMap((node) => {
+        switch (node.type) {
+            case 'id':
+                return [insertNodes([new MId(node.loc, { text: node.text, ccls: node.ccls })], [])];
+            case 'list':
+                return insertList(top, node.loc, node.kind, node.children);
+            case 'text':
+                return insertText(top, node.loc, node.spans);
+            case 'table':
+                throw new Error('not yet');
+        }
+    });
+
+    return { roots, ops, selPath };
+};
+
+export const c_addInside = (top: CTop, path: Path, children: RecNodeT<boolean>[], cursor: Cursor): void | CUpdate[] => {
+    const node = top.graph.nodes[lastChild(path)];
+    if (!(node instanceof MList)) return; // and table
+
+    const { roots, selPath, ops } = insertRecNodes(top, children);
+
+    const rootList = insertArrayOp(top.ts, roots);
+
+    const child = node.getChildEdge(top.graph.getEdge);
+    if (!child) return;
+    ops.push(rootList.op, replaceEdges([child.edge.del(top.ts())], child.edge.to(top.ts, rootList.head)));
+
+    // nodes[node.loc] = node.type === 'table' ? { ...node, rows: [roots] } : { ...node, children: roots };
+
+    return [...ops, { type: 'move', to: { start: selStart(pathWithChildren(path, ...selPath), cursor) } }];
+
+    // return {
+    //     nodes,
+    //     nextLoc,
+    //     selection: { start: selStart(pathWithChildren(path, ...selPath), cursor) },
+    // };
 };
 
 export function insertRoot(nodes: MNodes[], edges: Edge[], ts: string): CGraphOp<MNodes>[] {

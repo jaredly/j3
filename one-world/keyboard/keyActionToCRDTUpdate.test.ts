@@ -164,8 +164,14 @@ test('smoosh list beofre', () => {
     ccheck(state, smoosh([id('.', true), round([])]), idc(1));
 });
 
-test.skip('list inside', () => {
+test('list inside', () => {
     const state = initial(round([], true), listc('inside'));
     op(state, keyUpdate(state, '.', {}));
     ccheck(state, round([id('.', true)]), idc(1));
+});
+
+test('list inside two', () => {
+    const state = initial(round([], true), listc('inside'));
+    op(state, keyUpdate(state, ',', {}));
+    ccheck(state, round([id(''), id('', true)]), idc(0));
 });

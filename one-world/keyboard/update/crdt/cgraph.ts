@@ -158,7 +158,7 @@ export class CGraph<T extends MNode<V> & CRDT & SerDe<any>, V> implements CRDT, 
         return edge.end;
     }
 
-    _getEdge = <V1 extends T>(id: string, attr: string) => {
+    private _getEdge = <V1 extends T>(id: string, attr: string) => {
         // TODO(perf): keep a cache of 'source:edgeid[]' to make this so much faster
         const ids = this.edgeFrom[`${id} ${attr}`] ?? [];
         const matching = ids.map((id) => this.edges[id]).filter((e) => !e.deleted);
