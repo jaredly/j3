@@ -1,7 +1,7 @@
 import { ccheck, ticker } from './crdt-check.test';
 import { full, initial, op, pathWith } from './ctdt-test-utils';
 import { c_handleInsertList, c_setIdText, CTop, insertRoot, justOps } from './keyActionToCRDTUpdate';
-import { id, idc, list, listc, round, smoosh, spaced, square, text } from './test-utils';
+import { id, idc, list, listc, round, smoosh, spaced, square, text, textc, tspan } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 import { CGraph } from './update/crdt/cgraph';
 import { MId } from './update/crdt/crdtnodes';
@@ -175,3 +175,9 @@ test('list inside two', () => {
     op(state, keyUpdate(state, ',', {}));
     ccheck(state, round([id(''), id('', true)]), idc(0));
 });
+
+// test('in text', () => {
+//     const state = initial(text([tspan('hi')], true), textc(0, 2));
+//     op(state, keyUpdate(state, ',', {}));
+//     ccheck(state, text([tspan('hi,')], true), textc(0, 3));
+// });

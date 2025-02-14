@@ -14,7 +14,7 @@ import { fromRec, ListKind, Node, NodeID, Nodes, RecNodeT, TextSpan } from '../s
 import { isTag } from './handleNav';
 import { KeyAction, KeyWhat } from './keyActionToUpdate';
 import { CGraph, CGraphOp, Edge, MNode, rootEdge } from './update/crdt/cgraph';
-import { insertText, MCons, MId, MList, MListKind, MListTag, MNil, MNodes, MOp } from './update/crdt/crdtnodes';
+import { insertText, MCons, MId, MList, MListKind, MListTag, MNil, MNodes, MOp, MText } from './update/crdt/crdtnodes';
 import { Cursor, lastChild, move, parentLoc, parentPath, Path, pathWithChildren, selStart, SelUpdate, Top } from './utils';
 
 // type CRDTUpdate = {
@@ -99,11 +99,33 @@ export const keyActionToUpdate = (top: CTop, action: KeyAction): CUpdate[] | voi
         //     return c_controlToggle(top, action.path, action.index);
         case 'add-inside':
             return c_addInside(top, action.path, action.children, action.cursor);
+        // case 'set-text-text':
+        //     return c_setTextText(top, action.path, action.text, action.index, action.end);
         // case 'paste':
         //     return c_pasteUpdate(top, action.path, action.cursor, action.values);
     }
     throw new Error(`no action ${action.type}`);
 };
+
+// export const c_setTextText = (top: CTop, path: Path, text: string, index: number, end: number) => {
+//     const node = top.graph.nodes[lastChild(path)];
+//     if (!(node instanceof MText)) return;
+//     // const spans = node.spans.slice();
+//     // const span = spans[index];
+//     // if (span.type !== 'text') return;
+
+//     spans[index] = { ...span, text };
+//     // this is 'set text text'
+//     return {
+//         nodes: { [node.loc]: { ...node, spans } },
+//         selection: {
+//             start: selStart(path, { type: 'text', end: { index, cursor: end } }),
+//         },
+//         // tmpText: { [`${current.node.loc}:${left.index}`]: grems },
+//     };
+// };
+
+export const withIds = (nodes: RecNodeT<boolean>[]) => {};
 
 export const insertRecNodes = (top: CTop, items: RecNodeT<boolean>[]) => {
     let selPath: NodeID[] = [];
@@ -120,20 +142,22 @@ export const insertRecNodes = (top: CTop, items: RecNodeT<boolean>[]) => {
 
     if (selPath.length === 0) throw new Error(`nothing selected in node to add`);
 
-    const ops = Object.values(nodes).flatMap((node) => {
-        switch (node.type) {
-            case 'id':
-                return [insertNodes([new MId(node.loc, { text: node.text, ccls: node.ccls })], [])];
-            case 'list':
-                return insertList(top, node.loc, node.kind, node.children);
-            case 'text':
-                return insertText(top, node.loc, node.spans);
-            case 'table':
-                throw new Error('not yet');
-        }
-    });
+    const ops = Object.values(nodes).flatMap((node) => insertNode(top, node));
 
     return { roots, ops, selPath };
+};
+
+export const insertNode = (top: CTop, node: Node) => {
+    switch (node.type) {
+        case 'id':
+            return [insertNodes([new MId(node.loc, { text: node.text, ccls: node.ccls })], [])];
+        case 'list':
+            return insertList(top, node.loc, node.kind, node.children);
+        case 'text':
+            return insertText(top, node.loc, node.spans);
+        case 'table':
+            throw new Error('not yet');
+    }
 };
 
 export const c_addInside = (top: CTop, path: Path, children: RecNodeT<boolean>[], cursor: Cursor): void | CUpdate[] => {

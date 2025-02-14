@@ -1,41 +1,13 @@
-import { RecNodeT, NodeID, ListKind, Node, mapLocs } from '../shared/cnodes';
+import { RecNodeT, NodeID, ListKind, Node, mapLocs, fromRec, Nodes } from '../shared/cnodes';
 import { applySelUp } from './applyUpdate';
 import { CTState, ticker } from './crdt-check.test';
 import { isTag } from './handleNav';
-import { CTop, CUpdate, justOps, justUps, keyActionToUpdate, replaceEdges } from './keyActionToCRDTUpdate';
+import { CTop, CUpdate, insertNode, justOps, justUps, keyActionToUpdate, replaceEdges } from './keyActionToCRDTUpdate';
 import { KeyAction } from './keyActionToUpdate';
 import { CGraph, rootEdge } from './update/crdt/cgraph';
-import { MOp, MId, MList, MCons, MListKind, MListTag, isMain } from './update/crdt/crdtnodes';
+import { MOp, MId, MList, MCons, MListKind, MListTag, isMain, insertText, insertTextSpan } from './update/crdt/crdtnodes';
 import { graphToXMLs, showXMLs } from './update/crdt/show-graph';
 import { Cursor, NodeSelection, Path, selStart, Top } from './utils';
-
-// NOTE: these ids better be different y'all
-export const insert = (top: CTop, node: RecNodeT<NodeID>): MOp[] => {
-    if (!node.loc) node.loc = top.ts();
-    switch (node.type) {
-        case 'id':
-            return [MId.insert(top.ts, node)];
-        case 'list':
-            let ops: MOp[] = [];
-            let kind: ListKind<NodeID>;
-            if (typeof node.kind === 'object' && node.kind.type === 'tag') {
-                ops.push(...insert(top, node.kind.node));
-                if (node.kind.attributes) {
-                    ops.push(...insert(top, node.kind.attributes));
-                }
-                kind = { ...node.kind, node: node.kind.node.loc, attributes: node.kind.attributes?.loc };
-            } else {
-                kind = node.kind;
-            }
-            const children = node.children.map((child) => {
-                ops.push(...insert(top, child));
-                return child.loc;
-            });
-            return [...ops, ...MList.insert(top.ts, { ...node, kind, children })];
-        default:
-            throw new Error('not doin it');
-    }
-};
 
 export const expand = (top: CTop, node: Node): RecNodeT<NodeID> => {
     switch (node.type) {
@@ -59,17 +31,12 @@ export const full = (top: CTop) => {
     return expand(top, top.graph.getRoot().construct(top.graph.getEdge));
 };
 
-// TODO: do the `asTopAndLocs` trick, but maybe only ... idk
-// OK actually let's separate it.
-// ONE PASS: rewrite the recnode with new Locs, and track the paths.
-// THEN: use initial() to make the Ops. Love it.
 export const initial = (
     iroot: RecNodeT<boolean | number | null> = { type: 'id', text: '', loc: true },
     cursor: Cursor = { type: 'id', end: 0 },
     endCursor?: Cursor,
 ): CTState => {
     const ts = ticker();
-    // const id = new MId(ts(), { text: '' });
     const ctop: CTop = { ts, graph: new CGraph({}, {}) };
 
     const { sels, root } = withLocs(iroot, ts);
@@ -79,7 +46,11 @@ export const initial = (
         end: endCursor ? selStart(pathWith(sels[2] ?? sels[1]), endCursor) : undefined,
     };
 
-    ctop.graph = ctop.graph.merge_ops([...insert(ctop, root), replaceEdges([], rootEdge(ts(), root.loc))]);
+    const nodes: Nodes = {};
+    fromRec(root, nodes, (loc) => loc);
+    const ops = Object.values(nodes).flatMap((node) => insertNode(ctop, node));
+
+    ctop.graph = ctop.graph.merge_ops([...ops, replaceEdges([], rootEdge(ts(), root.loc))]);
 
     return { ctop, top: asTop(ctop), sel };
 };
