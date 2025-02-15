@@ -1,4 +1,14 @@
 
+# GettingCRDT Implemented keyUpdate -> CUpdate
+
+- [ ] string sel index must be ID folks
+  - hrmmmm. so first, gotta put ID on TextSpans.
+    might want to make it optional for the sake of previous code?
+    and then make it required when I delete that code...
+  - and then ,it could be number|string
+YEAH ok, so: if the span in question has a `loc`, use that as the index.
+I guess that sounds good.
+
 # CRDT Thinkings
 
 - need a way to serialize / deserialize my classes

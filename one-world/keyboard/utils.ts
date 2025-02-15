@@ -54,7 +54,7 @@ export type IdCursor = {
     end: number;
 };
 
-export type TextIndex = number;
+export type TextIndex = number | string;
 
 export type TextCursor = {
     type: 'text';
