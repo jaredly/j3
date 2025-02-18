@@ -7,7 +7,7 @@ import { Mods } from './handleShiftNav';
 import { KeyAction, moveA } from './keyActionToUpdate';
 // import { textCursorSides } from './insertId';
 import { Config } from './test-utils';
-import { ListCursor, Path, TextCursor, Top, gparentLoc, lastChild, parentLoc, parentPath, selStart } from './utils';
+import { ListCursor, Path, TextCursor, Top, getSpan, gparentLoc, lastChild, parentLoc, parentPath, selStart } from './utils';
 
 export const maybeJoin = (one?: TextSpan<NodeID>, two?: TextSpan<NodeID>) => {
     if (one?.type === 'text' && two?.type === 'text' && stylesEqual(one.style, two.style)) {
@@ -24,45 +24,42 @@ export const handleTextText = (
     top: Top,
     mods?: Mods,
 ): void | KeyAction[] => {
-    const span = current.spans[cursor.end.index];
+    const span = getSpan(current, cursor.end.index);
     if (span.type !== 'text') {
         if (span.type === 'embed') {
             // Either 0 or 1
             // do we ... go with ... hm. OK I do think that /embeds/ ought to be styleable.
             // Otherwise that diminishes their usefulness.
+            const at = current.spans.indexOf(span);
             if (cursor.end.cursor === 0) {
                 const spans = current.spans.slice();
-                if (cursor.end.index > 0) {
-                    const prev = spans[cursor.end.index - 1];
+                if (at > 0) {
+                    const prev = spans[at - 1];
                     if (prev.type === 'text') {
                         const grems = splitGraphemes(prev.text);
-                        spans[cursor.end.index - 1] = { ...prev, text: grems.concat([grem]).join('') };
-                        return [
-                            { type: 'set-text-text', path, text: grems.concat([grem]).join(''), index: cursor.end.index - 1, end: grems.length + 1 },
-                        ];
+                        spans[at - 1] = { ...prev, text: grems.concat([grem]).join('') };
+                        return [{ type: 'set-text-text', path, text: grems.concat([grem]).join(''), index: at - 1, end: grems.length + 1 }];
                     }
                 }
-                return [{ type: 'add-span', path, span: { type: 'text', text: grem }, index: cursor.end.index, cursor: 1 }];
+                return [{ type: 'add-span', path, span: { type: 'text', text: grem, loc: '' }, index: at, cursor: 1 }];
             }
 
             if (cursor.end.cursor === 1) {
-                if (grem === '"' && cursor.end.index === current.spans.length - 1) {
+                if (grem === '"' && at === current.spans.length - 1) {
                     return moveA(selStart(path, { type: 'list', where: 'after' }));
                 }
 
-                let next = current.spans[cursor.end.index + 1];
-                if (cursor.end.index === current.spans.length - 1 || next.type !== 'text' || !stylesEqual(span.style, next.style)) {
-                    return [
-                        { type: 'add-span', path, index: cursor.end.index + 1, cursor: 1, span: { type: 'text', style: span.style, text: grem } },
-                    ];
+                let next = current.spans[at + 1];
+                if (at === current.spans.length - 1 || next.type !== 'text' || !stylesEqual(span.style, next.style)) {
+                    return [{ type: 'add-span', path, index: at + 1, cursor: 1, span: { type: 'text', style: span.style, text: grem, loc: '' } }];
                 }
-                return moveA(selStart(path, { type: 'text', end: { index: cursor.end.index + 1, cursor: 1 } }));
+                return moveA(selStart(path, { type: 'text', end: { index: at + 1, cursor: 1 } }));
             }
         }
         return;
     }
 
-    const text = spanText(top.tmpText, current.loc, cursor.end, span);
+    const text = spanText(span);
     const [left, right] =
         sel == null ? [cursor.end.cursor, cursor.end.cursor] : sel < cursor.end.cursor ? [sel, cursor.end.cursor] : [cursor.end.cursor, sel];
 
@@ -133,7 +130,7 @@ export const handleTextText = (
                     left: { index: cursor.end.index, cursor: start },
                     right: { index: cursor.end.index, cursor: left - 1 },
                 },
-                { type: 'add-span', path, cursor: 0, index: 2, span: { type: 'text', text: '' } },
+                { type: 'add-span', path, cursor: 0, index: 2, span: { type: 'text', text: '', loc: '' } },
             ];
         }
     }
@@ -152,7 +149,7 @@ export const handleTextText = (
             },
             {
                 type: 'add-span',
-                span: { type: 'embed', item: { type: 'id', text: '', loc: true } },
+                span: { type: 'embed', item: { type: 'id', text: '', loc: true }, loc: '' },
                 cursor: { type: 'id', end: 0 },
                 index: cursor.end.index,
                 path,

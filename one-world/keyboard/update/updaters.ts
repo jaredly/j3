@@ -7,7 +7,21 @@ import { isTag, richNode, selectEnd } from '../handleNav';
 import { KeyWhat, selUpdate } from '../keyActionToUpdate';
 import { replaceAt } from '../replaceAt';
 import { flatten, flatToUpdateNew } from '../rough';
-import { Cursor, NodeSelection, Path, Top, UNodes, Update, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from '../utils';
+import {
+    Cursor,
+    NodeSelection,
+    Path,
+    TextIndex,
+    Top,
+    UNodes,
+    Update,
+    getSpanIndex,
+    lastChild,
+    parentLoc,
+    parentPath,
+    pathWithChildren,
+    selStart,
+} from '../utils';
 
 export { selUpdate };
 
@@ -103,7 +117,7 @@ export const removeSelf = (top: Top, current: { path: Path; node: Node }): Updat
     const loc = nextLoc++ + '';
     const up = replaceAt(parentPath(current.path).children, top, current.node.loc, loc);
     up.nextLoc = nextLoc;
-    up.nodes[loc] = inRich ? { type: 'text', spans: [{ type: 'text', text: '' }], loc } : { type: 'id', loc, text: '' };
+    up.nodes[loc] = inRich ? { type: 'text', spans: [{ type: 'text', text: '', loc: '' }], loc } : { type: 'id', loc, text: '' };
     up.selection = {
         start: selStart(
             pathWithChildren(parentPath(current.path), loc),
@@ -126,11 +140,11 @@ export const findParent = (nodes: Update['nodes'], loc: NodeID): NodeID | null =
     return null;
 };
 
-export const controlToggle = (top: Top, path: Path, index: number): void | Update => {
+export const controlToggle = (top: Top, path: Path, index: TextIndex): void | Update => {
     const current = top.nodes[lastChild(path)];
     if (current.type !== 'list' || typeof current.kind === 'string') return;
+    const loc = typeof index === 'number' ? current.children[index] : index;
     if (current.kind.type === 'checks') {
-        const loc = current.children[index];
         return {
             nodes: {
                 [current.loc]: {
@@ -141,7 +155,7 @@ export const controlToggle = (top: Top, path: Path, index: number): void | Updat
         };
     }
     if (current.kind.type === 'opts') {
-        const loc = current.children[index];
+        const loc = typeof index === 'number' ? current.children[index] : index;
         return { nodes: { [current.loc]: { ...current, kind: { type: 'opts', which: loc === current.kind.which ? undefined : loc } } } };
     }
 };
@@ -196,7 +210,9 @@ export const handleInsertText = (top: Top, path: Path, pos: 'before' | 'after' |
         );
     } else {
         const pnode = top.nodes[parentLoc(path)];
-        const blank: Node = richNode(pnode) ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: '-1' } : { type: 'id', text: '', loc: '-1' };
+        const blank: Node = richNode(pnode)
+            ? { type: 'text', spans: [{ type: 'text', text: '', loc: '' }], loc: '-1' }
+            : { type: 'id', text: '', loc: '-1' };
 
         var { sel, ncursor, nodes } = addNeighbor({
             flat,

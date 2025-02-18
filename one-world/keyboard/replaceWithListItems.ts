@@ -14,9 +14,9 @@ export const replaceWithListItems = (path: number[], top: Top, old: NodeID, locs
         const insert: Text<NodeID>['spans'] = [];
         for (let i = 0; i < locs.length; i++) {
             if (i > 0) {
-                insert.push({ type: 'text', text: ' ' });
+                insert.push({ type: 'text', text: ' ', loc: '' });
             }
-            insert.push({ type: 'embed', item: locs[i] });
+            insert.push({ type: 'embed', item: locs[i], loc: '' });
         }
         spans.splice(at, 1, ...insert);
         return { [ploc]: { ...parent, spans } };

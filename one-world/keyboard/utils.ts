@@ -56,6 +56,12 @@ export type IdCursor = {
 
 export type TextIndex = number | string;
 
+export const getSpanIndex = (spans: TextSpan<any>[], index: TextIndex) =>
+    typeof index === 'number' ? index : spans.findIndex((s) => s.loc === index);
+
+export const getSpan = (text: Text<any>, index: TextIndex) =>
+    typeof index === 'number' ? text.spans[index] : text.spans.find((s) => s.loc === index)!;
+
 export type TextCursor = {
     type: 'text';
     end: {
@@ -65,7 +71,7 @@ export type TextCursor = {
     };
 };
 export type ListWhere = 'before' | 'start' | 'inside' | 'end' | 'after';
-export type CollectionCursor = ListCursor | { type: 'control'; index: number };
+export type CollectionCursor = ListCursor | { type: 'control'; index: TextIndex };
 export type ListCursor = { type: 'list'; where: ListWhere };
 
 export type Cursor = IdCursor | TextCursor | CollectionCursor;

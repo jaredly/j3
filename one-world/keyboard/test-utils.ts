@@ -293,4 +293,5 @@ export const textc = (index: number, cursor: number): TextCursor => ({
 //     end: { index, cursor, text },
 //     start: { index: sindex, cursor: scursor },
 // });
-export const tspan = (text: string, style?: Style): TextSpan<any> => ({ type: 'text', text, style });
+export const tspan = (text: string, style?: Style): TextSpan<any> => ({ type: 'text', text, style, loc: '' });
+export const tembed = (item: RecNodeT<boolean | number>, style?: Style): TextSpan<any> => ({ type: 'embed', item, style, loc: '' });

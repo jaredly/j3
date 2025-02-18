@@ -2,7 +2,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { linksEqual, NodeID, Style, stylesEqual, Text, TextSpan } from '../shared/cnodes';
 import { Mods } from './handleShiftNav';
 import { KeyAction } from './keyActionToUpdate';
-import { ListCursor, Path, TextCursor, Top } from './utils';
+import { getSpan, ListCursor, Path, TextCursor, TextIndex, Top } from './utils';
 
 const isStyleKey = (key: string) => key === 'b' || key === 'i' || key === 'u';
 
@@ -72,15 +72,17 @@ export const keyMod = (key: string, mods: Mods): void | ((style: Style) => void)
 //     return true;
 // };
 
-export type Spat = { cursor: number; index: number };
+export type Spat = { cursor: number; index: TextIndex };
 
 export const specialTextMod = (node: Text<NodeID>, left: Spat, right: Spat, mod: (style: Style) => void) => {
     let off = 0;
     let scur: number | null = null;
     let ecur: { cursor: number; index: number } | null = null;
     const spans = node.spans.slice();
+    const lefti = spans.indexOf(getSpan(node, left.index));
+    const righti = spans.indexOf(getSpan(node, right.index));
 
-    for (let i = left.index; i <= right.index; i++) {
+    for (let i = lefti; i <= righti; i++) {
         const span = node.spans[i];
         if (!span) {
             console.log(node, left, right);
@@ -91,10 +93,10 @@ export const specialTextMod = (node: Text<NodeID>, left: Spat, right: Spat, mod:
         const grems = splitGraphemes(span.text);
         // const grems = tmpText[`${node.loc}:${i}`] ?? splitGraphemes(span.text);
 
-        const start = i === left.index ? left.cursor : 0;
-        const end = i === right.index ? right.cursor : grems.length;
+        const start = i === lefti ? left.cursor : 0;
+        const end = i === righti ? right.cursor : grems.length;
 
-        if (start === end && left.index !== right.index) {
+        if (start === end && lefti !== righti) {
             continue;
         }
 
@@ -102,8 +104,8 @@ export const specialTextMod = (node: Text<NodeID>, left: Spat, right: Spat, mod:
             spans.splice(i + off, 0, { ...span, text: grems.slice(0, start).join('') });
             off++;
         }
-        if (start < grems.length || (i === right.index && start === end)) {
-            if (scur === null && i >= left.index) scur = i + off;
+        if (start < grems.length || (i === righti && start === end)) {
+            if (scur === null && i >= lefti) scur = i + off;
             spans[i + off] = { ...span, style, text: grems.slice(start, end).join('') };
             ecur = { index: i + off, cursor: end - start };
         } else {
@@ -117,11 +119,6 @@ export const specialTextMod = (node: Text<NodeID>, left: Spat, right: Spat, mod:
     }
     if (scur == null || ecur == null) return;
 
-    // const ncursor: TextCursor = {
-    //     type: 'text',
-    //     start: { index: scur, cursor: 0 },
-    //     end: ecur,
-    // };
     const start: Spat = { index: scur, cursor: 0 };
     const end = ecur;
 

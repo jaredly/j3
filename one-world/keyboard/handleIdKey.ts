@@ -144,7 +144,7 @@ export const whatNeighbor = (what: KeyWhat): Flat => {
         : what.type === 'space'
         ? { type: 'space', loc: '-1' }
         : what.type === 'string'
-        ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: '-1' }
+        ? { type: 'text', spans: [{ type: 'text', text: '', loc: '' }], loc: '-1' }
         : { type: 'id', text: what.grem, loc: '-1', ccls: what.ccls };
 };
 
@@ -155,7 +155,9 @@ export const getSplit = (top: Top, path: Path, at: number | 'before' | 'after') 
     }
     if (node.type === 'list') {
         const pnode = top.nodes[parentLoc(path)];
-        const blank: Node = richNode(pnode) ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: '-1' } : { type: 'id', text: '', loc: '-1' };
+        const blank: Node = richNode(pnode)
+            ? { type: 'text', spans: [{ type: 'text', text: '', loc: '' }], loc: '-1' }
+            : { type: 'id', text: '', loc: '-1' };
         return splitListCell(node, { type: 'list', where: at === 'before' ? 'before' : 'after' }, blank);
     }
 };
@@ -289,6 +291,6 @@ export function flatNeighbor(kind: Kind, grem: string): Flat {
         : kind === 'space'
         ? { type: 'space', loc: '-1' }
         : kind === 'string'
-        ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: '-1' }
+        ? { type: 'text', spans: [{ type: 'text', text: '', loc: '' }], loc: '-1' }
         : { type: 'id', text: grem, loc: '-1', ccls: kind };
 }

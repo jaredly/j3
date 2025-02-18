@@ -296,7 +296,7 @@ export const handleWrap = (state: TestState, key: string): KeyAction[] | void =>
             return handleTextText(current.cursor, undefined, current.node, key, current.path, state.top);
         }
         if (current.cursor.type === 'list' && current.cursor.where === 'inside') {
-            return [{ type: 'add-span', path: current.path, index: 0, cursor: 1, span: { type: 'text', text: key } }];
+            return [{ type: 'add-span', path: current.path, index: 0, cursor: 1, span: { type: 'text', text: key, loc: '' } }];
         }
     }
     const kind = wrapKind(key);

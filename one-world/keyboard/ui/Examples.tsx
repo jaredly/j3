@@ -40,7 +40,7 @@ const precompute = (text: string[], config: Config) => {
             state = applyNormalUpdate(state, {
                 nodes: {
                     [node.loc]: { type: 'list', kind: { type: 'plain' }, children: [state.top.nextLoc + ''], loc: node.loc },
-                    [state.top.nextLoc + '']: { type: 'text', loc: state.top.nextLoc + '', spans: [{ type: 'text', text: '' }] },
+                    [state.top.nextLoc + '']: { type: 'text', loc: state.top.nextLoc + '', spans: [{ type: 'text', text: '', loc: '' }] },
                 },
                 selection: { start: selStart(pathWithChildren(path, state.top.nextLoc + ''), { type: 'text', end: { index: 0, cursor: 0 } }) },
                 nextLoc: state.top.nextLoc + 1,

@@ -16,6 +16,7 @@ import {
     getNode,
     parentLoc,
     parentPath,
+    getSpanIndex,
 } from './utils';
 
 const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor, inside: number | null = null): Highlight | undefined => {
@@ -35,15 +36,17 @@ const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor, inside: numb
     // ok, so `inside` is gonna need some more info folks. like "span at"
 
     if (node.type === 'text') {
+        const lat = left?.type === 'text' ? getSpanIndex(node.spans, left.end.index) : undefined;
+        const rat = right?.type === 'text' ? getSpanIndex(node.spans, right.end.index) : undefined;
         return {
             type: 'text',
             spans: node.spans.map((span, i) => {
                 if (!left && right?.type === 'list' && (right.where === 'before' || right.where === 'start')) return false;
                 if (!right && left?.type === 'list' && (left.where === 'after' || left.where === 'end')) return false;
                 if (left?.type === 'text') {
-                    if (left.end.index > i) return false;
+                    if ((lat ?? 0) > i) return false;
                     if (inside != null && inside <= i) return false;
-                    if (left.end.index === i) {
+                    if (lat === i) {
                         if (right?.type === 'text' && right.end.index === i) {
                             return [{ start: left.end.cursor, end: right.end.cursor }];
                         }
@@ -57,9 +60,9 @@ const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor, inside: numb
                     if (inside != null && inside >= i) return false;
                 }
                 if (right?.type === 'text') {
-                    if (right.end.index < i) return false;
+                    if ((rat ?? 0) < i) return false;
                     if (inside != null && inside >= i) return false;
-                    if (right.end.index === i) {
+                    if (rat === i) {
                         return [{ end: right.end.cursor }];
                     }
                 }
@@ -235,7 +238,8 @@ const innerSide = (outer: SelStart, inner: SelStart, top: Top): { side: 'before'
         if (at === outer.cursor.end.index) {
             return { side: outer.cursor.end.cursor === 0 ? 'before' : 'after', at };
         } else {
-            return { side: at < outer.cursor.end.index ? 'after' : 'before', at };
+            const cindex = getSpanIndex(node.spans, outer.cursor.end.index);
+            return { side: at < cindex ? 'after' : 'before', at };
         }
     }
     console.warn(`unexpected outer cursor type ${outer.cursor.type}`);

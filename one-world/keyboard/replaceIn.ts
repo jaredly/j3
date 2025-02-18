@@ -14,9 +14,9 @@ export const replaceIn = (node: Node, old: NodeID, ...locs: NodeID[]): Node => {
             spans.splice(at, 1);
             return { ...node, spans };
         }
-        spans[at] = { type: 'embed', item: locs[0] };
+        spans[at] = { type: 'embed', item: locs[0], loc: '' };
         for (let i = 1; i < locs.length; i++) {
-            spans.splice(at + i, 0, { type: 'embed', item: locs[i] });
+            spans.splice(at + i, 0, { type: 'embed', item: locs[i], loc: '' });
         }
         return { ...node, spans };
     }

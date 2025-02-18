@@ -355,7 +355,13 @@ export class MTextEmbed implements MNode<Extract<TextSpan<NodeID>, { type: 'embe
 
     construct(getEdge: GetEdge): Extract<TextSpan<NodeID>, { type: 'embed' }> | null {
         const edge = this.getItemEdge(getEdge);
-        return { type: 'embed', item: edge.end.id, link: this.plain.link.value ?? undefined, style: this.plain.style.value ?? undefined };
+        return {
+            type: 'embed',
+            item: edge.end.id,
+            link: this.plain.link.value ?? undefined,
+            style: this.plain.style.value ?? undefined,
+            loc: this.id,
+        };
     }
 
     static newItemEdge(id: string, dest: string, ts: string) {
@@ -401,7 +407,7 @@ export class MTextText implements MNode<Extract<TextSpan<NodeID>, { type: 'text'
 
     construct(getEdge: GetEdge): Extract<TextSpan<NodeID>, { type: 'text' }> | null {
         const { text, meta } = this.plain;
-        return { type: 'text', text: text.value, link: meta.link.value ?? undefined, style: meta.style.value ?? undefined };
+        return { type: 'text', text: text.value, link: meta.link.value ?? undefined, style: meta.style.value ?? undefined, loc: this.id };
     }
 
     toJSON() {

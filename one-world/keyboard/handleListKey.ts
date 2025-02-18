@@ -47,7 +47,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
             if (kind === 'string') {
                 return moveA(selStart(path, { type: 'list', where: 'after' }));
             }
-            return [{ type: 'add-span', path, span: { type: 'text', text: grem }, index: 0, cursor: 1 }];
+            return [{ type: 'add-span', path, span: { type: 'text', text: grem, loc: '' }, index: 0, cursor: 1 }];
         }
         if (current.type !== 'list' && current.type !== 'table') throw new Error('not list or table');
         if (grem === '>' && current.type === 'list' && isTag(current.kind)) {
@@ -59,7 +59,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
                     {
                         type: 'add-inside',
                         path,
-                        children: [{ type: 'text', spans: [{ type: 'text', text: '' }], loc: true }],
+                        children: [{ type: 'text', spans: [{ type: 'text', text: '', loc: '' }], loc: true }],
                         cursor: {
                             type: 'text',
                             end: { index: 0, cursor: 0 },

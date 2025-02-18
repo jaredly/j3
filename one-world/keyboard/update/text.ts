@@ -5,28 +5,44 @@ import { spanStart, spanEnd } from '../handleNav';
 import { SelStart, toggleFormat } from '../handleShiftNav';
 import { mergeAdjacentSpans, Spat, specialTextMod } from '../handleSpecialText';
 import { maybeJoin } from '../handleTextText';
-import { Top, Path, lastChild, selStart, Cursor, Update, pathWithChildren, TextCursor, parentLoc, parentPath } from '../utils';
+import {
+    Top,
+    Path,
+    lastChild,
+    selStart,
+    Cursor,
+    Update,
+    pathWithChildren,
+    TextCursor,
+    parentLoc,
+    parentPath,
+    TextIndex,
+    getSpanIndex,
+} from '../utils';
 
 export const textDelete = (top: Top, path: Path, left: Spat, right: Spat) => {
     const node = top.nodes[lastChild(path)];
     if (node.type !== 'text') return;
     const spans = node.spans.slice();
 
-    if (left.index === right.index) {
-        const span = spans[left.index];
+    const lindex = getSpanIndex(spans, left.index);
+    const rindex = getSpanIndex(spans, right.index);
+
+    if (lindex === rindex) {
+        const span = spans[lindex];
         if (span.type === 'text') {
             const grems = splitGraphemes(span.text);
             grems.splice(left.cursor, right.cursor - left.cursor);
-            return setTextText(top, path, grems.join(''), left.index, left.cursor);
+            return setTextText(top, path, grems.join(''), lindex, left.cursor);
         }
     }
 
     let off = 0;
-    for (let index = left.index; index <= right.index; index++) {
+    for (let index = lindex; index <= rindex; index++) {
         const span = spans[index - off];
         const sl = spanLength(span, undefined, index);
-        const start = left.index === index ? left.cursor : 0;
-        const end = right.index === index ? right.cursor : sl;
+        const start = lindex === index ? left.cursor : 0;
+        const end = rindex === index ? right.cursor : sl;
         if (start === 0 && end === sl) {
             spans.splice(index - off, 1);
             off++;
@@ -50,9 +66,9 @@ export const textDelete = (top: Top, path: Path, left: Spat, right: Spat) => {
                     : {
                           type: 'text',
                           end:
-                              left.index >= spans.length
+                              lindex >= spans.length
                                   ? { index: spans.length - 1, cursor: spanLength(spans[spans.length - 1], undefined, 0) }
-                                  : { index: left.index, cursor: left.cursor },
+                                  : { index: lindex, cursor: left.cursor },
                       },
             ),
         },
@@ -73,14 +89,15 @@ export const removeSpan = (top: Top, path: Path, index: number) => {
     return start ? { nodes: { [pnode.loc]: { ...pnode, spans } }, selection: { start } } : undefined;
 };
 
-export const setTextText = (top: Top, path: Path, text: string, index: number, end: number) => {
+export const setTextText = (top: Top, path: Path, text: string, index: TextIndex, end: number) => {
     const node = top.nodes[lastChild(path)];
     if (node.type !== 'text') return;
     const spans = node.spans.slice();
-    const span = spans[index];
+    const at = typeof index === 'number' ? index : spans.findIndex((s) => s.loc === index);
+    const span = spans[at];
     if (span.type !== 'text') return;
 
-    spans[index] = { ...span, text };
+    spans[at] = { ...span, text };
     // this is 'set text text'
     return {
         nodes: { [node.loc]: { ...node, spans } },
@@ -95,7 +112,7 @@ export const addSpan = (
     top: Top,
     path: Path,
     recSpan: TextSpan<RecNodeT<boolean>>,
-    index: number,
+    index: TextIndex,
     cursor: number | Cursor,
     within?: number,
 ): void | Update => {
@@ -136,31 +153,37 @@ export const addSpan = (
         sel = selStart(path, { type: 'text', end: { index: index, cursor } });
     }
 
+    let at = getSpanIndex(spans, index);
+
     if (within != null) {
-        const current = spans[index];
+        const current = spans[at];
         if (current?.type === 'text') {
             const text = splitGraphemes(current.text);
             if (within < text.length) {
-                spans[index] = { ...current, text: text.slice(0, within).join('') };
-                spans.splice(index + 1, 0, { ...current, text: text.slice(within).join('') });
+                spans[at] = { ...current, text: text.slice(0, within).join('') };
+                spans.splice(at + 1, 0, { ...current, text: text.slice(within).join('') });
             }
-            index++;
+            at++;
         }
     }
 
-    const left = maybeJoin(spans[index - 1], span);
+    const left = maybeJoin(spans[at - 1], span);
     if (left) {
-        spans[index - 1] = left.joined;
+        spans[at - 1] = left.joined;
         if (sel.cursor.type === 'text') {
-            sel.cursor.end.index--;
+            if (typeof sel.cursor.end.index === 'number') {
+                sel.cursor.end.index--;
+            } else {
+                sel.cursor.end.index = spans[at - 1].loc;
+            }
             sel.cursor.end.cursor += left.off;
         }
     } else {
-        const right = maybeJoin(span, spans[index]);
+        const right = maybeJoin(span, spans[at]);
         if (right) {
-            spans[index] = right.joined;
+            spans[at] = right.joined;
         } else {
-            spans.splice(index, 0, span);
+            spans.splice(at, 0, span);
         }
     }
 

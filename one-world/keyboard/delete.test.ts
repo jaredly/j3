@@ -123,9 +123,9 @@ test('smoosh blank id start', () => {
 });
 
 test('text pls', () => {
-    let state = asTop(text([{ type: 'text', text: 'hi' }], true), textc(0, 1));
+    let state = asTop(text([tspan('hi')], true), textc(0, 1));
     state = applyUpdate(state, handleDelete(state));
-    check(state, text([{ type: 'text', text: 'i' }], true), textc(0, 0));
+    check(state, text([tspan('i')], true), textc(0, 0));
 });
 
 test('text pls empty', () => {

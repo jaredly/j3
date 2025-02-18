@@ -2,22 +2,23 @@ import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Nodes } from '../../shared/cnodes';
 import { richNode } from '../handleNav';
 import { Spat } from '../handleSpecialText';
-import { Top, Path, Update, parentLoc, lastChild, findTableLoc, selStart, pathWithChildren, parentPath, gparentLoc } from '../utils';
+import { Top, Path, Update, parentLoc, lastChild, findTableLoc, selStart, pathWithChildren, parentPath, gparentLoc, getSpanIndex } from '../utils';
 
 export const splitTextInRich = (top: Top, path: Path, at: Spat): void | Update => {
     let parent = top.nodes[parentLoc(path)];
     if (!richNode(parent)) return;
     const current = top.nodes[lastChild(path)];
     if (current.type !== 'text') return;
-    const span = current.spans[at.index];
+    const lat = getSpanIndex(current.spans, at.index);
+    const span = current.spans[lat];
     if (span.type !== 'text') return;
     const text = splitGraphemes(span.text);
 
     // nowww we split.
     // hrm but we also need to allow a mods
-    const before = current.spans.slice(0, at.index + 1);
+    const before = current.spans.slice(0, lat + 1);
     before[before.length - 1] = { ...span, text: text.slice(0, at.cursor).join('') };
-    const after = current.spans.slice(at.index);
+    const after = current.spans.slice(lat);
     after[0] = { ...span, text: text.slice(at.cursor).join('') };
 
     let nextLoc = top.nextLoc;
@@ -40,7 +41,7 @@ export const splitTextInRich = (top: Top, path: Path, at: Spat): void | Update =
         if (!right.length) {
             for (let i = 1; i < rows[row].length; i++) {
                 const cloc = nextLoc++ + '';
-                nodes[cloc] = { type: 'text', spans: [{ type: 'text', text: '' }], loc: cloc };
+                nodes[cloc] = { type: 'text', spans: [{ type: 'text', text: '', loc: nextLoc++ + '' }], loc: cloc };
                 rows[row + 1].push(cloc);
             }
         }

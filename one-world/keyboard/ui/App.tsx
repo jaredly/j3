@@ -11,7 +11,7 @@ import { selectStart } from '../handleNav';
 import { allPaths, Mods, SelStart, Src } from '../handleShiftNav';
 import { root } from '../root';
 import { argify, atomify, getCurrent, getSelectionStatuses } from '../selections';
-import { lastChild, mergeHighlights, NodeSelection, pathWithChildren, SelectionStatuses, selStart, Top, Update } from '../utils';
+import { getSpan, lastChild, mergeHighlights, NodeSelection, pathWithChildren, SelectionStatuses, selStart, Top, Update } from '../utils';
 import { HistoryItem, initialAppState, reducer } from './history';
 import { Visual } from './keyUpdate';
 import { RenderNode } from './RenderNode';
@@ -197,10 +197,10 @@ export const App = ({ id }: { id: string }) => {
         if (!pos) return;
         const current = getCurrent(sel, state.top);
         if (current.type === 'text' && current.cursor.type === 'text') {
-            const span = current.node.spans[current.cursor.end.index];
+            const span = getSpan(current.node, current.cursor.end.index);
             const end = current.cursor.end;
             if (span.type === 'text') {
-                const text = spanText(state.top.tmpText, current.node.loc, current.cursor.end, span);
+                const text = spanText(span);
                 // idText(state.top.tmpText, current.cursor.end, span);
                 if (text[current.cursor.end.cursor - 1] === '\\') {
                     return setMenu({
@@ -276,7 +276,7 @@ export const App = ({ id }: { id: string }) => {
                                             {
                                                 type: 'text',
                                                 loc: true,
-                                                spans: [{ type: 'text', text: '' }],
+                                                spans: [{ type: 'text', text: '', loc: '' }],
                                             },
                                         ],
                                     },
@@ -309,8 +309,8 @@ export const App = ({ id }: { id: string }) => {
                                             loc: false,
                                             rows: [
                                                 [
-                                                    { type: 'text', loc: true, spans: [{ type: 'text', text: '' }] },
-                                                    { type: 'text', loc: false, spans: [{ type: 'text', text: '' }] },
+                                                    { type: 'text', loc: true, spans: [{ type: 'text', text: '', loc: '' }] },
+                                                    { type: 'text', loc: false, spans: [{ type: 'text', text: '', loc: '' }] },
                                                 ],
                                             ],
                                         },

@@ -107,22 +107,17 @@ export const linksEqual = (one?: Link, two?: Link) => {
 };
 
 export type TextSpan<Embed> =
-    | { type: 'text'; text: string; link?: Link; style?: Style; loc?: string }
+    | { type: 'text'; text: string; link?: Link; style?: Style; loc: string }
     // Jump back to a normal node I guess
-    | { type: 'embed'; item: Embed; link?: Link; style?: Style; loc?: string }
-    | { type: 'attachment'; attachment: string; display: 'name' | 'small' | 'large'; loc?: string }
+    | { type: 'embed'; item: Embed; link?: Link; style?: Style; loc: string }
+    | { type: 'attachment'; attachment: string; display: 'name' | 'small' | 'large'; loc: string }
     // I kinda forget what this was about? Maybe like letting you supply rich-text plugins or something
-    | { type: 'custom'; plugin: string; data: any; loc?: string }
+    | { type: 'custom'; plugin: string; data: any; loc: string }
     // How are these different from `embed`? Well these actually yoink the source
     // of the referenced term and plop it in there.
     // Embed would either be a ref to it, or duplicate the code
-    | { type: 'include'; id: string; hash: string; loc?: string }
-    | {
-          type: 'diff';
-          before: { id: string; hash: string };
-          after: { id: string; hash: string };
-          loc?: string;
-      };
+    | { type: 'include'; id: string; hash: string; loc: string }
+    | { type: 'diff'; before: { id: string; hash: string }; after: { id: string; hash: string }; loc: string };
 
 export type RichKind =
     | { type: 'plain' }

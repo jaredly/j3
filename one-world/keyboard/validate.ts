@@ -1,7 +1,7 @@
 import { childLocs, isRich, NodeID } from '../shared/cnodes';
 import { isTag, richNode } from './handleNav';
 import { TestState } from './test-utils';
-import { parentLoc, Path, Top } from './utils';
+import { getSpan, lastChild, parentLoc, Path, Top } from './utils';
 import { getCurrent } from './selections';
 
 const validatePath = (top: Top, path: Path) => {
@@ -116,7 +116,12 @@ const validateCursor = (state: TestState) => {
             throw new Error(`Rich text texts can't be selected before or after`);
         }
         if (current.cursor.type === 'text') {
-            if (current.cursor.end.index < 0 || current.cursor.end.index >= current.node.spans.length) {
+            const span = getSpan(current.node, current.cursor.end.index);
+            if (!span) {
+                throw new Error(`invalid text cursor`);
+            }
+            const at = current.node.spans.indexOf(span);
+            if (at < 0 || at >= current.node.spans.length) {
                 throw new Error(`cursor text index out of range`);
             }
         }

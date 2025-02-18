@@ -172,12 +172,14 @@ export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSele
             }
         }
     }
+
     if (cursor.type === 'control' && node.type === 'list') {
-        if (!shift || cursor.index > 0) {
+        const at = typeof cursor.index === 'string' ? node.children.indexOf(cursor.index) : cursor.index;
+        if (!shift || at > 0) {
             if (shift) {
-                return selectEnd(pathWithChildren(path, node.children[cursor.index - 1]), top);
+                return selectEnd(pathWithChildren(path, node.children[at - 1]), top);
             } else {
-                return selectStart(pathWithChildren(path, node.children[cursor.index]), top);
+                return selectStart(pathWithChildren(path, node.children[at]), top);
             }
         }
     }
@@ -256,7 +258,8 @@ export const wordNav = (state: TestState, left: boolean, shift: boolean | undefi
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text' && current.cursor.type === 'text') {
         const { index, cursor } = current.cursor.end;
-        const next = wordNext(current.node, left, index, cursor, undefined); // state.top.tmpText[`${current.node.loc}:${index}`]);
+        const at = typeof index === 'number' ? index : current.node.spans.findIndex((s) => s.loc === index);
+        const next = wordNext(current.node, left, at, cursor, undefined); // state.top.tmpText[`${current.node.loc}:${index}`]);
         if (next != null) {
             const start = selStart(current.path, {
                 type: 'text',

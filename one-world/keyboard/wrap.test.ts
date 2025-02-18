@@ -3,7 +3,7 @@ import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleClose, handleWrap } from './handleWrap';
-import { asMultiTop, asTop, curly, id, idc, listc, round, smoosh, spaced, square, text, textc } from './test-utils';
+import { asMultiTop, asTop, curly, id, idc, listc, round, smoosh, spaced, square, text, textc, tspan } from './test-utils';
 
 test('round', () => {
     let state = asTop(id('', true), idc(0));
@@ -24,9 +24,9 @@ test('curly', () => {
 });
 
 test('text normal', () => {
-    let state = asTop(text([{ type: 'text', text: '' }], true), textc(0, 0));
+    let state = asTop(text([tspan('')], true), textc(0, 0));
     state = applyUpdate(state, handleWrap(state, '{'));
-    check(state, text([{ type: 'text', text: '{' }], true), textc(0, 1));
+    check(state, text([tspan('{')], true), textc(0, 1));
 });
 
 test('start of id', () => {

@@ -14,7 +14,7 @@ import { joinTable } from './update/table';
 import { removeSpan } from './update/text';
 import { joinInList } from './update/list';
 import { textDelete } from './update/text';
-import { Cursor, lastChild, Path, Update } from './utils';
+import { Cursor, lastChild, Path, TextIndex, Update } from './utils';
 import { CopiedValues, handleDeleteTooMuch, pasteUpdate } from './update/multi-change';
 import { ListKind, NodeID, RecNodeT, Style, TextSpan } from '../shared/cnodes';
 import { handleIdWrap, handleInsertList, wrapUpdate } from './handleWrap';
@@ -110,7 +110,7 @@ export type KeyWhat = { type: 'space' } | { type: 'string' } | { type: 'sep'; ne
 
 export type KeyAction =
     | { type: 'add-inside'; path: Path; children: RecNodeT<boolean>[]; cursor: Cursor }
-    | { type: 'control-toggle'; path: Path; index: number }
+    | { type: 'control-toggle'; path: Path; index: TextIndex }
     | { type: 'unwrap'; path: Path }
     | { type: 'wrap'; path: Path; min: number; max: number; kind: ListKind<any> }
     | { type: 'id-wrap'; path: Path; left: number; right: number; kind: ListKind<any> }
@@ -126,8 +126,8 @@ export type KeyAction =
     | { type: 'split-text-in-rich'; path: Path; at: Spat }
     | { type: 'join-text'; path: Path }
     | { type: 'remove-span'; index: number; path: Path }
-    | { type: 'set-text-text'; path: Path; text: string; index: number; end: number }
-    | { type: 'add-span'; path: Path; span: TextSpan<RecNodeT<boolean>>; index: number; cursor: number | Cursor; within?: number }
+    | { type: 'set-text-text'; path: Path; text: string; index: TextIndex; end: number }
+    | { type: 'add-span'; path: Path; span: TextSpan<RecNodeT<boolean>>; index: TextIndex; cursor: number | Cursor; within?: number }
     | { type: 'text-format'; format: Partial<Style>; path: Path; left: Spat; right: Spat; select?: 'before' | 'after' | 'cover' }
     // some other things
     | { type: 'join-list'; path: Path; child: { loc: NodeID; cursor: Cursor } }

@@ -7,6 +7,7 @@ import {
     Current,
     Cursor,
     findTableLoc,
+    getSpan,
     lastChild,
     NodeSelection,
     parentLoc,
@@ -277,24 +278,25 @@ export const navRight = (current: Current, state: TestState): SelStart | void =>
                 //     return selStart(current.path, { type: 'text', end: right });
                 // }
                 const { end } = current.cursor;
-                const span = current.node.spans[end.index];
+                const span = getSpan(current.node, end.index);
+                const at = current.node.spans.indexOf(span);
                 if (span.type !== 'text') {
                     if (end.cursor === 0) {
                         return spanStart(span, end.index, current.path, state.top, true);
                     }
-                    if (end.index < current.node.spans.length - 1) {
-                        return spanStart(current.node.spans[end.index + 1], end.index + 1, current.path, state.top, true);
+                    if (at < current.node.spans.length - 1) {
+                        return spanStart(current.node.spans[at + 1], at + 1, current.path, state.top, true);
                     }
                     return selStart(current.path, { type: 'list', where: 'after' });
                 }
-                const text = spanText(state.top.tmpText, current.node.loc, end, span);
+                const text = spanText(span);
                 if (end.cursor < text.length) {
                     return selStart(current.path, {
                         type: 'text',
                         end: { index: end.index, cursor: end.cursor + 1 },
                     });
                 }
-                if (end.index >= current.node.spans.length - 1) {
+                if (at >= current.node.spans.length - 1) {
                     const parent = state.top.nodes[parentLoc(current.path)];
                     // Rich Text, we jump to the next item thankx
                     if (richNode(parent)) {
@@ -302,7 +304,7 @@ export const navRight = (current: Current, state: TestState): SelStart | void =>
                     }
                     return selStart(current.path, { type: 'list', where: 'after' });
                 }
-                const idx = end.index + 1;
+                const idx = at + 1;
                 return spanStart(current.node.spans[idx], idx, current.path, state.top, true);
             }
 
@@ -381,10 +383,10 @@ export const navLeft = (current: Current, state: TestState): SelStart | void => 
                 //     return selStart(current.path, { type: 'text', end: left });
                 // }
                 const { end } = current.cursor;
+                const span = getSpan(current.node, end.index);
                 if (end.cursor > 0) {
-                    const span = current.node.spans[end.index];
                     if (span.type !== 'text') {
-                        return spanEnd(current.node.spans[end.index], current.path, end.index, state.top, true);
+                        return spanEnd(span, current.path, end.index, state.top, true);
                     }
 
                     return selStart(current.path, {
@@ -392,8 +394,9 @@ export const navLeft = (current: Current, state: TestState): SelStart | void => 
                         end: { index: end.index, cursor: end.cursor - 1 },
                     });
                 }
-                if (end.index > 0) {
-                    const idx = end.index - 1;
+                const at = current.node.spans.indexOf(span);
+                if (at > 0) {
+                    const idx = at - 1;
                     return spanEnd(current.node.spans[idx], current.path, idx, state.top, true);
                 }
                 if (richNode(state.top.nodes[parentLoc(current.path)])) {
@@ -404,10 +407,11 @@ export const navLeft = (current: Current, state: TestState): SelStart | void => 
         }
         case 'list': {
             if (current.cursor.type === 'control' && current.node.type === 'list') {
-                if (current.cursor.index === 0) {
+                const at = typeof current.cursor.index === 'number' ? current.cursor.index : current.node.children.indexOf(current.cursor.index);
+                if (at === 0) {
                     return goLeft(current.path, state.top);
                 }
-                return selectEnd(pathWithChildren(current.path, current.node.children[current.cursor.index - 1]), state.top);
+                return selectEnd(pathWithChildren(current.path, current.node.children[at - 1]), state.top);
             }
             if (current.cursor.type === 'list') {
                 switch (current.cursor.where) {

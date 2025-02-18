@@ -15,6 +15,8 @@ import { disolveSmooshed, joinSmooshed, rebalanceSmooshed } from './update/list'
 import {
     Cursor,
     findTableLoc,
+    getSpan,
+    getSpanIndex,
     lastChild,
     move,
     NodeSelection,
@@ -24,6 +26,7 @@ import {
     pathWithChildren,
     selStart,
     SelUpdate,
+    TextIndex,
     Top,
 } from './utils';
 
@@ -292,32 +295,34 @@ export const simpleSide = (node: Node, side: 'start' | 'end'): Cursor => {
 
 export const normalizeTextCursorSide = (
     spans: TextSpan<NodeID>[],
-    side: { index: number; cursor: number },
-    text?: { index: number; grems: string[] },
-): 'before' | 'after' | { index: number; cursor: number } => {
+    side: { index: TextIndex; cursor: number },
+    text?: { index: TextIndex; grems: string[] },
+): 'before' | 'after' | { index: TextIndex; cursor: number } => {
     side = { ...side };
+    let sideindex = getSpanIndex(spans, side.index);
     while (true) {
-        if (side.index >= spans.length) return 'after';
-        if (side.index < 0) return 'before';
+        if (sideindex >= spans.length) return 'after';
+        if (sideindex < 0) return 'before';
 
-        const len = spanLength(spans[side.index], text, side.index);
+        const len = spanLength(spans[sideindex], undefined, sideindex);
         if (side.cursor > len) {
             side.cursor -= len;
-            side.index += 1;
+            sideindex += 1;
             continue;
         }
         if (side.cursor < 0) {
-            if (side.index === 0) return 'before';
-            const pix = side.index - 1;
-            const len = spanLength(spans[pix], text, pix);
+            if (sideindex === 0) return 'before';
+            const pix = sideindex - 1;
+            const len = spanLength(spans[pix], undefined, pix);
             side.cursor += len;
-            side.index -= 1;
+            sideindex -= 1;
             continue;
         }
 
         break;
     }
-    return side;
+    // return side;
+    return { index: sideindex, cursor: side.cursor };
 };
 
 export const handleTextDelete = (state: TestState, current: { node: Text<NodeID>; path: Path }, left: Spat, right: Spat): KeyAction[] | void => {

@@ -3,8 +3,7 @@ import { Id, NodeID, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { IdCursor, Top } from './utils';
 
-export const spanText = (tmpText: Top['tmpText'], loc: NodeID, end: { text?: string[]; index: number }, span: { text: string }) =>
-    end.text ?? splitGraphemes(span.text);
+export const spanText = (span: { text: string }) => splitGraphemes(span.text);
 
 export const idText = (tmpText: Top['tmpText'], cursor: IdCursor | { text?: string[] }, node: { text: string; loc: NodeID }) =>
     splitGraphemes(node.text);

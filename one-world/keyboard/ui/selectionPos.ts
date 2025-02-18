@@ -1,7 +1,7 @@
 import { TestState } from '../test-utils';
 
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { lastChild, NodeSelection, Path, pathWithChildren, selStart, Top } from '../utils';
+import { getSpan, lastChild, NodeSelection, Path, pathWithChildren, selStart, Top } from '../utils';
 import { getCurrent } from '../selections';
 import { goLeft, goRight, handleNav, isTag, selectEnd, selectStart } from '../handleNav';
 import { SelStart } from '../handleShiftNav';
@@ -145,7 +145,7 @@ export const selectionPos = (
                     return null;
                 }
                 try {
-                    const tspan = cur.node.spans[cur.cursor.end.index];
+                    const tspan = getSpan(cur.node, cur.cursor.end.index);
                     if (tspan.type === 'embed') {
                         if (cur.cursor.end.cursor === 0) {
                             range.setStart(got, 0);
@@ -165,7 +165,7 @@ export const selectionPos = (
                         first = first.firstChild;
                     }
                     if (!first) return null;
-                    const text = spanText(top.tmpText, cur.node.loc, cur.cursor.end, tspan);
+                    const text = spanText(tspan);
                     const at = text.slice(0, cur.cursor.end.cursor).join('').length;
                     range.setStart(first, at);
                     range.setEnd(first, at);
