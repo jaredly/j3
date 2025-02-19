@@ -156,6 +156,10 @@ export const c_addSpan = (
         throw new Error('no numeric index ' + index);
     }
 
+    const spans = node.getSpans(top.graph.getEdge);
+    if (!spans) return null;
+    let at = spans.findIndex((s) => s.id === index);
+
     if (within != null) {
         const span = top.graph.nodes[index];
         if (span instanceof MTextText) {
@@ -163,19 +167,11 @@ export const c_addSpan = (
             if (within < text.length) {
                 console.log(text, within);
                 throw new Error('need to split');
+                //         spans[at] = { ...current, text: text.slice(0, within).join('') };
+                //         spans.splice(at + 1, 0, { ...current, text: text.slice(within).join('') });
             }
-            //
-            throw new Error('we actually want index to represent the spot after the current spot');
+            at++;
         }
-        // const current = spans[at];
-        // if (current?.type === 'text') {
-        //     const text = splitGraphemes(current.text);
-        //     if (within < text.length) {
-        //         spans[at] = { ...current, text: text.slice(0, within).join('') };
-        //         spans.splice(at + 1, 0, { ...current, text: text.slice(within).join('') });
-        //     }
-        //     at++;
-        // }
     }
 
     // const left = maybeJoin(spans[at - 1], span);

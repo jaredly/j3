@@ -166,6 +166,14 @@ export class MCons<T extends MNode<any>> implements MNode<T[]>, SerDe<'cons'> {
         return other;
     }
 
+    static newHeadEdge(ts: () => string, id: string, dest: string) {
+        return new Edge(ts(), { id, attr: 'head' }, dest);
+    }
+
+    static newTailEdge(ts: () => string, id: string, dest: string) {
+        return new Edge(ts(), { id, attr: 'tail' }, dest);
+    }
+
     getHeadEdge(getEdge: GetEdge): GotEdge<T> {
         return getEdge<T>(this.id, 'head');
     }
@@ -386,6 +394,104 @@ export class MTextEmbed implements MNode<Extract<TextSpan<NodeID>, { type: 'embe
     }
 }
 
+type ChildT<T> = MCons<MNode<T>> | MNode<T>;
+export const childAt = <T>(getEdge: GetEdge, at: number | string, edge: GotEdge<ChildT<T>>) => {
+    const first = edge;
+    if (!edge) return null;
+    if (typeof at === 'number') {
+        for (let i = 0; i < at; i++) {
+            const node: ChildT<T> = edge.end;
+            if (!(node instanceof MCons)) {
+                return null;
+            }
+            edge = node.getTailEdge(getEdge);
+        }
+    } else {
+        while (true) {
+            const node: ChildT<T> = edge.end;
+            if (!(node instanceof MCons)) {
+                if (node.id === at) {
+                    break;
+                }
+                return null;
+            }
+            const head = node.getHeadEdge(getEdge);
+            if (head.edge.dest === at) break;
+            edge = node.getTailEdge(getEdge);
+        }
+    }
+
+    return { edge, first: edge === first };
+};
+
+export const getList = (child: GotEdge<MNode<unknown>>, getEdge: GetEdge): string[] | null => {
+    if (child.end instanceof MCons) {
+        const res = child.end.construct(getEdge);
+        if (res == null) return null;
+        return res.map((n) => n.id);
+    } else if (child.end instanceof MNil) {
+        return [];
+    } else {
+        return [child.end.id];
+    }
+};
+
+export const removeChild = <T>(edge: GotEdge<ChildT<T>>, getEdge: GetEdge, at: number, ts: () => string): null | CUpdate[] => {
+    if (!edge) return null;
+    for (let i = 0; i < at; i++) {
+        const node: ChildT<T> = edge.end;
+        if (!(node instanceof MCons)) {
+            return null;
+        }
+        edge = node.getTailEdge(getEdge);
+    }
+    if (edge.end instanceof MCons) {
+        return [replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, edge.end.getTailEdge(getEdge).end.id))];
+    }
+    const nts = ts();
+    return [insertNodes([new MNil(nts)], []), replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, nts))];
+};
+
+export const insertAfter = <T>(edge: GotEdge<ChildT<T>>, getEdge: GetEdge, ts: () => string, loc: NodeID) => {
+    const cons = ts();
+
+    if (edge.end instanceof MCons) {
+        const tedge = edge.end.getTailEdge(getEdge);
+        return insertBefore(tedge, ts, loc);
+    }
+
+    return [
+        insertNodes([new MCons(cons)], [MCons.newHeadEdge(ts, cons, edge.edge.dest), MCons.newTailEdge(ts, cons, loc)]),
+        replaceEdges([edge.edge.del(ts())], edge.edge.to(ts, cons)),
+    ];
+};
+
+export const insertBefore = <T>(edge: GotEdge<ChildT<T>>, ts: () => string, loc: NodeID) => {
+    const cons = ts();
+
+    return [
+        insertNodes([new MCons(cons)], [MCons.newHeadEdge(ts, cons, loc), MCons.newTailEdge(ts, cons, edge.edge.dest)]),
+        replaceEdges([edge.edge.del(ts())], edge.edge.to(ts, cons)),
+    ];
+};
+
+export const replaceChild = <T>(edge: GotEdge<ChildT<T>>, getEdge: GetEdge, ts: () => string, ...locs: NodeID[]) => {
+    if (locs.length === 0) throw new Error(`need at list one child to replace`);
+
+    if (edge.end instanceof MCons) {
+        const hedge = edge.end.getHeadEdge(getEdge);
+        const tedge = edge.end.getTailEdge(getEdge);
+        const rops = locs.length > 1 ? insertArrayOp(ts, locs.slice(1).concat(edge.end.getTailEdge(getEdge).end.id)) : null;
+        return [
+            ...(rops ? [rops.op] : []),
+            replaceEdges([hedge.edge.del(ts())], hedge.edge.to(ts, locs[0])),
+            ...(rops ? [replaceEdges([tedge.edge.del(ts())], tedge.edge.to(ts, rops.head))] : []),
+        ];
+    }
+    const rops = locs.length > 1 ? insertArrayOp(ts, locs) : null;
+    return [...(rops ? [rops.op] : []), replaceEdges([edge.edge.del(ts())], edge.edge.to(ts, rops ? rops.head : locs[0]))];
+};
+
 @serde
 export class MTextText implements MNode<Extract<TextSpan<NodeID>, { type: 'text' }>>, SerDe<'text:text'> {
     id: string;
@@ -567,93 +673,21 @@ export class MList implements MCNode<List<NodeID>>, SerDe<'list'> {
     }
 
     getChildren(getEdge: GetEdge): NodeID[] | null {
-        const child = getEdge<MNode<Node> | MCons<MNode<Node>>>(this.id, 'children');
-        if (child.end instanceof MCons) {
-            const res = child.end.construct(getEdge);
-            if (res == null) return null;
-            return res.map((n) => n.id);
-        } else if (child.end instanceof MNil) {
-            return [];
-        } else {
-            return [child.end.id];
-        }
+        return getList(this.getChildEdge(getEdge)!, getEdge);
     }
 
     childAt(getEdge: GetEdge, at: number | string) {
-        type Child = MCons<MNode<Node>> | MNode<Node>;
-
-        let edge: GotEdge<Child> | null = this.getChildEdge(getEdge);
-        const first = edge;
-        if (!edge) return null;
-        if (typeof at === 'number') {
-            for (let i = 0; i < at; i++) {
-                const node: Child = edge.end;
-                if (!(node instanceof MCons)) {
-                    return null;
-                }
-                edge = node.getTailEdge(getEdge);
-            }
-        } else {
-            while (true) {
-                const node: Child = edge.end;
-                if (!(node instanceof MCons)) {
-                    if (node.id === at) {
-                        break;
-                    }
-                    return null;
-                }
-                const head = node.getHeadEdge(getEdge);
-                if (head.edge.dest === at) break;
-                edge = node.getTailEdge(getEdge);
-            }
-        }
-
-        return { edge, first: edge === first };
+        return childAt(getEdge, at, this.getChildEdge(getEdge)!);
     }
 
     replaceChild(getEdge: GetEdge, ts: () => string, at: number | string, ...locs: NodeID[]) {
-        if (locs.length === 0) throw new Error(`need at list one child to replace`);
         const child = this.childAt(getEdge, at);
-        if (!child) return null;
-        const edge = child.edge;
-
-        if (edge.end instanceof MCons) {
-            const hedge = edge.end.getHeadEdge(getEdge);
-            const tedge = edge.end.getTailEdge(getEdge);
-            const rops = locs.length > 1 ? insertArrayOp(ts, locs.slice(1).concat(edge.end.getTailEdge(getEdge).end.id)) : null;
-            return [
-                ...(rops ? [rops.op] : []),
-                replaceEdges([hedge.edge.del(ts())], hedge.edge.to(ts, locs[0])),
-                ...(rops ? [replaceEdges([tedge.edge.del(ts())], tedge.edge.to(ts, rops.head))] : []),
-            ];
-            // return [replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, edge.end.getTailEdge(getEdge).end.id))];
-        }
-        const rops = locs.length > 1 ? insertArrayOp(ts, locs) : null;
-        // if (locs.length === 1) {
-        //     return [replaceEdges([edge.edge.del(ts())], edge.edge.to(ts, locs[0]))];
-        // }
-        return [...(rops ? [rops.op] : []), replaceEdges([edge.edge.del(ts())], edge.edge.to(ts, rops ? rops.head : locs[0]))];
-        // const nts = ts();
-        // return [insertNodes([new MNil(nts)], []), replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, nts))];
+        if (child == null) return null;
+        return replaceChild(child.edge, getEdge, ts, ...locs);
     }
 
     removeChild(getEdge: GetEdge, at: number, ts: () => string): null | CUpdate[] {
-        type Child = MCons<MNode<Node>> | MNode<Node>;
-
-        let edge: GotEdge<Child> | null = this.getChildEdge(getEdge);
-        if (!edge) return null;
-        for (let i = 0; i < at; i++) {
-            const node: Child = edge.end;
-            if (!(node instanceof MCons)) {
-                return null;
-            }
-            edge = node.getTailEdge(getEdge);
-        }
-        if (edge.end instanceof MCons) {
-            return [replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, edge.end.getTailEdge(getEdge).end.id))];
-        }
-        const nts = ts();
-        return [insertNodes([new MNil(nts)], []), replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, nts))];
+        return removeChild(this.getChildEdge(getEdge)!, getEdge, at, ts);
     }
 
     getKindEdge(getEdge: GetEdge): GotEdge<MNode<ListKind<NodeID>>> | null {

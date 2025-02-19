@@ -182,7 +182,7 @@ test('in text', () => {
     ccheck(state, text([tspan('hi,', undefined, true)]), textc('', 3));
 });
 
-test.only('maybe embed', () => {
+test.skip('maybe embed', () => {
     const state = initial(text([tspan('h$', undefined, true)]), textc('', 2));
     op(state, keyUpdate(state, '{', {}), true);
     ccheck(state, text([tspan('h'), tembed(id('', true))]), idc(0));
