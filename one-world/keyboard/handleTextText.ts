@@ -25,6 +25,7 @@ export const handleTextText = (
     mods?: Mods,
 ): void | KeyAction[] => {
     const span = getSpan(current, cursor.end.index);
+    console.log('sapan', span, current, cursor.end.index);
     if (span.type !== 'text') {
         if (span.type === 'embed') {
             // Either 0 or 1

@@ -294,7 +294,7 @@ export const simpleSide = (node: Node, side: 'start' | 'end'): Cursor => {
 };
 
 export const normalizeTextCursorSide = (
-    spans: TextSpan<NodeID>[],
+    spans: TextSpan<NodeID, any>[],
     side: { index: TextIndex; cursor: number },
     text?: { index: TextIndex; grems: string[] },
 ): 'before' | 'after' | { index: TextIndex; cursor: number } => {

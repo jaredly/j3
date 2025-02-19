@@ -59,7 +59,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
                     {
                         type: 'add-inside',
                         path,
-                        children: [{ type: 'text', spans: [{ type: 'text', text: '', loc: '' }], loc: true }],
+                        children: [{ type: 'text', spans: [{ type: 'text', text: '', loc: false }], loc: true }],
                         cursor: {
                             type: 'text',
                             end: { index: 0, cursor: 0 },

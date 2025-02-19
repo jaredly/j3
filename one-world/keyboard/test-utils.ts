@@ -47,7 +47,7 @@ export const asTopAndPath = (node: RecNodeT<boolean | number>): { top: Top; sel:
     let nextLoc = 0;
     let sel: NodeID[] = [];
     const sels: Record<number, NodeID[]> = {};
-    const root = fromRec(node, nodes, (l, node, path) => {
+    const root = fromRec(node, nodes, (l, _, path) => {
         const loc = nextLoc++ + '';
         if (l === true || l === 1) {
             sel = path.concat([loc]);
@@ -65,7 +65,7 @@ export const asTopAndLocs = (node: RecNodeT<number>): { top: Top; locs: Record<n
     const nodes: Nodes = {};
     let nextLoc = 0;
     let locs: Record<number, NodeID[]> = {};
-    const rootLoc = fromRec(node, nodes, (l, node, path) => {
+    const rootLoc = fromRec(node, nodes, (l, _, path) => {
         const loc = nextLoc++ + '';
         if (l != null) {
             if (locs[l]) throw new Error(`duplicate num ${l}`);
@@ -80,7 +80,7 @@ export const asTopAndPaths = (node: RecNodeT<Sels>, root: Path['root']): { top: 
     const nodes: Nodes = {};
     let nextLoc = 0;
     let sels: Record<number, NodeSelection> = {};
-    const rootLoc = fromRec(node, nodes, (l, node, path) => {
+    const rootLoc = fromRec(node, nodes, (l, _, path) => {
         const loc = nextLoc++ + '';
         if (l != null) {
             if (Array.isArray(l[0])) {
@@ -213,7 +213,7 @@ export const table = <T>(kind: TableKind, rows: RecNodeT<T>[][], loc: T = null a
     loc,
     forceMultiline,
 });
-export const text = <T>(spans: TextSpan<RecNodeT<T>>[], loc: T = null as T): RecText<T> => ({ type: 'text', loc, spans });
+export const text = <T>(spans: TextSpan<RecNodeT<T>, T>[], loc: T = null as T): RecText<T> => ({ type: 'text', loc, spans });
 
 // ugh.
 /*
@@ -283,15 +283,22 @@ export const listc = (where: ListWhere): CollectionCursor => ({ type: 'list', wh
 export const controlc = (index: number): CollectionCursor => ({ type: 'control', index });
 export const noText = (cursor: Cursor): Cursor => cursor;
 // cursor.type === 'id' ? { ...cursor } : cursor.type === 'text' ? { ...cursor, end: { ...cursor.end, text: undefined } } : cursor;
-export const textc = (index: number, cursor: number): TextCursor => ({
+export const textc = (index: number | string, cursor: number): TextCursor => ({
     // text?: string[]
     type: 'text',
     end: { index, cursor }, // text
 });
+
 // export const textcs = (index: number, cursor: number, sindex: number, scursor: number, text?: string[]): TextCursor => ({
 //     type: 'text',
 //     end: { index, cursor, text },
 //     start: { index: sindex, cursor: scursor },
 // });
-export const tspan = (text: string, style?: Style): TextSpan<any> => ({ type: 'text', text, style, loc: '' });
-export const tembed = (item: RecNodeT<boolean | number>, style?: Style): TextSpan<any> => ({ type: 'embed', item, style, loc: '' });
+
+export const tspan = (text: string, style?: Style, loc?: boolean | number): TextSpan<any, boolean | number> => ({
+    type: 'text',
+    text,
+    style,
+    loc: loc ?? 0,
+});
+export const tembed = (item: RecNodeT<boolean | number>, style?: Style): TextSpan<any, number | boolean> => ({ type: 'embed', item, style, loc: 0 });

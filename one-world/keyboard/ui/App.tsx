@@ -276,7 +276,7 @@ export const App = ({ id }: { id: string }) => {
                                             {
                                                 type: 'text',
                                                 loc: true,
-                                                spans: [{ type: 'text', text: '', loc: '' }],
+                                                spans: [{ type: 'text', text: '', loc: false }],
                                             },
                                         ],
                                     },
@@ -309,8 +309,8 @@ export const App = ({ id }: { id: string }) => {
                                             loc: false,
                                             rows: [
                                                 [
-                                                    { type: 'text', loc: true, spans: [{ type: 'text', text: '', loc: '' }] },
-                                                    { type: 'text', loc: false, spans: [{ type: 'text', text: '', loc: '' }] },
+                                                    { type: 'text', loc: true, spans: [{ type: 'text', text: '', loc: false }] },
+                                                    { type: 'text', loc: false, spans: [{ type: 'text', text: '', loc: false }] },
                                                 ],
                                             ],
                                         },

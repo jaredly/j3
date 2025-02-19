@@ -389,7 +389,10 @@ export const getCurrent = (selection: NodeSelection, top: Top): Current => {
     const sel = selection.end ?? selection.start;
     const path = sel.path;
     const node = getNode(path, top);
-    if (node == null) throw new Error('bad path');
+    if (node == null) {
+        console.log('NO WHAT', path);
+        throw new Error('bad path');
+    }
     const cursor = sel.cursor;
     if (node.type === 'id') {
         if (cursor.type !== 'id') {

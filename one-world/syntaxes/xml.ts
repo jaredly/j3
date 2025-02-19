@@ -40,7 +40,7 @@ export const attrs = (v: Record<string, any>, max = 20) => {
         .join(' ');
 };
 
-export const textSpanToXML = <T>(span: TextSpan<T>, toXML: (t: T) => XML): XML => {
+export const textSpanToXML = <T>(span: TextSpan<T, any>, toXML: (t: T) => XML): XML => {
     switch (span.type) {
         case 'text':
             return { tag: 'span:' + span.type, src: { left: [] }, attrs: { text: span.text, style: span.style, link: span.link } };

@@ -64,6 +64,10 @@ export class LRW<T> implements CRDT, SerDe<'LRW'> {
         return other.ts < this.ts ? this : other;
     }
 
+    set(value: T, ts: string) {
+        return new LRW<T>(value, ts);
+    }
+
     toJSON() {
         return { kind: this.kind, value: { value: this.value, ts: this.ts } };
     }

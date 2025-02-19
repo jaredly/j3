@@ -186,7 +186,7 @@ test('smooshed covered', () => {
 
 test('text into', () => {
     let state = asTop(
-        text([tspan('before'), { type: 'embed', item: round([id('over'), id('inner', 2), id('yall')]), loc: '' }, tspan('after')], 1),
+        text([tspan('before'), { type: 'embed', item: round([id('over'), id('inner', 2), id('yall')]), loc: false }, tspan('after')], 1),
         textc(0, 2),
         idc(2),
     );
@@ -214,7 +214,7 @@ test('text into more', () => {
     let state = asTop(
         round([
             id('abcd', 1),
-            text([tspan('before'), { type: 'embed', item: round([id('over'), id('inner', 2), id('yall')]), loc: '' }, tspan('after')]),
+            text([tspan('before'), { type: 'embed', item: round([id('over'), id('inner', 2), id('yall')]), loc: false }, tspan('after')]),
         ]),
         idc(3),
         idc(2),

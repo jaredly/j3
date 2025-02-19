@@ -176,8 +176,8 @@ test('list inside two', () => {
     ccheck(state, round([id(''), id('', true)]), idc(0));
 });
 
-// test('in text', () => {
-//     const state = initial(text([tspan('hi')], true), textc(0, 2));
-//     op(state, keyUpdate(state, ',', {}));
-//     ccheck(state, text([tspan('hi,')], true), textc(0, 3));
-// });
+test.only('in text', () => {
+    const state = initial(text([tspan('hi', undefined, true)]), textc('', 2));
+    op(state, keyUpdate(state, ',', {}));
+    ccheck(state, text([tspan('hi,', undefined, true)]), textc(0, 3));
+});

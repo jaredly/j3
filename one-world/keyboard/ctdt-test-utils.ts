@@ -2,6 +2,7 @@ import { RecNodeT, NodeID, ListKind, Node, mapLocs, fromRec, Nodes } from '../sh
 import { applySelUp } from './applyUpdate';
 import { CTState, ticker } from './crdt-check.test';
 import { isTag } from './handleNav';
+import { SelStart } from './handleShiftNav';
 import { CTop, CUpdate, insertNode, justOps, justUps, keyActionToUpdate, replaceEdges } from './keyActionToCRDTUpdate';
 import { KeyAction } from './keyActionToUpdate';
 import { CGraph, rootEdge } from './update/crdt/cgraph';
@@ -31,6 +32,13 @@ export const full = (top: CTop) => {
     return expand(top, top.graph.getRoot().construct(top.graph.getEdge));
 };
 
+const fixTextSel = (sel: SelStart) => {
+    if (sel.cursor.type === 'text' && sel.cursor.end.index === '') {
+        sel.cursor.end.index = sel.path.children.pop()!;
+    }
+    return sel;
+};
+
 export const initial = (
     iroot: RecNodeT<boolean | number | null> = { type: 'id', text: '', loc: true },
     cursor: Cursor = { type: 'id', end: 0 },
@@ -45,6 +53,9 @@ export const initial = (
         start: selStart(pathWith(sels[1]), cursor),
         end: endCursor ? selStart(pathWith(sels[2] ?? sels[1]), endCursor) : undefined,
     };
+    fixTextSel(sel.start);
+    console.log('sel', sel);
+    console.log(root);
 
     const nodes: Nodes = {};
     fromRec(root, nodes, (loc) => loc);
@@ -130,7 +141,7 @@ export const pathWith = (children: string[]): Path => ({ root: { ids: [], top: '
 
 export const withLocs = (root: RecNodeT<boolean | number | null>, ts: () => string) => {
     const sels: Record<number, NodeID[]> = {};
-    const tx = mapLocs<boolean | number | null, string>(root, (l, _, path) => {
+    const tx = mapLocs<boolean | number | null, string>(root, (l, path) => {
         const loc = ts();
         if (l) {
             sels[l === true ? 1 : l] = path.concat([loc]);

@@ -152,7 +152,7 @@ export const match_ = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: numbe
         }
         case 'text':
             if (node?.type !== 'text') return;
-            const spans: TextSpan<any>[] = [];
+            const spans: TextSpan<any, any>[] = [];
             for (let i = 0; i < node.spans.length; i++) {
                 const span = node.spans[i];
                 if (span.type === 'embed') {

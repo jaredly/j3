@@ -1,4 +1,11 @@
 
+ugh.
+so, text in path.
+textindex
+
+yeah NO not in path. don't need that.
+
+
 # GettingCRDT Implemented keyUpdate -> CUpdate
 
 - [ ] string sel index must be ID folks

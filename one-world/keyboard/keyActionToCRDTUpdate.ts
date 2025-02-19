@@ -14,7 +14,7 @@ import { fromRec, ListKind, Node, NodeID, Nodes, RecNodeT, TextSpan } from '../s
 import { isTag } from './handleNav';
 import { KeyAction, KeyWhat } from './keyActionToUpdate';
 import { CGraph, CGraphOp, Edge, MNode, rootEdge } from './update/crdt/cgraph';
-import { insertText, MCons, MId, MList, MListKind, MListTag, MNil, MNodes, MOp, MText } from './update/crdt/crdtnodes';
+import { insertText, MCons, MId, MList, MListKind, MListTag, MNil, MNodes, MOp, MText, MTextText } from './update/crdt/crdtnodes';
 import { Cursor, lastChild, move, parentLoc, parentPath, Path, pathWithChildren, selStart, SelUpdate, Top } from './utils';
 
 // type CRDTUpdate = {
@@ -53,9 +53,9 @@ export const keyActionToUpdate = (top: CTop, action: KeyAction): CUpdate[] | voi
         // }
         case 'set-id-text':
             return c_setIdText(top, action.path, action.text, action.end, action.ccls);
-        // case 'set-text-text': {
-        //     return c_setTextText(top, action.path, action.text, action.index, action.end);
-        // }
+        case 'set-text-text': {
+            return c_setTextText(top, action.path, action.text, action.index, action.end);
+        }
         // case 'text-delete':
         //     return c_textDelete(top, action.path, action.left, action.right);
         // case 'multi-delete': {
@@ -105,6 +105,28 @@ export const keyActionToUpdate = (top: CTop, action: KeyAction): CUpdate[] | voi
         //     return c_pasteUpdate(top, action.path, action.cursor, action.values);
     }
     throw new Error(`no action ${action.type}`);
+};
+
+export const c_setTextText = (top: CTop, path: Path, text: string, index: string | number, end: number): CUpdate[] | null => {
+    if (typeof index === 'number') throw new Error('need an string loc');
+    const node = top.graph.nodes[index];
+    if (!(node instanceof MTextText)) return null;
+    // top.graph.nodes[index]
+    // const spans = node.spans.slice();
+    // const at = spans.findIndex((s) => s.loc === index);
+    // const span = spans[at];
+    // if (span.type !== 'text') return;
+
+    return [updateNode(node.setText(text, top.ts())), move({ start: selStart(path, { type: 'text', end: { index, cursor: end } }) })];
+    // spans[at] = { ...span, text };
+    // // this is 'set text text'
+    // return {
+    //     nodes: { [node.loc]: { ...node, spans } },
+    //     selection: {
+    //         start: selStart(path, { type: 'text', end: { index, cursor: end } }),
+    //     },
+    //     // tmpText: { [`${current.node.loc}:${left.index}`]: grems },
+    // };
 };
 
 // export const c_setTextText = (top: CTop, path: Path, text: string, index: number, end: number) => {

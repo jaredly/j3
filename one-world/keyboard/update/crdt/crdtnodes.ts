@@ -414,6 +414,10 @@ export class MTextText implements MNode<Extract<TextSpan<NodeID>, { type: 'text'
         return { kind: this.kind, value: { id: this.id, plain: this.plain.toJSON() } };
     }
 
+    setText(text: string, ts: string) {
+        return new MTextText(this.id, this.plain.text.set(text, ts), this.plain.meta);
+    }
+
     static fromJSON(data: any, registry: Registry) {
         if (typeof data.id !== 'string') return null;
         const praw = data.plain;

@@ -277,7 +277,7 @@ test('text', () => {
 });
 
 test('text in rich', () => {
-    const { top, sel } = asTopAndPath(list({ type: 'plain' })([text([{ type: 'text', text: 'hi', loc: '' }], true)]));
+    const { top, sel } = asTopAndPath(list({ type: 'plain' })([text([{ type: 'text', text: 'hi', loc: false }], true)]));
     expect(selectEnd(pc(sel), top)).toEqual(selStart(pc(sel), { type: 'text', end: { index: 0, cursor: 2 } }));
     expect(selectStart(pc(sel), top)).toEqual(selStart(pc(sel), { type: 'text', end: { index: 0, cursor: 0 } }));
 });
@@ -297,7 +297,7 @@ test('text empty in rich', () => {
 // });
 
 test('text control in rich', () => {
-    const { top, sel } = asTopAndPath(list({ type: 'plain' })([text([{ type: 'include', hash: '', id: '', loc: '' }], true)]));
+    const { top, sel } = asTopAndPath(list({ type: 'plain' })([text([{ type: 'include', hash: '', id: '', loc: false }], true)]));
     expect(selectEnd(pc(sel), top)).toEqual(selStart(pc(sel), { type: 'control', index: 0 }));
     expect(selectStart(pc(sel), top)).toEqual(selStart(pc(sel), { type: 'control', index: 0 }));
 });
@@ -321,9 +321,9 @@ test('over into text - empty', () => {
 });
 
 test('over into text', () => {
-    let state = asTop(smoosh([id('b', true), text([{ type: 'text', text: 'hi', loc: '' }])]), idc(1));
+    let state = asTop(smoosh([id('b', true), text([{ type: 'text', text: 'hi', loc: false }])]), idc(1));
     state = applySel(state, handleNav('ArrowRight', state)!);
-    check(state, smoosh([id('b'), text([{ type: 'text', text: 'hi', loc: '' }], true)]), textc(0, 0));
+    check(state, smoosh([id('b'), text([{ type: 'text', text: 'hi', loc: false }], true)]), textc(0, 0));
 });
 
 test('between two lists', () => {
@@ -333,19 +333,19 @@ test('between two lists', () => {
 });
 
 test('out of an embed', () => {
-    let state = asTop(text([tspan('a'), { type: 'embed', item: id('b', true), loc: '' }, tspan('c')]), idc(1));
+    let state = asTop(text([tspan('a'), { type: 'embed', item: id('b', true), loc: false }, tspan('c')]), idc(1));
     state = applySel(state, handleNav('ArrowRight', state)!);
-    check(state, text([tspan('a'), { type: 'embed', item: id('b'), loc: '' }, tspan('c')], true), textc(1, 1));
+    check(state, text([tspan('a'), { type: 'embed', item: id('b'), loc: false }, tspan('c')], true), textc(1, 1));
 });
 
 test('left out of an embed', () => {
-    let state = asTop(text([tspan('a'), { type: 'embed', item: id('b', true), loc: '' }, tspan('c')]), idc(0));
+    let state = asTop(text([tspan('a'), { type: 'embed', item: id('b', true), loc: false }, tspan('c')]), idc(0));
     state = applySel(state, handleNav('ArrowLeft', state)!);
-    check(state, text([tspan('a'), { type: 'embed', item: id('b'), loc: '' }, tspan('c')], true), textc(1, 0));
+    check(state, text([tspan('a'), { type: 'embed', item: id('b'), loc: false }, tspan('c')], true), textc(1, 0));
 });
 
 test('into an embed', () => {
-    let state = asTop(text([tspan('a'), { type: 'embed', item: id('b'), loc: '' }, tspan('c')], true), textc(1, 0));
+    let state = asTop(text([tspan('a'), { type: 'embed', item: id('b'), loc: false }, tspan('c')], true), textc(1, 0));
     state = applySel(state, handleNav('ArrowRight', state)!);
-    check(state, text([tspan('a'), { type: 'embed', item: id('b', true), loc: '' }, tspan('c')]), idc(0));
+    check(state, text([tspan('a'), { type: 'embed', item: id('b', true), loc: false }, tspan('c')]), idc(0));
 });

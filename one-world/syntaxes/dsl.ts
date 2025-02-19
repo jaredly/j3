@@ -304,7 +304,7 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
             return one(matcher.f(node), node);
         case 'text':
             if (node.type !== 'text') return fail(matcher, node);
-            const items: TextSpan<any>[] = [];
+            const items: TextSpan<any, any>[] = [];
             node.spans.forEach((span, i) => {
                 switch (span.type) {
                     case 'embed':

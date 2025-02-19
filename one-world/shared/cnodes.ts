@@ -106,18 +106,18 @@ export const linksEqual = (one?: Link, two?: Link) => {
     return false;
 };
 
-export type TextSpan<Embed> =
-    | { type: 'text'; text: string; link?: Link; style?: Style; loc: string }
+export type TextSpan<Embed, Loc = string> =
+    | { type: 'text'; text: string; link?: Link; style?: Style; loc: Loc }
     // Jump back to a normal node I guess
-    | { type: 'embed'; item: Embed; link?: Link; style?: Style; loc: string }
-    | { type: 'attachment'; attachment: string; display: 'name' | 'small' | 'large'; loc: string }
+    | { type: 'embed'; item: Embed; link?: Link; style?: Style; loc: Loc }
+    | { type: 'attachment'; attachment: string; display: 'name' | 'small' | 'large'; loc: Loc }
     // I kinda forget what this was about? Maybe like letting you supply rich-text plugins or something
-    | { type: 'custom'; plugin: string; data: any; loc: string }
+    | { type: 'custom'; plugin: string; data: any; loc: Loc }
     // How are these different from `embed`? Well these actually yoink the source
     // of the referenced term and plop it in there.
     // Embed would either be a ref to it, or duplicate the code
-    | { type: 'include'; id: string; hash: string; loc: string }
-    | { type: 'diff'; before: { id: string; hash: string }; after: { id: string; hash: string }; loc: string };
+    | { type: 'include'; id: string; hash: string; loc: Loc }
+    | { type: 'diff'; before: { id: string; hash: string }; after: { id: string; hash: string }; loc: Loc };
 
 export type RichKind =
     | { type: 'plain' }
@@ -181,7 +181,7 @@ export type RecList<Loc> = {
 
 export type RecText<Loc> = {
     type: 'text';
-    spans: TextSpan<RecNodeT<Loc>>[];
+    spans: TextSpan<RecNodeT<Loc>, Loc>[];
     loc: Loc;
     src?: Src;
 };
@@ -297,7 +297,11 @@ export const fromMap = <Loc>(id: NodeID, nodes: Nodes, toLoc: (l: NodeID) => Loc
             return {
                 ...node,
                 loc,
-                spans: node.spans.map((span) => (span.type === 'embed' ? { ...span, item: fromMap(span.item, nodes, toLoc) } : span)),
+                spans: node.spans.map((span) =>
+                    span.type === 'embed'
+                        ? { ...span, item: fromMap(span.item, nodes, toLoc), loc: toLoc(span.loc) }
+                        : { ...span, loc: toLoc(span.loc) },
+                ),
             };
         case 'list':
             return {
@@ -325,10 +329,10 @@ export const fromMap = <Loc>(id: NodeID, nodes: Nodes, toLoc: (l: NodeID) => Loc
 export const fromRec = <Loc>(
     node: RecNodeT<Loc>,
     map: Nodes | Update['nodes'],
-    get: (l: Loc, node: RecNodeT<Loc>, path: NodeID[]) => NodeID,
+    get: (l: Loc, node: null, path: NodeID[]) => NodeID,
     path: NodeID[] = [],
 ): NodeID => {
-    const loc = get(node.loc, node, path);
+    const loc = get(node.loc, null, path);
     const inner = path.concat([loc]);
     switch (node.type) {
         case 'id':
@@ -338,7 +342,11 @@ export const fromRec = <Loc>(
             map[loc] = {
                 ...node,
                 loc,
-                spans: node.spans.map((span) => (span.type === 'embed' ? { ...span, item: fromRec(span.item, map, get, inner) } : span)),
+                spans: node.spans.map((span) =>
+                    span.type === 'embed'
+                        ? { ...span, item: fromRec(span.item, map, get, inner), loc: get(span.loc, null, inner) }
+                        : { ...span, loc: get(span.loc, null, inner) },
+                ),
             };
             return loc;
         case 'list':
@@ -366,18 +374,22 @@ export const fromRec = <Loc>(
     }
 };
 
-export const mapLocs = <From, To>(node: RecNodeT<From>, get: (l: From, node: RecNodeT<From>, path: To[]) => To, path: To[] = []): RecNodeT<To> => {
-    const loc = get(node.loc, node, path);
+export const mapLocs = <From, To>(node: RecNodeT<From>, get: (l: From, path: To[]) => To, path: To[] = []): RecNodeT<To> => {
+    const loc = get(node.loc, path);
     const inner = path.concat([loc]);
     switch (node.type) {
         case 'id':
             return { ...node, loc };
-        case 'text':
-            return {
-                ...node,
-                loc,
-                spans: node.spans.map((span) => (span.type === 'embed' ? { ...span, item: mapLocs(span.item, get, inner) } : span)),
-            };
+        case 'text': {
+            const spans = node.spans.map((span) => {
+                const loc = get(span.loc, inner);
+                if (span.type === 'embed') {
+                    return { ...span, item: mapLocs(span.item, get, inner), loc };
+                }
+                return { ...span, loc };
+            });
+            return { ...node, loc, spans };
+        }
         case 'list':
             return {
                 ...node,
