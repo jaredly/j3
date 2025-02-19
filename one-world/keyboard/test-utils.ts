@@ -132,6 +132,11 @@ export const atPath = (root: NodeID, top: Top, path: number[]) => {
     const res: NodeID[] = [root];
     path = path.slice();
     while (path.length) {
+        const node = top.nodes[root];
+        if (path.length === 1 && node.type === 'text') {
+            res.push(node.spans[path[0]].loc);
+            break;
+        }
         root = childLocs(top.nodes[root])[path.shift()!];
         res.push(root);
     }
@@ -160,6 +165,17 @@ export const selPaths = (exp: RecNodeT<number | boolean | null>): { main: number
             main = path;
         } else if (typeof node.loc === 'number') {
             paths[node.loc] = path;
+        }
+        if (node.type === 'text') {
+            for (let i = 0; i < node.spans.length; i++) {
+                const span = node.spans[i];
+                if (span.loc === true || span.loc === 1) {
+                    if (main != null) throw new Error(`multiple nodes marked as selected`);
+                    main = path.concat([i]);
+                } else if (typeof span.loc === 'number') {
+                    paths[span.loc] = path.concat([i]);
+                }
+            }
         }
         childNodes(node).forEach((child, i) => visit(child, path.concat([i])));
     };

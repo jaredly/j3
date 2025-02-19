@@ -54,8 +54,6 @@ export const initial = (
         end: endCursor ? selStart(pathWith(sels[2] ?? sels[1]), endCursor) : undefined,
     };
     fixTextSel(sel.start);
-    console.log('sel', sel);
-    console.log(root);
 
     const nodes: Nodes = {};
     fromRec(root, nodes, (loc) => loc);
@@ -120,7 +118,6 @@ const updateTop = (state: CTState, ups: CUpdate[]) => {
             return;
         }
         state.top.nodes[id] = state.ctop.graph.getNode(id) as Node;
-        // console.log('up', id, state.top.nodes[id]);
     });
 };
 

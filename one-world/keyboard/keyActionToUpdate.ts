@@ -30,7 +30,6 @@ export const selUpdate = (sel?: void | SelStart, start?: SelStart): Update | voi
     sel ? { nodes: {}, selection: start ? { start, end: sel } : { start: sel } } : undefined;
 
 export const keyActionToUpdate = (state: TestState, action: KeyAction): Update | void => {
-    console.log('Key Action', action.type);
     switch (action.type) {
         case 'join-table':
             return joinTable(state.top, action.path, state.top.nodes[action.child.loc], action.child.cursor, action.at);

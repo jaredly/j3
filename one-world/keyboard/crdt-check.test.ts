@@ -27,9 +27,16 @@ export const ccheck = (state: CTState, exp: RecNodeT<boolean | number | null>, c
         endCursor: state.sel.end ? noText(state.sel.end.cursor) : undefined,
         endPath: state.sel.end?.path.children ?? state.sel.start.path.children,
     }).toEqual({
-        sel: atPath(state.top.root, state.top, main),
-        endPath: paths[2] ? atPath(state.top.root, state.top, paths[2]) : atPath(state.top.root, state.top, main),
+        sel: fixTID(atPath(state.top.root, state.top, main), cursor),
+        endPath: fixTID(paths[2] ? atPath(state.top.root, state.top, paths[2]) : atPath(state.top.root, state.top, main), endCursor ?? cursor),
         cursor,
         endCursor,
     });
+};
+
+const fixTID = (ids: string[], cursor: Cursor) => {
+    if (cursor && cursor.type === 'text' && (cursor.end.index === '' || cursor.end.index === ids[ids.length - 1])) {
+        cursor.end.index = ids.pop()!;
+    }
+    return ids;
 };

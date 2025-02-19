@@ -446,9 +446,8 @@ export const insertTextSpan = (top: CTop, id: string, span: TextSpan<NodeID>): M
 export const insertText = (top: CTop, id: string, spans: TextSpan<NodeID>[]): MOp[] => {
     const ops: MOp[] = [];
     const ids = spans.map((span) => {
-        const id = top.ts();
-        ops.push(insertTextSpan(top, id, span));
-        return id;
+        ops.push(insertTextSpan(top, span.loc, span));
+        return span.loc;
     });
     const mspans = insertArrayOp(top.ts, ids);
     ops.push(mspans.op);
