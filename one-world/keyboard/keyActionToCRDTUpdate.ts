@@ -18,8 +18,10 @@ import { CGraph, CGraphOp, Edge, MNode, rootEdge } from './update/crdt/cgraph';
 import {
     childAt,
     insertAfter,
+    insertBefore,
     insertText,
     insertTextSpan,
+    lastTail,
     MCons,
     MId,
     MList,
@@ -135,7 +137,7 @@ export const c_addSpan = (
     top: CTop,
     path: Path,
     recSpan: TextSpan<RecNodeT<boolean>>,
-    index: TextIndex,
+    index: TextIndex | null,
     cursor: number | Cursor,
     within?: number,
 ): null | CUpdate[] => {
@@ -155,7 +157,7 @@ export const c_addSpan = (
         sel =
             result.selPath.length && typeof cursor !== 'number'
                 ? selStart(pathWithChildren(path, ...result.selPath), cursor)
-                : selStart(path, { type: 'text', end: { index: index, cursor: 0 } });
+                : selStart(path, { type: 'text', end: { index: id, cursor: 0 } });
     } else {
         ops.push(insertTextSpan(top, { ...recSpan, loc: id }));
 
@@ -163,36 +165,51 @@ export const c_addSpan = (
             cursor = 0;
         }
 
-        sel = selStart(path, { type: 'text', end: { index: index, cursor } });
+        sel = selStart(path, { type: 'text', end: { index: id, cursor } });
     }
 
     // let at = getSpanIndex(spans, index);
-    if (typeof index !== 'string') {
+    if (index != null && typeof index !== 'string') {
         throw new Error('no numeric index ' + index);
     }
+    const spans = node.getSpansEdge(top.graph.getEdge);
 
-    const child = childAt(top.graph.getEdge, index, node.getSpansEdge(top.graph.getEdge));
+    let child;
+    let after = false;
+    if (index === null) {
+        child = lastTail(spans, top.graph.getEdge);
+        after = true;
+        index = child.end.id;
+    } else {
+        child = childAt(top.graph.getEdge, index, spans)?.edge;
+    }
     if (!child) return null;
 
-    ops.push(...insertAfter(child.edge, top.graph.getEdge, top.ts, id));
+    if (within != null) {
+        if (after) {
+            throw new Error(`cant do within and also be adding to the end`);
+        }
+        const span = child.end;
+        if (span instanceof MTextText) {
+            const text = splitGraphemes(span.text);
+            if (within < text.length) {
+                const nid = top.ts();
+                ops.push(
+                    updateNode(span.setText(text.slice(0, within).join(''), top.ts())),
+                    insertNodes([span.clone(nid).setText(text.slice(within).join(''), top.ts())], []),
+                    ...insertAfter(child, top.graph.getEdge, top.ts, id, nid),
+                );
+                return [...ops, { type: 'move', to: { start: sel } }];
+            }
+            after = true;
+        }
+    }
 
-    // const spans = node.getSpans(top.graph.getEdge);
-    // if (!spans) return null;
-    // let at = spans.findIndex((s) => s.id === index);
-
-    // if (within != null) {
-    //     const span = top.graph.nodes[index];
-    //     if (span instanceof MTextText) {
-    //         const text = splitGraphemes(span.text);
-    //         if (within < text.length) {
-    //             console.log(text, within);
-    //             throw new Error('need to split');
-    //             //         spans[at] = { ...current, text: text.slice(0, within).join('') };
-    //             //         spans.splice(at + 1, 0, { ...current, text: text.slice(within).join('') });
-    //         }
-    //         at++;
-    //     }
-    // }
+    if (after) {
+        ops.push(...insertAfter(child, top.graph.getEdge, top.ts, id));
+    } else {
+        ops.push(...insertBefore(child, top.ts, id));
+    }
 
     // const left = maybeJoin(spans[at - 1], span);
     // if (left) {

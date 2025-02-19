@@ -187,3 +187,9 @@ test('maybe embed', () => {
     op(state, keyUpdate(state, '{', {}));
     ccheck(state, text([tspan('h'), tembed(id('', true))]), idc(0));
 });
+
+test('splitit', () => {
+    const state = initial(text([tspan('h$oo', undefined, true)]), textc('', 2));
+    op(state, keyUpdate(state, '{', {}));
+    ccheck(state, text([tspan('h'), tembed(id('', true)), tspan('oo')]), idc(0));
+});

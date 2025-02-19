@@ -424,6 +424,13 @@ export const childAt = <T>(getEdge: GetEdge, at: number | string, edge: GotEdge<
     return { edge, first: edge === first };
 };
 
+export const lastTail = <T>(child: GotEdge<ChildT<T>>, getEdge: GetEdge): GotEdge<ChildT<T>> => {
+    while (child.end instanceof MCons) {
+        child = child.end.getTailEdge(getEdge);
+    }
+    return child;
+};
+
 export const getList = (child: GotEdge<MNode<unknown>>, getEdge: GetEdge): string[] | null => {
     if (child.end instanceof MCons) {
         const res = child.end.construct(getEdge);
@@ -452,27 +459,27 @@ export const removeChild = <T>(edge: GotEdge<ChildT<T>>, getEdge: GetEdge, at: n
     return [insertNodes([new MNil(nts)], []), replaceEdges([edge.edge.del(ts())], new Edge(ts(), edge.edge.source, nts))];
 };
 
-export const insertAfter = <T>(edge: GotEdge<ChildT<T>>, getEdge: GetEdge, ts: () => string, loc: NodeID) => {
-    const cons = ts();
-
+export const insertAfter = <T>(edge: GotEdge<ChildT<T>>, getEdge: GetEdge, ts: () => string, ...locs: NodeID[]) => {
     if (edge.end instanceof MCons) {
         const tedge = edge.end.getTailEdge(getEdge);
-        return insertBefore(tedge, ts, loc);
+        return insertBefore(tedge, ts, ...locs);
     }
+    const result = insertArrayOp(ts, locs);
 
+    const cons = ts();
     return [
-        insertNodes([new MCons(cons)], [MCons.newHeadEdge(ts, cons, edge.edge.dest), MCons.newTailEdge(ts, cons, loc)]),
+        result.op,
+        insertNodes([new MCons(cons)], [MCons.newHeadEdge(ts, cons, edge.edge.dest), MCons.newTailEdge(ts, cons, result.head)]),
         replaceEdges([edge.edge.del(ts())], edge.edge.to(ts, cons)),
     ];
 };
 
-export const insertBefore = <T>(edge: GotEdge<ChildT<T>>, ts: () => string, loc: NodeID) => {
-    const cons = ts();
+export const insertBefore = <T>(edge: GotEdge<ChildT<T>>, ts: () => string, ...locs: NodeID[]) => {
+    if (locs.length !== 1) throw new Error('not multi before');
 
-    return [
-        insertNodes([new MCons(cons)], [MCons.newHeadEdge(ts, cons, loc), MCons.newTailEdge(ts, cons, edge.edge.dest)]),
-        replaceEdges([edge.edge.del(ts())], edge.edge.to(ts, cons)),
-    ];
+    const result = insertArrayOp(ts, locs.concat([edge.edge.dest]));
+
+    return [result.op, replaceEdges([edge.edge.del(ts())], edge.edge.to(ts, result.head))];
 };
 
 export const replaceChild = <T>(edge: GotEdge<ChildT<T>>, getEdge: GetEdge, ts: () => string, ...locs: NodeID[]) => {
@@ -526,6 +533,10 @@ export class MTextText implements MNode<Extract<TextSpan<NodeID>, { type: 'text'
 
     setText(text: string, ts: string) {
         return new MTextText(this.id, this.plain.text.set(text, ts), this.plain.meta);
+    }
+
+    clone(id: string) {
+        return new MTextText(id, this.plain.text, this.plain.meta);
     }
 
     static fromJSON(data: any, registry: Registry) {

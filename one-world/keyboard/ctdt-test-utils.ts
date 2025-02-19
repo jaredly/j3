@@ -5,7 +5,7 @@ import { isTag } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import { CTop, CUpdate, insertNode, justOps, justUps, keyActionToUpdate, replaceEdges } from './keyActionToCRDTUpdate';
 import { KeyAction } from './keyActionToUpdate';
-import { CGraph, rootEdge } from './update/crdt/cgraph';
+import { CGraph, checkConflicts, rootEdge } from './update/crdt/cgraph';
 import { MOp, MId, MList, MCons, MListKind, MListTag, isMain, insertText, insertTextSpan } from './update/crdt/crdtnodes';
 import { graphToXMLs, showXMLs } from './update/crdt/show-graph';
 import { Cursor, NodeSelection, Path, selStart, Top } from './utils';
@@ -121,13 +121,32 @@ const updateTop = (state: CTState, ups: CUpdate[]) => {
     });
 };
 
+const showOp = (op: CUpdate) => {
+    switch (op.type) {
+        case 'cgraph:replace-edges':
+            return `REPL ${op.edge.source.id}:${op.edge.source.attr} : ${op.edge.dest}(${op.edge.id}) <= (${op.edges
+                .map((e) => `${e.dest}(${e.id})`)
+                .join(', ')})`;
+        case 'cgraph:add-nodes':
+            return `ADD  ${op.nodes.map((n) => `${n.kind} ${n.id}`)}`;
+        case 'cgraph:node':
+            return `UPD  ${op.node.kind} ${op.node.id}`;
+        default:
+            return `selection(${op.type})`;
+        // case 'move':
+        // case 'unparent':
+        // case 'addparent':
+        // case 'id':
+    }
+};
+
 export const op = (state: CTState, updates: KeyAction[] | void, debug = false) => {
     if (!updates) return;
 
     updates.forEach((up) => {
         const ups = keyActionToUpdate(state.ctop, up);
         if (!ups) return debug ? console.log('NO UPDATES') : null;
-        if (debug) console.log('\n# UPDATES\n' + ups.map((up) => up.type + ' : ' + JSON.stringify(up)).join('\n'));
+        if (debug) console.log('\n# UPDATES\n' + ups.map(showOp).join('\n'));
         if (debug) console.log('\n# PRE GRAPH\n' + showXMLs(graphToXMLs(state.ctop.graph)));
         state.ctop.graph = state.ctop.graph.merge_ops(justOps(ups));
         if (debug) console.log('\n# POST GRAPH\n' + showXMLs(graphToXMLs(state.ctop.graph)));
@@ -136,6 +155,8 @@ export const op = (state: CTState, updates: KeyAction[] | void, debug = false) =
         });
         updateTop(state, ups);
     });
+
+    checkConflicts(state.ctop.graph);
 };
 
 export const pathWith = (children: string[]): Path => ({ root: { ids: [], top: '' }, children });

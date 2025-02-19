@@ -103,6 +103,17 @@ export function rootEdge(ts: string, nid: string) {
     return new Edge(ts, { id: 'root', attr: 'root' }, nid);
 }
 
+export const checkConflicts = (graph: CGraph<any, unknown>) => {
+    Object.entries(graph.edgeFrom).forEach(([k, v]) => {
+        if (v.length > 1) {
+            const live = v.filter((id) => graph.edges[id].deleted == null);
+            if (live.length > 1) {
+                throw new Error(`Outgoing Conflict: ${k}`);
+            }
+        }
+    });
+};
+
 @serde
 export class CGraph<T extends MNode<V> & CRDT & SerDe<any>, V> implements CRDT, SerDe<'cgraph'> {
     static kind = 'cgraph';
