@@ -201,12 +201,12 @@ test('text into', () => {
                 closer: false,
             },
         },
-        ';;0,1': {
+        ';;0,2': {
             cursors: [],
             highlight: { type: 'list', opener: true, closer: false },
         },
-        ';;0,1,2': { cursors: [], highlight: { type: 'full' } },
-        ';;0,1,3': { cursors: [idc(2)], highlight: { type: 'id', spans: [{ end: 2 }] } },
+        ';;0,2,3': { cursors: [], highlight: { type: 'full' } },
+        ';;0,2,4': { cursors: [idc(2)], highlight: { type: 'id', spans: [{ end: 2 }] } },
     });
 });
 
@@ -229,12 +229,12 @@ test('text into more', () => {
             cursors: [],
             highlight: { type: 'text', spans: [true, false, false], opener: true, closer: false },
         },
-        ';;0,2,3': {
+        ';;0,2,4': {
             cursors: [],
             highlight: { type: 'list', opener: true, closer: false },
         },
-        ';;0,2,3,4': { cursors: [], highlight: { type: 'full' } },
-        ';;0,2,3,5': { cursors: [idc(2)], highlight: { type: 'id', spans: [{ end: 2 }] } },
+        ';;0,2,4,5': { cursors: [], highlight: { type: 'full' } },
+        ';;0,2,4,6': { cursors: [idc(2)], highlight: { type: 'id', spans: [{ end: 2 }] } },
     });
 });
 

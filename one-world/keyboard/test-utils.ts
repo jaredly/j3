@@ -130,14 +130,28 @@ export const asMultiTop = (node: RecNodeT<number>, cursor: Cursor): TestState =>
 
 export const atPath = (root: NodeID, top: Top, path: number[]) => {
     const res: NodeID[] = [root];
+    const orig = path;
     path = path.slice();
     while (path.length) {
         const node = top.nodes[root];
-        if (path.length === 1 && node.type === 'text') {
-            res.push(node.spans[path[0]].loc);
-            break;
+        if (node.type === 'text') {
+            const span = node.spans[path.shift()!];
+            if (!path.length) {
+                res.push(span.loc);
+            } else {
+                if (span.type !== 'embed') throw new Error(`cant go into non embed`);
+                root = span.item;
+                res.push(root);
+                path.shift()!; // it's just going to be `0`
+            }
+            continue;
         }
-        root = childLocs(top.nodes[root])[path.shift()!];
+        const locs = childLocs(top.nodes[root]);
+        const nxt = path.shift()!;
+        root = locs[nxt];
+        if (root == null) {
+            throw new Error(`invalid atPath invocation: ${orig.join(',')}`);
+        }
         res.push(root);
     }
     return res;
@@ -175,9 +189,13 @@ export const selPaths = (exp: RecNodeT<number | boolean | null>): { main: number
                 } else if (typeof span.loc === 'number') {
                     paths[span.loc] = path.concat([i]);
                 }
+                if (span.type === 'embed') {
+                    visit(span.item, path.concat([i, 0]));
+                }
             }
+        } else {
+            childNodes(node).forEach((child, i) => visit(child, path.concat([i])));
         }
-        childNodes(node).forEach((child, i) => visit(child, path.concat([i])));
     };
     visit(exp, []);
     if (main === null) throw new Error(`selected node not found`);
