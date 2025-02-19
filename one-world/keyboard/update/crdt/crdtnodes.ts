@@ -399,6 +399,10 @@ export class MTextText implements MNode<Extract<TextSpan<NodeID>, { type: 'text'
         this.plain = new MTTPlain(text, meta);
     }
 
+    get text() {
+        return this.plain.text.value;
+    }
+
     merge(other: MTextText): MTextText {
         if (other.id !== this.id) throw new Error(`not the same id text`);
         const t = this.plain.merge(other.plain);
@@ -430,15 +434,18 @@ export class MTextText implements MNode<Extract<TextSpan<NodeID>, { type: 'text'
 
 type MTextSpan = MTextText; // | others
 
-export const insertTextSpan = (top: CTop, id: string, span: TextSpan<NodeID>): MOp => {
+export const insertTextSpan = (top: CTop, span: TextSpan<NodeID>): MOp => {
     if (span.type === 'embed') {
         return insertNodes(
-            [new MTextEmbed(id, new TextMeta(new LRW(span.link ?? null, id), new LRW(span.style ?? null, id)))],
-            [MTextEmbed.newItemEdge(id, span.item, top.ts())],
+            [new MTextEmbed(span.loc, new TextMeta(new LRW(span.link ?? null, span.loc), new LRW(span.style ?? null, span.loc)))],
+            [MTextEmbed.newItemEdge(span.loc, span.item, top.ts())],
         );
     }
     if (span.type === 'text') {
-        return insertNodes([new MTextText(id, new LRW(span.text, id), new TextMeta(new LRW(null, id), new LRW(null, id)))], []);
+        return insertNodes(
+            [new MTextText(span.loc, new LRW(span.text, span.loc), new TextMeta(new LRW(null, span.loc), new LRW(null, span.loc)))],
+            [],
+        );
     }
     throw new Error(`text span type not supported ${span.type}`);
 };
@@ -446,7 +453,7 @@ export const insertTextSpan = (top: CTop, id: string, span: TextSpan<NodeID>): M
 export const insertText = (top: CTop, id: string, spans: TextSpan<NodeID>[]): MOp[] => {
     const ops: MOp[] = [];
     const ids = spans.map((span) => {
-        ops.push(insertTextSpan(top, span.loc, span));
+        ops.push(insertTextSpan(top, span));
         return span.loc;
     });
     const mspans = insertArrayOp(top.ts, ids);

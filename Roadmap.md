@@ -5,6 +5,24 @@ textindex
 
 yeah NO not in path. don't need that.
 
+- [x] tests are passing again.
+- [ ]
+
+
+
+
+
+ohhhk, so for convendience, I kinda think that
+these object should be bound to the graph
+so I can do getters for things instead of passing `getEdge` around.
+
+will that be a problem?
+that means that a given node is tied to its graph. but that is good
+in a way because it doesnt make much sense outside of its graph.
+
+
+
+
 
 # GettingCRDT Implemented keyUpdate -> CUpdate
 

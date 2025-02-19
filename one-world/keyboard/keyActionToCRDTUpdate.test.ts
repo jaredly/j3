@@ -1,7 +1,7 @@
 import { ccheck, ticker } from './crdt-check.test';
 import { full, initial, op, pathWith } from './ctdt-test-utils';
 import { c_handleInsertList, c_setIdText, CTop, insertRoot, justOps } from './keyActionToCRDTUpdate';
-import { id, idc, list, listc, round, smoosh, spaced, square, text, textc, tspan } from './test-utils';
+import { id, idc, list, listc, round, smoosh, spaced, square, tembed, text, textc, tspan } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 import { CGraph } from './update/crdt/cgraph';
 import { MId } from './update/crdt/crdtnodes';
@@ -180,4 +180,10 @@ test('in text', () => {
     const state = initial(text([tspan('hi', undefined, true)]), textc('', 2));
     op(state, keyUpdate(state, ',', {}));
     ccheck(state, text([tspan('hi,', undefined, true)]), textc('', 3));
+});
+
+test.only('maybe embed', () => {
+    const state = initial(text([tspan('h$', undefined, true)]), textc('', 2));
+    op(state, keyUpdate(state, '{', {}), true);
+    ccheck(state, text([tspan('h'), tembed(id('', true))]), idc(0));
 });

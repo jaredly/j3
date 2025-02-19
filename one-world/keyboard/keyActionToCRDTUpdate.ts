@@ -12,10 +12,11 @@ id-wrap
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { fromRec, ListKind, Node, NodeID, Nodes, RecNodeT, TextSpan } from '../shared/cnodes';
 import { isTag } from './handleNav';
+import { SelStart } from './handleShiftNav';
 import { KeyAction, KeyWhat } from './keyActionToUpdate';
 import { CGraph, CGraphOp, Edge, MNode, rootEdge } from './update/crdt/cgraph';
-import { insertText, MCons, MId, MList, MListKind, MListTag, MNil, MNodes, MOp, MText, MTextText } from './update/crdt/crdtnodes';
-import { Cursor, lastChild, move, parentLoc, parentPath, Path, pathWithChildren, selStart, SelUpdate, Top } from './utils';
+import { insertText, insertTextSpan, MCons, MId, MList, MListKind, MListTag, MNil, MNodes, MOp, MText, MTextText } from './update/crdt/crdtnodes';
+import { Cursor, lastChild, move, parentLoc, parentPath, Path, pathWithChildren, selStart, SelUpdate, TextIndex, Top } from './utils';
 
 // type CRDTUpdate = {
 // }
@@ -77,8 +78,8 @@ export const keyActionToUpdate = (top: CTop, action: KeyAction): CUpdate[] | voi
             return c_handleIdWrap(top, action.path, action.left, action.right, action.kind);
         case 'insert-list':
             return c_handleInsertList(top, action.path, action.pos, action.kind);
-        // case 'add-span':
-        //     return c_addSpan(top, action.path, action.span, action.index, action.cursor, action.within);
+        case 'add-span':
+            return c_addSpan(top, action.path, action.span, action.index, action.cursor, action.within);
         // case 'dedent-out-of-rich':
         //     return c_dedentOutOfRich(top, action.path);
         // case 'split-text-in-rich':
@@ -111,41 +112,101 @@ export const c_setTextText = (top: CTop, path: Path, text: string, index: string
     if (typeof index === 'number') throw new Error('need an string loc');
     const node = top.graph.nodes[index];
     if (!(node instanceof MTextText)) return null;
-    // top.graph.nodes[index]
-    // const spans = node.spans.slice();
-    // const at = spans.findIndex((s) => s.loc === index);
-    // const span = spans[at];
-    // if (span.type !== 'text') return;
 
     return [updateNode(node.setText(text, top.ts())), move({ start: selStart(path, { type: 'text', end: { index, cursor: end } }) })];
-    // spans[at] = { ...span, text };
-    // // this is 'set text text'
-    // return {
-    //     nodes: { [node.loc]: { ...node, spans } },
-    //     selection: {
-    //         start: selStart(path, { type: 'text', end: { index, cursor: end } }),
-    //     },
-    //     // tmpText: { [`${current.node.loc}:${left.index}`]: grems },
-    // };
 };
 
-// export const c_setTextText = (top: CTop, path: Path, text: string, index: number, end: number) => {
-//     const node = top.graph.nodes[lastChild(path)];
-//     if (!(node instanceof MText)) return;
-//     // const spans = node.spans.slice();
-//     // const span = spans[index];
-//     // if (span.type !== 'text') return;
+export const c_addSpan = (
+    top: CTop,
+    path: Path,
+    recSpan: TextSpan<RecNodeT<boolean>>,
+    index: TextIndex,
+    cursor: number | Cursor,
+    within?: number,
+): null | CUpdate[] => {
+    const node = top.graph.nodes[lastChild(path)];
+    if (!(node instanceof MText)) return null;
 
-//     spans[index] = { ...span, text };
-//     // this is 'set text text'
-//     return {
-//         nodes: { [node.loc]: { ...node, spans } },
-//         selection: {
-//             start: selStart(path, { type: 'text', end: { index, cursor: end } }),
-//         },
-//         // tmpText: { [`${current.node.loc}:${left.index}`]: grems },
-//     };
-// };
+    let ops: MOp[] = [];
+    let sel: SelStart;
+    const id = top.ts();
+
+    if (recSpan.type === 'embed') {
+        // let selPath: NodeID[] = [];
+        const result = insertRecNodes(top, [recSpan.item]);
+        ops.push(...result.ops);
+        ops.push(insertTextSpan(top, { ...recSpan, item: result.roots[0], loc: id }));
+
+        sel =
+            result.selPath.length && typeof cursor !== 'number'
+                ? selStart(pathWithChildren(path, ...result.selPath), cursor)
+                : selStart(path, { type: 'text', end: { index: index, cursor: 0 } });
+    } else {
+        ops.push(insertTextSpan(top, { ...recSpan, loc: id }));
+
+        if (typeof cursor !== 'number') {
+            cursor = 0;
+        }
+
+        sel = selStart(path, { type: 'text', end: { index: index, cursor } });
+    }
+
+    // let at = getSpanIndex(spans, index);
+    if (typeof index !== 'string') {
+        throw new Error('no numeric index ' + index);
+    }
+
+    if (within != null) {
+        const span = top.graph.nodes[index];
+        if (span instanceof MTextText) {
+            const text = splitGraphemes(span.text);
+            if (within < text.length) {
+                console.log(text, within);
+                throw new Error('need to split');
+            }
+            //
+            throw new Error('we actually want index to represent the spot after the current spot');
+        }
+        // const current = spans[at];
+        // if (current?.type === 'text') {
+        //     const text = splitGraphemes(current.text);
+        //     if (within < text.length) {
+        //         spans[at] = { ...current, text: text.slice(0, within).join('') };
+        //         spans.splice(at + 1, 0, { ...current, text: text.slice(within).join('') });
+        //     }
+        //     at++;
+        // }
+    }
+
+    // const left = maybeJoin(spans[at - 1], span);
+    // if (left) {
+    //     spans[at - 1] = left.joined;
+    //     if (sel.cursor.type === 'text') {
+    //         if (typeof sel.cursor.end.index === 'number') {
+    //             sel.cursor.end.index--;
+    //         } else {
+    //             sel.cursor.end.index = spans[at - 1].loc;
+    //         }
+    //         sel.cursor.end.cursor += left.off;
+    //     }
+    // } else {
+    //     const right = maybeJoin(span, spans[at]);
+    //     if (right) {
+    //         spans[at] = right.joined;
+    //     } else {
+    //         spans.splice(at, 0, span);
+    //     }
+    // }
+
+    // nodes[node.loc] = { ...node, spans };
+
+    // return {
+    //     nodes,
+    //     selection: { start: sel },
+    //     nextLoc,
+    // };
+    return [...ops, { type: 'move', to: { start: sel } }];
+};
 
 export const withIds = (nodes: RecNodeT<boolean>[]) => {};
 
