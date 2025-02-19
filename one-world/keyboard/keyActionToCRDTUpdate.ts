@@ -15,7 +15,22 @@ import { isTag } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import { KeyAction, KeyWhat } from './keyActionToUpdate';
 import { CGraph, CGraphOp, Edge, MNode, rootEdge } from './update/crdt/cgraph';
-import { insertText, insertTextSpan, MCons, MId, MList, MListKind, MListTag, MNil, MNodes, MOp, MText, MTextText } from './update/crdt/crdtnodes';
+import {
+    childAt,
+    insertAfter,
+    insertText,
+    insertTextSpan,
+    MCons,
+    MId,
+    MList,
+    MListKind,
+    MListTag,
+    MNil,
+    MNodes,
+    MOp,
+    MText,
+    MTextText,
+} from './update/crdt/crdtnodes';
 import { Cursor, lastChild, move, parentLoc, parentPath, Path, pathWithChildren, selStart, SelUpdate, TextIndex, Top } from './utils';
 
 // type CRDTUpdate = {
@@ -156,23 +171,28 @@ export const c_addSpan = (
         throw new Error('no numeric index ' + index);
     }
 
-    const spans = node.getSpans(top.graph.getEdge);
-    if (!spans) return null;
-    let at = spans.findIndex((s) => s.id === index);
+    const child = childAt(top.graph.getEdge, index, node.getSpansEdge(top.graph.getEdge));
+    if (!child) return null;
 
-    if (within != null) {
-        const span = top.graph.nodes[index];
-        if (span instanceof MTextText) {
-            const text = splitGraphemes(span.text);
-            if (within < text.length) {
-                console.log(text, within);
-                throw new Error('need to split');
-                //         spans[at] = { ...current, text: text.slice(0, within).join('') };
-                //         spans.splice(at + 1, 0, { ...current, text: text.slice(within).join('') });
-            }
-            at++;
-        }
-    }
+    ops.push(...insertAfter(child.edge, top.graph.getEdge, top.ts, id));
+
+    // const spans = node.getSpans(top.graph.getEdge);
+    // if (!spans) return null;
+    // let at = spans.findIndex((s) => s.id === index);
+
+    // if (within != null) {
+    //     const span = top.graph.nodes[index];
+    //     if (span instanceof MTextText) {
+    //         const text = splitGraphemes(span.text);
+    //         if (within < text.length) {
+    //             console.log(text, within);
+    //             throw new Error('need to split');
+    //             //         spans[at] = { ...current, text: text.slice(0, within).join('') };
+    //             //         spans.splice(at + 1, 0, { ...current, text: text.slice(within).join('') });
+    //         }
+    //         at++;
+    //     }
+    // }
 
     // const left = maybeJoin(spans[at - 1], span);
     // if (left) {
