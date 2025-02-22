@@ -17,6 +17,7 @@ import {
 import { Ctx, ParseResult } from '../syntaxes/dsl';
 import { selEnd, Src } from './handleShiftNav';
 import { charClass } from './insertId';
+import { initial } from './update/crdt/ctree.test';
 import { CollectionCursor, Cursor, IdCursor, ListWhere, NodeSelection, Path, selStart, TextCursor, Top } from './utils';
 
 export type TestState = {
@@ -97,12 +98,14 @@ export const asTopAndPaths = (node: RecNodeT<Sels>, root: Path['root']): { top: 
     return { top: { nextLoc, nodes, root: rootLoc }, sels };
 };
 
+export const asTop = initial;
+
 /**
  * Either RecNodeT<boolean> or RecNodeT<number>
  * if <number>, 1 = the start, 2 = end
  * if <boolean>, true = the start
  */
-export const asTop = (node: RecNodeT<number | boolean>, cursor: Cursor, endCursor?: Cursor): TestState => {
+export const _asTop = (node: RecNodeT<number | boolean>, cursor: Cursor, endCursor?: Cursor): TestState => {
     const { top, sel, sels } = asTopAndPath(node);
     return {
         top,

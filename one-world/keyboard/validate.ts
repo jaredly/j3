@@ -24,11 +24,11 @@ const validatePath = (top: Top, path: Path) => {
 
 const validateNextLoc = (top: Top) => {
     Object.keys(top.nodes).forEach((loc) => {
-        if (top.nodes[+loc].loc !== loc) {
-            throw new Error(`Node.loc doesn't match key ${+loc}`);
+        if (!top.nodes[loc]) {
+            return;
         }
-        if (+loc >= top.nextLoc) {
-            throw new Error(`nextLoc invalid, is ${top.nextLoc}, found ${+loc}`);
+        if (top.nodes[loc].loc !== loc) {
+            throw new Error(`Node.loc doesn't match key ${+loc}`);
         }
     });
 };

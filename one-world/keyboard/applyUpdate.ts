@@ -7,7 +7,7 @@ import { TestState } from './test-utils';
 import { lastChild, NodeSelection, parentPath, pathWithChildren, selStart, SelUpdate, Update } from './utils';
 import { validate } from './validate';
 
-export const applySel = (state: TestState, sel: SelStart | void) => applyNormalUpdate(state, selUpdate(sel));
+export const applySel = <T extends TestState>(state: T, sel: SelStart | void): T => applyNormalUpdate(state, selUpdate(sel));
 
 const modId = (sel: SelStart, mod: Extract<SelUpdate, { type: 'id' }>) => {
     const at = lastChild(sel.path);
@@ -77,7 +77,7 @@ export const applyNormalUpdate = <T extends TestState>(state: T, update: null | 
     try {
         validate(state);
     } catch (err) {
-        console.log(JSON.stringify(state, null, 2));
+        // console.log(JSON.stringify(state, null, 2));
         console.log(shape(root(state)));
         throw err;
     }

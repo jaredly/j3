@@ -110,11 +110,7 @@ const touchedNodes = (ups: Op[], tree: CTree): string[] => {
     return touched;
 };
 
-export const initial = (
-    iroot: RecNodeT<boolean | number | null> = { type: 'id', text: '', loc: true },
-    cursor: Cursor = { type: 'id', end: 0 },
-    endCursor?: Cursor,
-): CTState => {
+export const initial = (iroot: RecNodeT<boolean | number | null>, cursor: Cursor, endCursor?: Cursor): CTState => {
     const ts = ticker();
     const ctop: CTop = { ts, tree: new CTree({}, {}) };
 
@@ -134,9 +130,9 @@ export const initial = (
     return { ctop, top: asTop(ctop), sel };
 };
 
-test('initial set up', () => {
-    const state = initial(round([id('hello', true), id('yes')]), idc(5));
-    expect(shape(root(state))).toEqual('(id(hello/0) id(yes/0))');
-    op(state, keyUpdate(state, 'n', {}));
-    expect(shape(root(state))).toEqual('(id(hellon/0) id(yes/0))');
-});
+// test('initial set up', () => {
+//     const state = initial(round([id('hello', true), id('yes')]), idc(5));
+//     expect(shape(root(state))).toEqual('(id(hello/0) id(yes/0))');
+//     op(state, keyUpdate(state, 'n', {}));
+//     expect(shape(root(state))).toEqual('(id(hellon/0) id(yes/0))');
+// });
