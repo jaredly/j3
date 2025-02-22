@@ -10,6 +10,11 @@ OR wairrttt.
 iiii think I just do lrw for that.
 like, list kind should be LRW, a list cant have multiple kinds.
 
+oh but wait.
+no, I can't do LRW. because. I mean, ok so I will effectively to LRW,
+by just taking the first `child` reported from the tree.
+yeah that's fine. no conflict, because it's just been overwritten.
+
 
 # Thinking about CmRDT conflicts
 I don't want them. they are a bad user experience.

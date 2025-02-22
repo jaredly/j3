@@ -1,18 +1,18 @@
 import { fromRec, Node, Nodes, RecNodeT } from '../../../shared/cnodes';
 import { shape } from '../../../shared/shape';
+import { applySelUp } from '../../applyUpdate';
 import { ticker } from '../../crdt-check.test';
 import { fixTextSel, pathWith, withLocs } from '../../ctdt-test-utils';
 import { isTag } from '../../handleNav';
+import { KeyAction } from '../../keyActionToUpdate';
 import { root } from '../../root';
-import { id, round } from '../../test-utils';
+import { id, idc, round } from '../../test-utils';
+import { keyUpdate } from '../../ui/keyUpdate';
 import { Cursor, NodeSelection, selStart, Top } from '../../utils';
 import { LRW } from './crdt';
-import { CId, CList, CTree, insertArray, Op, ParentOp } from './ctree';
+import { CId, CList, CNode, CTree, insertArray, isMain, Op, ParentOp } from './ctree';
+import { CTop, ctreeUpdate, justOps } from './ctree-update';
 
-export type CTop = {
-    tree: CTree;
-    ts: () => string;
-};
 export type CTState = { ctop: CTop; top: Top; sel: NodeSelection };
 
 const insert = (node: Node, { ts, tree }: CTop): Op[] => {
@@ -52,6 +52,64 @@ const asTop = (ctop: CTop) => {
     return top;
 };
 
+export const op = (state: CTState, updates: KeyAction[] | void, debug = false) => {
+    if (!updates) return;
+
+    updates.forEach((up) => {
+        const ups = ctreeUpdate(state.ctop, up);
+        if (!ups) return debug ? console.log('NO UPDATES') : null;
+        // if (debug) console.log('\n# UPDATES\n' + ups.map(showOp).join('\n'));
+        // if (debug) console.log('\n# PRE GRAPH\n' + showXMLs(graphToXMLs(state.ctop.graph)));
+        state.ctop.tree.apply(justOps(ups));
+        // state.ctop.graph = state.ctop.graph.merge_ops(justOps(ups));
+        // if (debug) console.log('\n# POST GRAPH\n' + showXMLs(graphToXMLs(state.ctop.graph)));
+        ups.forEach((up) => {
+            if ('type' in up) {
+                state.sel = applySelUp(state.sel, up);
+            }
+        });
+        updateTop(state, justOps(ups));
+    });
+
+    // checkConflicts(state.ctop.graph);
+};
+
+const updateTop = (state: CTState, ups: Op[]) => {
+    touchedNodes(ups, state.ctop.tree).forEach((id) => {
+        if (id === 'root') {
+            state.top.root = state.ctop.tree.children('root', 'root')[0];
+            return;
+        }
+        state.top.nodes[id] = (state.ctop.tree.node(id) as CNode).asNode();
+    });
+};
+
+const touchedNodes = (ups: Op[], tree: CTree): string[] => {
+    const touched: string[] = [];
+    const add = (i: string, seen: string[] = []) => {
+        if (i === 'root') {
+            if (!touched.includes(i)) touched.push(i);
+            return;
+        }
+        if (seen.includes(i)) return;
+        const node = tree.node(i);
+        if (node && !isMain(node)) {
+            const cseen = seen.concat([i]);
+            add(tree.parent(i).parent, cseen);
+            return;
+        }
+        if (!touched.includes(i)) touched.push(i);
+    };
+    ups.forEach((up) => {
+        if (up instanceof ParentOp) {
+            add(up.parent.value.parent);
+        } else {
+            add(up.id);
+        }
+    });
+    return touched;
+};
+
 export const initial = (
     iroot: RecNodeT<boolean | number | null> = { type: 'id', text: '', loc: true },
     cursor: Cursor = { type: 'id', end: 0 },
@@ -77,6 +135,8 @@ export const initial = (
 };
 
 test('initial set up', () => {
-    const state = initial(round([id('hello', true), id('yes')]));
+    const state = initial(round([id('hello', true), id('yes')]), idc(5));
     expect(shape(root(state))).toEqual('(id(hello/0) id(yes/0))');
+    op(state, keyUpdate(state, 'n', {}));
+    expect(shape(root(state))).toEqual('(id(hellon/0) id(yes/0))');
 });

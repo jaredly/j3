@@ -16,6 +16,8 @@ import { CRDT, LRW } from './crdt';
 type Child = CList | CCons | CId | CNil;
 type Parent = LRW<{ parent: string; attr: string }>;
 
+export const isMain = (node: Child) => node instanceof CNode;
+
 export type Op = Child | ParentOp;
 
 export class ParentOp {
@@ -37,7 +39,7 @@ const unwrapCons = (tree: CTree, id: string) => {
     return [id];
 };
 
-abstract class CNode {
+export abstract class CNode {
     id: string;
     constructor(id: string) {
         this.id = id;
@@ -116,6 +118,10 @@ export class CTree {
 
     node(id: string): Child | null {
         return this.nodes[id] ?? null;
+    }
+
+    parent(id: string): { parent: string; attr: string } {
+        return this.parents[id].value;
     }
 
     children(parent: string, attr: string) {
@@ -203,6 +209,10 @@ export class CId extends CNode {
 
     asNode(): Node {
         return { type: 'id', loc: this.id, text: this.text, ccls: this.ccls };
+    }
+
+    setText(ts: string, text: string, ccls?: number): CId {
+        return new CId(this.id, new LRW({ text, ccls }, ts), this.tree);
     }
 
     merge(other: CId) {
