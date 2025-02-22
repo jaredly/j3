@@ -52,11 +52,11 @@ const asTop = (ctop: CTop) => {
     return top;
 };
 
-export const op = (state: CTState, updates: KeyAction[] | void, debug = false) => {
-    if (!updates) return;
+export const applyCTreeUpdate = (state: CTState, updates: KeyAction[] | null | void, debug = false) => {
+    if (!updates) return state;
 
     updates.forEach((up) => {
-        const ups = ctreeUpdate(state.ctop, up);
+        const ups = ctreeUpdate(state.ctop, up, state.sel);
         if (!ups) return debug ? console.log('NO UPDATES') : null;
         // if (debug) console.log('\n# UPDATES\n' + ups.map(showOp).join('\n'));
         // if (debug) console.log('\n# PRE GRAPH\n' + showXMLs(graphToXMLs(state.ctop.graph)));
@@ -72,6 +72,7 @@ export const op = (state: CTState, updates: KeyAction[] | void, debug = false) =
     });
 
     // checkConflicts(state.ctop.graph);
+    return state;
 };
 
 const updateTop = (state: CTState, ups: Op[]) => {

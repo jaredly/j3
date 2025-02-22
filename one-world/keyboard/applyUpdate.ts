@@ -1,9 +1,11 @@
 import { shape } from '../shared/shape';
+import { CTState } from './crdt-check.test';
 import { addInPath, removeInPath } from './handleDelete';
 import { SelStart } from './handleShiftNav';
 import { KeyAction, keyActionToUpdate, selUpdate } from './keyActionToUpdate';
 import { root } from './root';
 import { TestState } from './test-utils';
+import { applyCTreeUpdate } from './update/crdt/ctree.test';
 import { lastChild, NodeSelection, parentPath, pathWithChildren, selStart, SelUpdate, Update } from './utils';
 import { validate } from './validate';
 
@@ -84,7 +86,16 @@ export const applyNormalUpdate = <T extends TestState>(state: T, update: null | 
     return state;
 };
 
+export const TESTING_CTREE = false;
+
 export function applyUpdate<T extends TestState>(state: T, update: KeyAction[] | null | void): T {
+    if (TESTING_CTREE) {
+        return applyCTreeUpdate(state as any, update) as any;
+    }
+    return _applyUpdate(state, update);
+}
+
+export function _applyUpdate<T extends TestState>(state: T, update: KeyAction[] | null | void): T {
     if (!update) return state;
     for (let sub of update) {
         state = applyNormalUpdate(state, keyActionToUpdate(state, sub));

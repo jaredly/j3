@@ -1,7 +1,7 @@
 import equal from 'fast-deep-equal';
 import { Node, Nodes } from '../../shared/cnodes';
 import { shape } from '../../shared/shape';
-import { applyUpdate, applySelUp, applyNormalUpdate } from '../applyUpdate';
+import { applyUpdate, applySelUp, applyNormalUpdate, _applyUpdate } from '../applyUpdate';
 import { keyActionToUpdate } from '../keyActionToUpdate';
 import { root } from '../root';
 import { init } from '../test-utils';
@@ -210,7 +210,7 @@ export const applyAppUpdate = (state: AppState, action: Action, noJoin = false):
         case 'add-sel':
             return recordHistory(state, { ...state, selections: state.selections.concat([action.sel]) }, noJoin);
         case 'update':
-            const result = applyUpdate({ top: state.top, sel: state.selections[0] }, action.update);
+            const result = _applyUpdate({ top: state.top, sel: state.selections[0] }, action.update);
             return recordHistory(state, { ...state, top: result.top, selections: [result.sel] }, noJoin);
 
         case 'paste':
@@ -221,7 +221,7 @@ export const applyAppUpdate = (state: AppState, action: Action, noJoin = false):
 
                 selections.forEach((sel, i) => {
                     if (sel.end) {
-                        const result = applyUpdate({ top, sel: state.selections[i] }, [{ type: 'multi-delete', start: sel.start, end: sel.end }]);
+                        const result = _applyUpdate({ top, sel: state.selections[i] }, [{ type: 'multi-delete', start: sel.start, end: sel.end }]);
                         top = result.top;
                         selections[i] = result.sel;
                     }
@@ -232,7 +232,7 @@ export const applyAppUpdate = (state: AppState, action: Action, noJoin = false):
                     if (!v) break;
                     const sel = state.selections[i];
 
-                    const result = applyUpdate({ top, sel: state.selections[i] }, [
+                    const result = _applyUpdate({ top, sel: state.selections[i] }, [
                         {
                             type: 'paste',
                             path: sel.start.path,
@@ -271,7 +271,7 @@ export const applyAppUpdate = (state: AppState, action: Action, noJoin = false):
                     }
                     continue;
                 }
-                const result = applyUpdate({ top, sel }, update);
+                const result = _applyUpdate({ top, sel }, update);
                 top = result.top;
                 selections[i] = result.sel;
             }

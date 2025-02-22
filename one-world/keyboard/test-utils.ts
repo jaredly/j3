@@ -15,6 +15,7 @@ import {
     NodeID,
 } from '../shared/cnodes';
 import { Ctx, ParseResult } from '../syntaxes/dsl';
+import { TESTING_CTREE } from './applyUpdate';
 import { selEnd, Src } from './handleShiftNav';
 import { charClass } from './insertId';
 import { initial } from './update/crdt/ctree.test';
@@ -98,7 +99,13 @@ export const asTopAndPaths = (node: RecNodeT<Sels>, root: Path['root']): { top: 
     return { top: { nextLoc, nodes, root: rootLoc }, sels };
 };
 
-export const asTop = initial;
+// export { initial as asTop };
+export const asTop = (node: RecNodeT<number | boolean>, cursor: Cursor, endCursor?: Cursor): TestState => {
+    if (TESTING_CTREE) {
+        return initial(node, cursor, endCursor);
+    }
+    return _asTop(node, cursor, endCursor);
+};
 
 /**
  * Either RecNodeT<boolean> or RecNodeT<number>

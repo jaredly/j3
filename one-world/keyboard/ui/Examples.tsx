@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Config, init, js, lisp, TestState } from '../test-utils';
 import React from 'react';
 import { DisplayConfig, RenderNode } from './RenderNode';
-import { applyNormalUpdate, applyUpdate } from '../applyUpdate';
+import { _applyUpdate, applyNormalUpdate, applyUpdate } from '../applyUpdate';
 import { keyUpdate } from './keyUpdate';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { ShowXML } from './XML';
@@ -54,9 +54,9 @@ const precompute = (text: string[], config: Config) => {
             grem = 'Enter';
         }
         if (grem === '\b') {
-            state = applyUpdate(state, keyUpdate(state, 'i', { meta: true }, undefined, config));
+            state = _applyUpdate(state, keyUpdate(state, 'i', { meta: true }, undefined, config));
         } else {
-            state = applyUpdate(state, keyUpdate(state, grem, {}, undefined, config));
+            state = _applyUpdate(state, keyUpdate(state, grem, {}, undefined, config));
         }
     });
     return { state, running: false, at: text.length };
@@ -69,7 +69,7 @@ const Example = ({ text }: { text: string[] }) => {
         const v = setInterval(() => {
             setState((st) => {
                 if (st.at >= text.length) return { ...st, running: false };
-                return { ...st, at: st.at + 1, state: applyUpdate(st.state, keyUpdate(st.state, text[st.at], {}, undefined, js)) };
+                return { ...st, at: st.at + 1, state: _applyUpdate(st.state, keyUpdate(st.state, text[st.at], {}, undefined, js)) };
             });
         }, 150);
         return () => clearInterval(v);

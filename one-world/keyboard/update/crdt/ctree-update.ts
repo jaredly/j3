@@ -1,5 +1,5 @@
 import { KeyAction } from '../../keyActionToUpdate';
-import { lastChild, move, parentLoc, Path, selStart, SelUpdate } from '../../utils';
+import { lastChild, move, NodeSelection, parentLoc, Path, selStart, SelUpdate } from '../../utils';
 import { CId, CList, CTree, Op } from './ctree';
 
 export type CTop = {
@@ -11,10 +11,12 @@ type Up = Op | SelUpdate;
 
 export const justOps = (ups: Up[]): Op[] => ups.filter((up) => !('type' in up)) as Op[];
 
-export const ctreeUpdate = (top: CTop, action: KeyAction): Up[] | null => {
+export const ctreeUpdate = (top: CTop, action: KeyAction, sel: NodeSelection): Up[] | null => {
     switch (action.type) {
         case 'move':
             return [action.end ? move({ end: action.end, start: action.sel }) : move({ start: action.sel })];
+        case 'sel-expand':
+            return [move({ start: sel.start, end: action.sel })];
         case 'set-id-text':
             return setIdText(top, action.path, action.text, action.end, action.ccls);
     }
@@ -36,5 +38,5 @@ export const setIdText = (top: CTop, path: Path, text: string, end: number, ccls
     if (!(node instanceof CId)) {
         return [];
     }
-    return [node.setText(top.ts(), text, ccls), { type: 'move', to: { start: selStart(path, { type: 'id', end }) } }];
+    return [node.setText(top.ts(), text, node.ccls ?? ccls), { type: 'move', to: { start: selStart(path, { type: 'id', end }) } }];
 };
