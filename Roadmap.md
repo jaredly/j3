@@ -1,4 +1,84 @@
 
+# Getting ready for CTree
+
+soooo, we would need all /links/ to allow multiple nodes, not just one.
+
+- [-] list(kind=tag:node/attributes) -> instead, make it a list of items.
+  NOPE won't do it
+
+OR wairrttt.
+iiii think I just do lrw for that.
+like, list kind should be LRW, a list cant have multiple kinds.
+
+
+# Thinking about CmRDT conflicts
+I don't want them. they are a bad user experience.
+I had been thinking that I would just show all conflicts or something, but
+the current CmRDT allows things to be really complicated, in ways that would be user-hostile to display.
+
+SO REUIRESMTNS
+- no conflicts at all
+- but the user needs to be able to scrub through the full history (from *their perspective*) of a given toplevel, so they can copy/paste stuff out of it to overwrite stuff that got lost or weird. this should be rare, but should also be very painless.
+
+THGOUTHS
+
+there's the kleppmann(?) tree crdt that Loro uses.
+- I don't like the requirement of holding on to the whole operation log. That seems like the worst. like just do event logging at that point
+- my requirement for non-cycles is... lighter? looser? if there's a cycle, that just means its not in the tree. so its fine.
+
+"move (ts) (nodeid) (meta) (parentid)"
+
+doesn't prevent "duplicates" by meta:parentid.
+- is this fine? I would need to structure my nodes such that they tolerate duplicates.
+
+using cons-lists still I think is wise, instead of fractional indices.
+
+ALSO under this strategy, it is entirely possible for children to be /missing/. This means
+my selection stuffs needs to be able to deal with that.
+I can fudge it by coming up with 'pseudo-ids' for an empty element, like `${parentid}%${attr}` or something.
+and then in the generated `Top` that would be populated by a blank. I think that's fine.
+processing an update to that node would mean creating a new node with a new ID as well as changing the selection
+to match it.
+
+NODE TYPES
+
+- id (no children, text = string LWW)
+- list (children is list, duplicates is fine)
+  - jsx (tag, attributes) <- duplicates dont make sense here. what to do? maybe just ~hide the others?
+- table (children is list of lists, duplicates are fine)
+- text (children is spans)
+  - span embed, child is singular. duplicates don't really make sense here. what to do? I guess could ... have a pseudo-spaced created to allow you to interact with it?
+    hmmm that might be the right way to handle it. although if one of the children is itself a spaced,
+    that makes things ... weird.
+  - I can start by just ignoring the duplicates that are inconvenient, and then fifguring out how to display and editablize them later.
+
+
+# Text so rich you love it
+
+thinking about the rich text crdt story, I think it might make sense to have the CRDT machinery live
+at the level of the Toplevel, for all the rich texts inside it.
+This would allow things like "split a text into paragraphs" to not break rich-text-collaborative happiness.
+HOWWEVR I can punt on this and just do LWW string for noww.
+
+
+# STRESS TEST FOR CRDT CONFLICTS
+
+- (a b c d e f)
+  - (a (b c d) e f)
+  - (a (b c d e) f)
+- possible correct end states:
+  - (a () (b c d) e f)
+  - (a () (b c d e) f)
+- invalid end states
+  - missing any of the nodes
+
+those two operations are simultaneous. do we lose things weirdly? I would very much like to not.
+
+
+
+
+#
+
 ugh.
 so, text in path.
 textindex

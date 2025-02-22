@@ -255,9 +255,7 @@ export class CGraph<T extends MNode<V> & CRDT & SerDe<any>, V> implements CRDT, 
                 case 'cgraph:replace-edges':
                     op.edges.forEach((edge) => {
                         edges[edge.id] = edges[edge.id]?.merge(edge) ?? edge;
-                        this.cacheEdge(edge);
                     });
-                    this.cacheEdge(op.edge);
                     edges[op.edge.id] = edges[op.edge.id]?.merge(op.edge) ?? op.edge;
                     break;
             }

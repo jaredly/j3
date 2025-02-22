@@ -32,7 +32,7 @@ export const full = (top: CTop) => {
     return expand(top, top.graph.getRoot().construct(top.graph.getEdge));
 };
 
-const fixTextSel = (sel: SelStart) => {
+export const fixTextSel = (sel: SelStart) => {
     if (sel.cursor.type === 'text' && sel.cursor.end.index === '') {
         sel.cursor.end.index = sel.path.children.pop()!;
     }

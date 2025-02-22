@@ -2,7 +2,7 @@ import { Registry, serde, SerDe } from './serde';
 
 export interface CRDT {
     kind: string;
-    merge(other: ThisType<this>): ThisType<this>;
+    merge(other?: ThisType<this>): ThisType<this>;
 }
 
 @serde
@@ -60,8 +60,8 @@ export class LRW<T> implements CRDT, SerDe<'LRW'> {
         this.ts = ts;
     }
 
-    merge(other: LRW<T>): LRW<T> {
-        return other.ts < this.ts ? this : other;
+    merge(other?: LRW<T>): LRW<T> {
+        return !other ? this : other.ts < this.ts ? this : other;
     }
 
     set(value: T, ts: string) {
