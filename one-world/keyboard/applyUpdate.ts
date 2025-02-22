@@ -86,7 +86,10 @@ export const applyNormalUpdate = <T extends TestState>(state: T, update: null | 
     return state;
 };
 
-export const TESTING_CTREE = false;
+export let TESTING_CTREE = false;
+export const testCtree = (yes: boolean) => {
+    TESTING_CTREE = yes;
+};
 
 export function applyUpdate<T extends TestState>(state: T, update: KeyAction[] | null | void): T {
     if (TESTING_CTREE) {

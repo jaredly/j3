@@ -1,6 +1,6 @@
 import { RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
-import { applyUpdate } from './applyUpdate';
+import { applyUpdate, testCtree } from './applyUpdate';
 import { check } from './check.test';
 import { handleKey } from './handleKey';
 import { root } from './root';
@@ -112,6 +112,13 @@ wellll ok maybe id and text can collapse?
 Alright, anyway, I've decided that any of these things can be the side of a multiselect.
 
 */
+
+beforeAll(() => {
+    testCtree(true);
+});
+afterAll(() => {
+    testCtree(false);
+});
 
 test('id', () => {
     let state = asTop(round([id('', true)]), idc(0));
