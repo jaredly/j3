@@ -1,9 +1,12 @@
-import { applyUpdate } from './applyUpdate';
+import { applyUpdate, testCtree } from './applyUpdate';
 import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleClose, handleWrap } from './handleWrap';
 import { asMultiTop, asTop, curly, id, idc, listc, round, smoosh, spaced, square, text, textc, tspan } from './test-utils';
+
+beforeAll(() => testCtree(true));
+afterAll(() => testCtree(false));
 
 test('round', () => {
     let state = asTop(id('', true), idc(0));

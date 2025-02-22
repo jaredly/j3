@@ -10,35 +10,10 @@ import { id, idc, round } from '../../test-utils';
 import { keyUpdate } from '../../ui/keyUpdate';
 import { Cursor, NodeSelection, selStart, Top } from '../../utils';
 import { LRW } from './crdt';
-import { CId, CList, CNode, CTree, insertArray, isMain, Op, ParentOp } from './ctree';
+import { CId, CList, CNode, CTree, insert, insertArray, isMain, Op, ParentOp } from './ctree';
 import { CTop, ctreeUpdate, justOps } from './ctree-update';
 
 export type CTState = { ctop: CTop; top: Top; sel: NodeSelection };
-
-const insert = (node: Node, { ts, tree }: CTop): Op[] => {
-    switch (node.type) {
-        case 'id':
-            return [new CId(node.loc, new LRW({ text: node.text, ccls: node.ccls }, node.loc), tree)];
-        case 'list': {
-            const result = insertArray(ts, tree, node.children);
-            let kind = node.kind;
-            const ops: Op[] = [];
-            if (isTag(kind)) {
-                ops.push(new ParentOp(kind.node, new LRW({ attr: 'tag', parent: node.loc }, node.loc)));
-                if (kind.attributes) {
-                    ops.push(new ParentOp(kind.attributes, new LRW({ attr: 'attributes', parent: node.loc }, node.loc)));
-                }
-                kind = { ...kind, node: '', attributes: '' };
-            }
-            return [
-                new CList(node.loc, new LRW(node.kind, node.loc), new LRW(node.forceMultiline ?? null, node.loc), tree),
-                ...result.ops,
-                new ParentOp(result.head, new LRW({ attr: 'children', parent: node.loc }, node.loc)),
-            ];
-        }
-    }
-    throw new Error(`node type not yet ${node.type}`);
-};
 
 const asTop = (ctop: CTop) => {
     const roots = ctop.tree.children('root', 'root');
@@ -52,12 +27,21 @@ const asTop = (ctop: CTop) => {
     return top;
 };
 
+const showOp = (op: Op) => {
+    if (op instanceof ParentOp) {
+        return `[parent] ${op.node} -> ${op.parent.value?.parent}.${op.parent.value?.attr}`;
+    }
+    if ('type' in op) return `sel:${op.type}`;
+    return op.show();
+};
+
 export const applyCTreeUpdate = (state: CTState, updates: KeyAction[] | null | void, debug = false) => {
     if (!updates) return state;
 
     updates.forEach((up) => {
         const ups = ctreeUpdate(state.ctop, up, state.sel);
         if (!ups) return debug ? console.log('NO UPDATES') : null;
+        if (debug) console.log(ups.map(showOp).join('\n'));
         // if (debug) console.log('\n# UPDATES\n' + ups.map(showOp).join('\n'));
         // if (debug) console.log('\n# PRE GRAPH\n' + showXMLs(graphToXMLs(state.ctop.graph)));
         state.ctop.tree.apply(justOps(ups));
@@ -71,6 +55,11 @@ export const applyCTreeUpdate = (state: CTState, updates: KeyAction[] | null | v
         updateTop(state, justOps(ups));
     });
 
+    if (debug) {
+        console.log(state.ctop.tree.ids().map((id) => state.ctop.tree.node(id)?.show()));
+        console.log(state.ctop.tree.showParents());
+        console.log(state.ctop.tree.asNodes());
+    }
     // checkConflicts(state.ctop.graph);
     return state;
 };
@@ -87,7 +76,8 @@ const updateTop = (state: CTState, ups: Op[]) => {
 
 const touchedNodes = (ups: Op[], tree: CTree): string[] => {
     const touched: string[] = [];
-    const add = (i: string, seen: string[] = []) => {
+    const add = (i: string | undefined, seen: string[] = []) => {
+        if (!i) return;
         if (i === 'root') {
             if (!touched.includes(i)) touched.push(i);
             return;
@@ -96,14 +86,16 @@ const touchedNodes = (ups: Op[], tree: CTree): string[] => {
         const node = tree.node(i);
         if (node && !isMain(node)) {
             const cseen = seen.concat([i]);
-            add(tree.parent(i).parent, cseen);
+            add(tree.parent(i)?.parent, cseen);
             return;
         }
         if (!touched.includes(i)) touched.push(i);
     };
     ups.forEach((up) => {
         if (up instanceof ParentOp) {
-            add(up.parent.value.parent);
+            if (up.parent.value) {
+                add(up.parent.value.parent);
+            }
         } else {
             add(up.id);
         }

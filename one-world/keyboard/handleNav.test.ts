@@ -1,7 +1,7 @@
 // let's test some operations
 
 import { NodeID, RecNodeT } from '../shared/cnodes';
-import { applySel, applyUpdate } from './applyUpdate';
+import { applySel, applyUpdate, testCtree } from './applyUpdate';
 import { check } from './check.test';
 import { handleNav, selectEnd, selectStart } from './handleNav';
 import { asTop, asTopAndPath, id, idc, list, listc, round, smoosh, spaced, table, text, textc, tspan } from './test-utils';
@@ -12,6 +12,8 @@ const run = (node: RecNodeT<boolean>, cursor: Cursor, key: 'ArrowLeft' | 'ArrowR
     state = applySel(state, handleNav(key, state)!);
     check(state, exp, ecursor);
 };
+// beforeAll(() => testCtree(true));
+// afterAll(() => testCtree(false));
 
 // MARK: IDs
 

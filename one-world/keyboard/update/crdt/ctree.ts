@@ -5,7 +5,9 @@ can I just do LWW for that?
 */
 
 import { ListKind, Node, Nodes } from '../../../shared/cnodes';
+import { isTag } from '../../handleNav';
 import { CRDT, LRW } from './crdt';
+import { CTop } from './ctree-update';
 
 // Kinds of things we can store:
 // CId, CList, CText, CTable
@@ -14,7 +16,7 @@ import { CRDT, LRW } from './crdt';
 // CTableRow
 
 type Child = CList | CCons | CId | CNil;
-type Parent = LRW<{ parent: string; attr: string }>;
+type Parent = LRW<{ parent: string; attr: string } | null>;
 
 export const isMain = (node: Child) => node instanceof CNode;
 
@@ -39,11 +41,20 @@ const unwrapCons = (tree: CTree, id: string) => {
     return [id];
 };
 
-export abstract class CNode {
+export abstract class CChild {
     id: string;
-    constructor(id: string) {
+    tree: CTree;
+    constructor(id: string, tree: CTree) {
         this.id = id;
+        this.tree = tree;
     }
+    get parent() {
+        return this.tree.parent(this.id);
+    }
+    abstract show(): string;
+}
+
+export abstract class CNode extends CChild {
     abstract asNode(): Node;
 }
 
@@ -64,8 +75,10 @@ export class CTree {
         this.nodes = nodes;
         this.childCache = {};
         Object.entries(parents).forEach(([key, item]) => {
-            const { parent, attr } = item.value;
-            this.cacheChild(key, parent, attr);
+            if (item.value) {
+                const { parent, attr } = item.value;
+                this.cacheChild(key, parent, attr);
+            }
         });
     }
 
@@ -88,6 +101,19 @@ export class CTree {
         }
     }
 
+    get root() {
+        const ids = this.children('root', 'root');
+        if (!ids.length) throw new Error(`no root in tree!`);
+        return ids[0];
+    }
+
+    ids() {
+        return Object.keys(this.nodes);
+    }
+    showParents() {
+        return this.parents;
+    }
+
     asNodes() {
         const nodes: Nodes = {};
         Object.entries(this.nodes).forEach(([key, node]) => {
@@ -106,10 +132,12 @@ export class CTree {
                     if (cur.ts > op.parent.ts) {
                         return; // discard this one
                     }
-                    this.uncacheChild(op.node, cur.value.parent, cur.value.attr);
+                    if (cur.value) {
+                        this.uncacheChild(op.node, cur.value.parent, cur.value.attr);
+                    }
                 }
                 this.parents[op.node] = op.parent;
-                this.cacheChild(op.node, op.parent.value.parent, op.parent.value.attr);
+                if (op.parent.value) this.cacheChild(op.node, op.parent.value.parent, op.parent.value.attr);
             } else {
                 this.nodes[op.id] = this.nodes[op.id]?.merge(op as any) ?? op;
             }
@@ -120,7 +148,7 @@ export class CTree {
         return this.nodes[id] ?? null;
     }
 
-    parent(id: string): { parent: string; attr: string } {
+    parent(id: string): { parent: string; attr: string } | null {
         return this.parents[id].value;
     }
 
@@ -135,19 +163,24 @@ export class CTree {
     }
 }
 
-export class CCons {
+export class CCons extends CChild {
     static kind = 'ccons';
     readonly kind = 'ccons' as const;
-    id: string;
-    tree: CTree;
-
-    constructor(id: string, tree: CTree) {
-        this.id = id;
-        this.tree = tree;
-    }
 
     merge(other: CCons) {
         return this;
+    }
+
+    setHead(id: string, ts: string) {
+        return new ParentOp(id, new LRW({ parent: this.id, attr: 'head' }, ts));
+    }
+
+    setTail(id: string, ts: string) {
+        return new ParentOp(id, new LRW({ parent: this.id, attr: 'tail' }, ts));
+    }
+
+    show() {
+        return `cons(${this.head.join(',')} -> ${this.tail.join(',')})`;
     }
 
     get head() {
@@ -161,15 +194,16 @@ export class CCons {
     }
 }
 
-export class CNil {
+export class CNil extends CChild {
     static kind = 'cnil';
     readonly kind = 'cnil' as const;
-    id: string;
-    constructor(id: string) {
-        this.id = id;
-    }
+
     merge(other?: CNil) {
         return this;
+    }
+
+    show(): string {
+        return `(nil)`;
     }
 }
 
@@ -179,7 +213,7 @@ export const insertArray = (ts: TS, tree: CTree, items: string[]): { head: strin
     if (items.length === 1) return { head: items[0], ops: [] };
     if (items.length === 0) {
         const head = ts();
-        return { head, ops: [new CNil(head)] };
+        return { head, ops: [new CNil(head, tree)] };
     }
     const ops: Op[] = [];
     let tail = items[items.length - 1];
@@ -198,13 +232,11 @@ export const insertArray = (ts: TS, tree: CTree, items: string[]): { head: strin
 export class CId extends CNode {
     static $kind = 'cid';
     readonly $kind = 'cid' as const;
-    tree: CTree;
     meta: LRW<{ text: string; ccls?: number }>;
 
     constructor(id: string, meta: LRW<{ text: string; ccls?: number }>, tree: CTree) {
-        super(id);
+        super(id, tree);
         this.meta = meta;
-        this.tree = tree;
     }
 
     asNode(): Node {
@@ -219,6 +251,10 @@ export class CId extends CNode {
         return new CId(this.id, this.meta.merge(other.meta), this.tree);
     }
 
+    show(): string {
+        return `id(${this.text}/${this.ccls})`;
+    }
+
     get text() {
         return this.meta.value.text;
     }
@@ -227,18 +263,45 @@ export class CId extends CNode {
     }
 }
 
+/*
+so, there's a case where I want to:
+- replace N with M
+- /move/ M, replacing with N
+*/
+
+export const replaceChild = (ts: TS, node: CChild, ...locs: string[]): Op[] => {
+    if (node instanceof CCons) {
+        const ops: Op[] = node.head.map((id) => new ParentOp(id, new LRW(null, ts())));
+        ops.push(node.setHead(locs[0], ts()));
+        if (locs.length > 1) {
+            const res = insertArray(ts, node.tree, locs.slice(1).concat(node.tail));
+            ops.push(...res.ops);
+            ops.push(node.setTail(res.head, ts()));
+        }
+        return ops;
+    }
+
+    const res = insertArray(ts, node.tree, locs);
+
+    const parent = node.parent;
+    if (!parent) throw new Error(`replacing orphan?`);
+    return [...res.ops, new ParentOp(res.head, new LRW(parent, ts()))];
+};
+
 export class CList extends CNode {
     static $kind = 'clist';
     readonly $kind = 'clist' as const;
-    tree: CTree;
     _kind: LRW<ListKind<string>>;
     multi: LRW<boolean | null>;
 
     constructor(id: string, kind: LRW<ListKind<string>>, multi: LRW<boolean | null>, tree: CTree) {
-        super(id);
-        this.tree = tree;
+        super(id, tree);
         this._kind = kind;
         this.multi = multi;
+    }
+
+    show(): string {
+        return `list(${JSON.stringify(this.kind)})[${this.children.join(',')}]`;
     }
 
     asNode(): Node {
@@ -268,4 +331,33 @@ export class CList extends CNode {
     get children() {
         return this.tree.children(this.id, 'children').flatMap((id) => unwrapCons(this.tree, id));
     }
+
+    clearChildren(ts: string) {
+        return this.tree.children(this.id, 'children').map((id) => new ParentOp(id, new LRW(null, ts)));
+    }
 }
+
+export const insert = (node: Node, { ts, tree }: CTop): Op[] => {
+    switch (node.type) {
+        case 'id':
+            return [new CId(node.loc, new LRW({ text: node.text, ccls: node.ccls }, node.loc), tree)];
+        case 'list': {
+            const result = insertArray(ts, tree, node.children);
+            let kind = node.kind;
+            const ops: Op[] = [];
+            if (isTag(kind)) {
+                ops.push(new ParentOp(kind.node, new LRW({ attr: 'tag', parent: node.loc }, ts())));
+                if (kind.attributes) {
+                    ops.push(new ParentOp(kind.attributes, new LRW({ attr: 'attributes', parent: node.loc }, ts())));
+                }
+                kind = { ...kind, node: '', attributes: '' };
+            }
+            return [
+                new CList(node.loc, new LRW(node.kind, node.loc), new LRW(node.forceMultiline ?? null, node.loc), tree),
+                ...result.ops,
+                new ParentOp(result.head, new LRW({ attr: 'children', parent: node.loc }, ts())),
+            ];
+        }
+    }
+    throw new Error(`node type not yet ${node.type}`);
+};

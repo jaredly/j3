@@ -113,12 +113,8 @@ Alright, anyway, I've decided that any of these things can be the side of a mult
 
 */
 
-beforeAll(() => {
-    testCtree(true);
-});
-afterAll(() => {
-    testCtree(false);
-});
+beforeAll(() => testCtree(true));
+afterAll(() => testCtree(false));
 
 test('id', () => {
     let state = asTop(round([id('', true)]), idc(0));

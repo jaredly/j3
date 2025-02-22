@@ -16,7 +16,10 @@ const validatePath = (top: Top, path: Path) => {
             continue;
         }
         const children = childLocs(top.nodes[parent]);
-        if (!children.includes(id)) throw new Error(`child ${id} is not a child of ${parent}`);
+        if (!children.includes(id)) {
+            console.log(top.nodes[parent]);
+            throw new Error(`child ${id} is not a child of ${parent} (${children.join(',')})`);
+        }
         parent = id;
     }
     return true;
