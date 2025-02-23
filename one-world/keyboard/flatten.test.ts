@@ -1,6 +1,6 @@
 import { RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
-import { applyUpdate } from './applyUpdate';
+import { applyUpdate, testCtree } from './applyUpdate';
 import { check } from './check.test';
 import { handleKey } from './handleKey';
 import { root } from './root';
@@ -9,6 +9,8 @@ import { Cursor } from './utils';
 import { validate } from './validate';
 
 // MARK: space sep
+beforeAll(() => testCtree(true));
+afterAll(() => testCtree(false));
 
 test('smoosh in space in sep', () => {
     let state = asTop(
