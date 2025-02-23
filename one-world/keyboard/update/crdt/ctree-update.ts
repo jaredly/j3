@@ -1,11 +1,11 @@
 import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
-import { ListKind, Node, NodeID, Nodes } from '../../../shared/cnodes';
+import { fromRec, ListKind, Node, NodeID, Nodes, RecNodeT } from '../../../shared/cnodes';
 import { isTag, selectStart } from '../../handleNav';
 import { SelStart } from '../../handleShiftNav';
 import { KeyAction, KeyWhat } from '../../keyActionToUpdate';
-import { lastChild, move, NodeSelection, parentLoc, parentPath, PartialSel, Path, pathWithChildren, selStart, SelUpdate } from '../../utils';
+import { Cursor, lastChild, move, NodeSelection, parentLoc, parentPath, PartialSel, Path, pathWithChildren, selStart, SelUpdate } from '../../utils';
 import { LRW } from './crdt';
-import { CId, CList, CNode, CTree, insert, Op, ParentOp, replaceChild } from './ctree';
+import { CId, CList, CNode, CTree, insert, insertArray, Op, ParentOp, replaceChild } from './ctree';
 
 export type CTop = {
     tree: CTree;
@@ -30,9 +30,48 @@ export const ctreeUpdate = (top: CTop, action: KeyAction, sel: NodeSelection): U
             return c_handleInsertList(top, action.path, action.pos, action.kind);
         case 'insert-text':
             return c_handleInsertText(top, action.path, action.pos, action.what);
+        case 'add-inside':
+            return c_addInside(top, action.path, action.children, action.cursor);
     }
     console.warn(`no update ${action.type}`);
     return null;
+};
+
+export const c_addInside = (top: CTop, path: Path, children: RecNodeT<boolean>[], cursor: Cursor): null | Up[] => {
+    const node = top.tree.node(lastChild(path));
+    if (!(node instanceof CList)) return null; // and table
+
+    const { roots, selPath, ops } = insertRecNodes(top, children);
+
+    const rootList = insertArray(top.ts, top.tree, roots);
+
+    const child = top.tree.children(node.id, 'children');
+    if (!child) return null;
+    ops.push(...rootList.ops);
+    ops.push(...child.map((cid) => new ParentOp(cid, new LRW(null, top.ts()))));
+    ops.push(new ParentOp(rootList.head, new LRW({ parent: node.id, attr: 'children' }, top.ts())));
+
+    return [...ops, { type: 'move', to: { start: selStart(pathWithChildren(path, ...selPath), cursor) } }];
+};
+
+export const insertRecNodes = (top: CTop, items: RecNodeT<boolean>[]) => {
+    let selPath: NodeID[] = [];
+    const nodes: Nodes = {};
+    const roots = items.map((child) =>
+        fromRec(child, nodes, (loc, __, path) => {
+            const nl = top.ts();
+            if (loc === true) {
+                selPath = path.concat([nl]);
+            }
+            return nl;
+        }),
+    );
+
+    if (selPath.length === 0) throw new Error(`nothing selected in node to add`);
+
+    const ops = Object.values(nodes).flatMap((node) => insert(node, top));
+
+    return { roots, ops, selPath };
 };
 
 export const c_handleIdWrap = (top: CTop, path: Path, left: number, right: number, kind: ListKind<NodeID>): Up[] | null => {
