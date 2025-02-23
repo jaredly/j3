@@ -4,7 +4,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { fromMap, RecNodeT } from '../shared/cnodes';
 import { cread } from '../shared/creader';
 import { shape } from '../shared/shape';
-import { applySel, applyUpdate } from './applyUpdate';
+import { applySel, applyUpdate, testCtree } from './applyUpdate';
 import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
@@ -19,6 +19,8 @@ const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown
     state = applyUpdate(state, up);
     expect(shape(fromMap(state.top.root, state.top.nodes, () => 0))).toEqual(shape(out));
 };
+beforeAll(() => testCtree(true));
+afterAll(() => testCtree(false));
 
 // MARK: Text smooshed
 

@@ -2,7 +2,7 @@ import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
 import { ListKind, Node, NodeID, Nodes } from '../../../shared/cnodes';
 import { isTag, selectStart } from '../../handleNav';
 import { SelStart } from '../../handleShiftNav';
-import { KeyAction } from '../../keyActionToUpdate';
+import { KeyAction, KeyWhat } from '../../keyActionToUpdate';
 import { lastChild, move, NodeSelection, parentLoc, parentPath, Path, pathWithChildren, selStart, SelUpdate } from '../../utils';
 import { LRW } from './crdt';
 import { CId, CList, CNode, CTree, insert, Op, ParentOp } from './ctree';
@@ -28,6 +28,8 @@ export const ctreeUpdate = (top: CTop, action: KeyAction, sel: NodeSelection): U
             return wrapUpdate(top, action.path, action.min, action.max, action.kind);
         case 'insert-list':
             return c_handleInsertList(top, action.path, action.pos, action.kind);
+        case 'insert-text':
+            return c_handleInsertText(top, action.path, action.pos, action.what);
     }
     console.warn(`no update ${action.type}`);
     return null;
@@ -40,6 +42,13 @@ export const c_handleIdWrap = (top: CTop, path: Path, left: number, right: numbe
     // Wrap the whole thing
     if (left === 0 && right === text.length) {
         return c_wrapNode(top, path, node.id, kind);
+    }
+
+    if (left === 0 && right === 0) {
+        // beforeee
+    }
+    if (left === text.length && right === text.length) {
+        // afterrr
     }
 
     const first = text.slice(0, left);
@@ -268,4 +277,85 @@ export const c_replaceIn = (top: CTop, node: CNode, old: NodeID, ...locs: NodeID
     // }
 
     throw new Error(`unexpected node type ${node}`);
+};
+
+export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after' | number, what: KeyWhat): Up[] | null => {
+    const parent = parentPath(path);
+    const self = lastChild(path);
+    const nid = top.ts();
+    const ops: Up[] = [];
+    let current = top.tree.node(self);
+
+    let left: string;
+    let right: string;
+    let moveSel = false;
+    let rightText = what.type === 'text' ? { text: what.grem, ccls: what.ccls } : { text: '' };
+
+    // if (typeof pos === 'number') {
+    //     if (current instanceof CId) {
+    //         const grems = splitGraphemes(current.text);
+    //         if (grems.length <= pos) {
+    //             left = self;
+    //             right = nid;
+    //             moveSel = true;
+    //         } else if (pos === 0) {
+    //             left = nid;
+    //             right = self;
+    //         } else {
+    //             moveSel = true;
+    //             const pre = grems.slice(0, pos);
+    //             const post = grems.slice(pos).join('');
+    //             ops.push(updateNode(current.setText(pre.join(''), undefined, top.ts())));
+    //             if (what.type === 'text') {
+    //                 const postId = top.ts();
+    //                 ops.push(insertNodes([new MId(postId, { text: post, ccls: current.plain.value.ccls })], []));
+    //                 // OK this is the only case where we don't have EXACTLY 2 newids, and
+    //                 // it shouldn't be handled by splitin.
+    //                 // SO I'll do it speartely.
+    //                 const rep = replaceInOrWrap(top, 'smooshed', parent, self, [self, nid, postId], {
+    //                     children: [nid],
+    //                     cursor: { type: 'id', end: 0 },
+    //                 });
+    //                 return rep ? [...ops, insertNodes([new MId(nid, rightText)], []), ...rep] : null;
+    //             } else {
+    //                 rightText = { text: post, ccls: current.plain.value.ccls };
+    //                 left = self;
+    //                 right = nid;
+    //             }
+    //         }
+    //     } else {
+    //         // we're doing "inside a list" anddddd idk
+    //         throw new Error('nop');
+    //     }
+    // } else if (pos === 'before') {
+    //     left = nid;
+    //     right = self;
+    // } else {
+    //     left = self;
+    //     right = nid;
+    //     moveSel = true;
+    // }
+
+    // if (what.type === 'text' || what.type === 'string') {
+    //     const newThing = what.type === 'text' ? [insertNodes([new MId(nid, { text: what.grem, ccls: what.ccls })], [])] : insertText(top, nid, []);
+    //     const rep = replaceInOrWrap(top, 'smooshed', parent, self, [left, right], {
+    //         children: [nid],
+    //         cursor: what.type === 'string' ? { type: 'list', where: 'inside' } : { type: 'id', end: 1 },
+    //     });
+    //     return rep ? [...ops, ...newThing, ...rep] : null;
+    // }
+
+    // const newThing = insertNodes([new MId(nid, rightText)], []);
+
+    // const splop = splitIn(
+    //     top,
+    //     parent,
+    //     self,
+    //     left,
+    //     right,
+    //     what.type === 'sep' ? 'list' : what.type === 'space' ? 'spaced' : 'smooshed',
+    //     moveSel ? { children: [nid], cursor: { type: 'id', end: 0 } } : undefined,
+    // );
+    // if (!splop) return null;
+    // return [...ops, newThing, ...splop];
 };

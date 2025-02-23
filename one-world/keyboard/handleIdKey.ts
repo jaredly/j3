@@ -1,3 +1,4 @@
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Collection, Id, Node, NodeID } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { cursorSplit, idText } from './cursorSplit';
@@ -100,6 +101,26 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
             const { left, right } = cursorSides(cursor, current.start);
             chars.splice(left, right - left, grem);
             return [{ type: 'set-id-text', path, end: left + 1, text: chars.join(''), ccls: kind }];
+        }
+
+        if (grem === '.' && cursor.end > 0 && current.start == null && node.text.match(/^[0-9]/)) {
+            let skipDecimal = false;
+            const parent = top.nodes[parentLoc(path)];
+            if (parent?.type === 'list' && parent.kind === 'smooshed') {
+                const at = parent.children.indexOf(current.node.loc);
+                if (at > 0) {
+                    const prev = parent.children[at - 1];
+                    const pnode = top.nodes[prev];
+                    if (pnode.type === 'id' && pnode.text === '.') {
+                        skipDecimal = true;
+                    }
+                }
+            }
+            if (!skipDecimal) {
+                const chars = splitGraphemes(node.text);
+                chars.splice(cursor.end, 0, grem);
+                return [{ type: 'set-id-text', path, end: cursor.end + 1, text: chars.join(''), ccls: node.ccls }];
+            }
         }
     }
 

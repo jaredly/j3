@@ -1,4 +1,11 @@
 
+
+NEXT TUP
+
+- [x] keyUpdate '.' in a number, do the normal update instead of insert-text
+- [ ] smoosh test, make insert text work :)
+
+
 # Getting ready for CTree
 
 soooo, we would need all /links/ to allow multiple nodes, not just one.

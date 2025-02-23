@@ -132,7 +132,7 @@ export const pruneEmptyIds = (flat: Flat[], selection: { node: Node; cursor: Cur
     return { items: res, selection };
 };
 
-const isNumberPair = (one: Id<NodeID>, two: Id<NodeID>) => {
+export const isNumberPair = (one: Id<NodeID>, two: Id<NodeID>) => {
     return (one.text === '.' && two.text.match(/^[0-9]/)) || (two.text === '.' && one.text.match(/^[0-9]/));
 };
 
