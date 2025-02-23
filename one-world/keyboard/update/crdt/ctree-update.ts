@@ -5,7 +5,7 @@ import { SelStart } from '../../handleShiftNav';
 import { KeyAction, KeyWhat } from '../../keyActionToUpdate';
 import { Cursor, lastChild, move, NodeSelection, parentLoc, parentPath, PartialSel, Path, pathWithChildren, selStart, SelUpdate } from '../../utils';
 import { LRW } from './crdt';
-import { CId, CList, CNode, CTree, insert, insertArray, Op, ParentOp, replaceChild } from './ctree';
+import { CCons, CId, CList, CNode, CTree, insert, insertArray, Op, ParentOp, replaceChild } from './ctree';
 
 export type CTop = {
     tree: CTree;
@@ -543,36 +543,51 @@ export const splitList = (top: CTop, node: CList, at: string, left: string, righ
     // it will be relevant to know whether the left or right was wrapped.
     const kind = node.kind;
     const dissolvable = kind === 'smooshed' || kind === 'spaced';
-    const child = node.childAt(top.graph.getEdge, at);
+    const child = top.tree.node(at);
+    // node.childAt(top.graph.getEdge, at);
     if (!child || !kind) return null;
 
     if (dissolvable) {
-        if (child.first) {
-            const first = node.getChildEdge(top.graph.getEdge);
-            if (!first) return null;
-            if (first.end instanceof MCons) {
-                const hedge = first.end.getHeadEdge(top.graph.getEdge);
-                const ops: MOp[] = [replaceEdges([hedge.edge.del(top.ts())], hedge.edge.to(top.ts, right))];
-                return { left, right: node.id, ops };
-            } else {
-                return { left, right, ops: [] };
-            }
+        if (!child.parent) return null;
+        // if (child.first) {
+        if (child.parent.attr === 'children') {
+            return { left, right, ops: [] };
+        }
+        const parent = top.tree.node(child.parent.parent);
+        if (parent instanceof CCons && parent?.parent?.attr === 'children') {
+            // const hedge = first.end.getHeadEdge(top.graph.getEdge);
+            // const ops: Up[] = [replaceEdges([hedge.edge.del(top.ts())], hedge.edge.to(top.ts, right))];
+            return { left, right: node.id, ops: [new ParentOp(right, new LRW({ parent: parent.id, attr: 'head' }, top.ts()))] };
+
+            // const first = node.getChildEdge(top.graph.getEdge);
+            // if (!first) return null;
+            // if (first.end instanceof MCons) {
+            //     const hedge = first.end.getHeadEdge(top.graph.getEdge);
+            //     const ops: MOp[] = [replaceEdges([hedge.edge.del(top.ts())], hedge.edge.to(top.ts, right))];
+            //     return { left, right: node.id, ops };
+            // } else {
+            //     return { left, right, ops: [] };
+            // }
         }
     }
 
-    const ops: MOp[] = [];
-    ops.push(replaceEdges([child.edge.edge.del(top.ts())], child.edge.edge.to(top.ts, left)));
+    const ops: Up[] = [];
     const nid = top.ts();
-    if (child.edge.end instanceof MCons) {
-        const hedge = child.edge.end.getHeadEdge(top.graph.getEdge);
-        ops.push(replaceEdges([hedge.edge.del(top.ts())], hedge.edge.to(top.ts, right)), insertList(top, nid, kind, [child.edge.end.id]));
-    } else {
-        ops.push(insertList(top, nid, kind, [right]));
-    }
-    return { left: node.id, right: nid, ops };
-    // child.first // whatt
-    // dissolvable // hrmms
 
-    // child?.edge
-    // child?.end
+    ops.push(...replaceChild(top.ts, child, left, right));
+
+    // ops.push(replaceEdges([child.edge.edge.del(top.ts())], child.edge.edge.to(top.ts, left)));
+    // if (child.edge.end instanceof MCons) {
+    //     const hedge = child.edge.end.getHeadEdge(top.graph.getEdge);
+    //     // ops.push(
+    //     //     replaceEdges([hedge.edge.del(top.ts())], hedge.edge.to(top.ts, right)),
+    //     //     insertList(top, nid, kind, [child.edge.end.id]));
+    //     ops.push(
+    //         new ParentOp(right, new LRW({attr: 'head', parent: child}, top.ts())),
+    //         ...insert({type: 'list', kind, loc: nid, children: [child.edge.end.id]} ,top))
+    // } else {
+    //     ops.push(...insert({type: 'list', kind, loc: nid, children: [right]} ,top))
+    // }
+
+    return { left: node.id, right: nid, ops };
 };
