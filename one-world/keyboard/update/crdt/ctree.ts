@@ -4,7 +4,7 @@ the paper has (id, meta, parent, ts) as the quads.
 can I just do LWW for that?
 */
 
-import { ListKind, Node, Nodes } from '../../../shared/cnodes';
+import { Link, ListKind, Node, Nodes, Style } from '../../../shared/cnodes';
 import { isTag } from '../../handleNav';
 import { CRDT, LRW } from './crdt';
 import { CTop } from './ctree-update';
@@ -15,7 +15,7 @@ import { CTop } from './ctree-update';
 // CTextText, CTextEmbed
 // CTableRow
 
-type Child = CList | CCons | CId | CNil;
+type Child = CList | CCons | CId | CNil | CTextText;
 type Parent = LRW<{ parent: string; attr: string } | null>;
 
 export const isMain = (node: Child) => node instanceof CNode;
@@ -298,6 +298,50 @@ export const replaceChild = (ts: TS, node: CChild, ...locs: string[]): Op[] => {
 
     return [...res.ops, new ParentOp(res.head, new LRW(parent, ts()))];
 };
+
+export abstract class CTextSpan extends CChild {
+    style: LRW<{ link?: Link; style?: Style }>;
+    constructor(id: string, tree: CTree, style: LRW<{ link?: Link; style?: Style }>) {
+        super(id, tree);
+        this.style = style;
+    }
+}
+
+export class CTextText extends CTextSpan {
+    text: LRW<string>;
+    constructor(id: string, tree: CTree, style: LRW<{ link?: Link; style?: Style }>, text: LRW<string>) {
+        super(id, tree, style);
+        this.text = text;
+    }
+
+    show(): string {
+        return `text:text"${this.text.value}"`;
+    }
+
+    merge(other: CTextText): CTextText {
+        return new CTextText(this.id, this.tree, this.style.merge(other.style), this.text.merge(other.text));
+    }
+}
+
+export class CText extends CNode {
+    static $kind = 'ctext';
+    readonly $kind = 'ctext' as const;
+
+    get spans() {
+        return this.tree
+            .children(this.id, 'spans')
+            .flatMap((id) => unwrapCons(this.tree, id))
+            .map((sid) => this.tree.node(sid) as CTextSpan);
+    }
+
+    show(): string {
+        return `text(${this.spans})`;
+    }
+
+    asNode(): Node {
+        const spans = this.tree.children;
+    }
+}
 
 export class CList extends CNode {
     static $kind = 'clist';
