@@ -249,7 +249,7 @@ export class CId extends CNode {
     }
 
     setText(ts: string, text: string, ccls?: number): CId {
-        return new CId(this.id, new LRW({ text, ccls }, ts), this.tree);
+        return new CId(this.id, new LRW({ text, ccls: ccls ?? this.meta.value.ccls }, ts), this.tree);
     }
 
     merge(other: CId) {

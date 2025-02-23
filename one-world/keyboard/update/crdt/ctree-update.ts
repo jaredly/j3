@@ -334,42 +334,43 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
 
     // console.log('want to insert text', path, pos, what);
     if (typeof pos === 'number') {
-        // if (current instanceof CId) {
-        //     const grems = splitGraphemes(current.text);
-        //     if (grems.length <= pos) {
-        //         left = self;
-        //         right = nid;
-        //         moveSel = true;
-        //     } else if (pos === 0) {
-        //         left = nid;
-        //         right = self;
-        //     } else {
-        //         moveSel = true;
-        //         const pre = grems.slice(0, pos);
-        //         const post = grems.slice(pos).join('');
-        //         ops.push(updateNode(current.setText(pre.join(''), undefined, top.ts())));
-        //         if (what.type === 'text') {
-        //             const postId = top.ts();
-        //             ops.push(insertNodes([new MId(postId, { text: post, ccls: current.plain.value.ccls })], []));
-        //             // OK this is the only case where we don't have EXACTLY 2 newids, and
-        //             // it shouldn't be handled by splitin.
-        //             // SO I'll do it speartely.
-        //             const rep = replaceInOrWrap(top, 'smooshed', parent, self, [self, nid, postId], {
-        //                 children: [nid],
-        //                 cursor: { type: 'id', end: 0 },
-        //             });
-        //             return rep ? [...ops, insertNodes([new MId(nid, rightText)], []), ...rep] : null;
-        //         } else {
-        //             rightText = { text: post, ccls: current.plain.value.ccls };
-        //             left = self;
-        //             right = nid;
-        //         }
-        //     }
-        // } else {
-        //     // we're doing "inside a list" anddddd idk
-        //     throw new Error('nop');
-        // }
-        throw new Error('nop');
+        if (current instanceof CId) {
+            const grems = splitGraphemes(current.text);
+            if (grems.length <= pos) {
+                left = self;
+                right = nid;
+                moveSel = true;
+            } else if (pos === 0) {
+                left = nid;
+                right = self;
+            } else {
+                moveSel = true;
+                const pre = grems.slice(0, pos);
+                const post = grems.slice(pos).join('');
+                ops.push(current.setText(top.ts(), pre.join('')));
+                // ops.push(updateNode(current.setText(pre.join(''), undefined, top.ts())));
+                if (what.type === 'text') {
+                    const postId = top.ts();
+                    ops.push(new CId(postId, new LRW({ text: post, ccls: current.ccls }, postId), top.tree));
+                    // OK this is the only case where we don't have EXACTLY 2 newids, and
+                    // it shouldn't be handled by splitin.
+                    // SO I'll do it speartely.
+                    const rep = replaceInOrWrap(top, 'smooshed', parent, self, [self, nid, postId], {
+                        children: [nid],
+                        cursor: { type: 'id', end: 0 },
+                    });
+                    return rep ? [...ops, new CId(nid, new LRW(rightText, nid), top.tree), ...rep] : null;
+                } else {
+                    rightText = { text: post, ccls: current.ccls };
+                    left = self;
+                    right = nid;
+                }
+            }
+        } else {
+            // we're doing "inside a list" anddddd idk
+            throw new Error('nop');
+        }
+        // throw new Error('nop');
     } else if (pos === 'before') {
         left = nid;
         right = self;

@@ -62,7 +62,7 @@ test('between twoo', () => {
     check(state, smoosh([round([]), id('A', true), round([])]), idc(1));
 });
 
-test.only('text after', () => {
+test('text after', () => {
     let state = asTop(id('hi', true), idc(2));
     state = applyUpdate(state, handleKey(state, '"', js));
     check(state, smoosh([id('hi'), text([], true)]), listc('inside'));
