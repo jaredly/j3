@@ -453,7 +453,15 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
         return rep ? [...ops, ...newThing, ...rep] : null;
     }
 
+    // if (rightText.text !== '') {
     ops.push(new CId(nid, new LRW(rightText, nid), top.tree));
+    // } else {
+    //     if (left === nid) {
+    //         left = null
+    //     } else if (right === nid) {
+    //         right = null
+    //     }
+    // }
 
     if (what.type === 'sep' && what.newLine) {
         const node = top.tree.node(lastChild(parent));
