@@ -311,6 +311,10 @@ export class CList extends CNode {
         this.multi = multi;
     }
 
+    setMulti(multi: boolean | null, ts: string) {
+        return new CList(this.id, this._kind, this.multi.set(multi, ts), this.tree);
+    }
+
     show(): string {
         return `list(${JSON.stringify(this.kind)})[${this.children.join(',')}]`;
     }

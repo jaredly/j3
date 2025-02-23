@@ -32,6 +32,12 @@ export const ctreeUpdate = (top: CTop, action: KeyAction, sel: NodeSelection): U
             return c_handleInsertText(top, action.path, action.pos, action.what);
         case 'add-inside':
             return c_addInside(top, action.path, action.children, action.cursor);
+        case 'toggle-multiline': {
+            const node = top.tree.node(action.loc);
+            if (node instanceof CList) {
+                return [node.setMulti(!node.multi.value, top.ts())];
+            }
+        }
     }
     console.warn(`no update ${action.type}`);
     return null;
@@ -271,7 +277,8 @@ export const c_replaceIn = (top: CTop, node: CNode, old: NodeID, ...locs: NodeID
             }
         }
 
-        throw new Error('nopp');
+        return replaceChild(top.ts, top.tree.node(old)!, ...locs);
+
         // const childLocs = node.getChildren(top.graph.getEdge);
         // if (!childLocs) return [];
 
