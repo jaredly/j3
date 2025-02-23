@@ -94,13 +94,20 @@ export const c_handleIdWrap = (top: CTop, path: Path, left: number, right: numbe
     }
     if (left === text.length && right === text.length) {
         // afterrr
+        const nid = top.ts();
+        const rep = replaceInOrWrap(top, 'smooshed', parentPath(path), node.id, [node.id, nid], {
+            children: [nid],
+            cursor: { type: 'list', where: 'inside' },
+        });
+        if (!rep) return null;
+        return [...rep, ...insert({ type: 'list', kind, children: [], loc: nid }, top)];
     }
 
     const first = text.slice(0, left);
     const mid = text.slice(left, right);
     const end = text.slice(right);
 
-    throw new Error(`need to split ID I guess`);
+    throw new Error(`need to split ID I guess ${left} - ${right} : ${text.length}`);
     // return [];
 };
 
