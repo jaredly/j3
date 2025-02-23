@@ -111,6 +111,9 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
             let skipDecimal = false;
             const parent = top.nodes[parentLoc(path)];
             if (parent?.type === 'list' && parent.kind === 'smooshed') {
+                if (grem !== '.') {
+                    skipDecimal = true;
+                }
                 const at = parent.children.indexOf(current.node.loc);
                 if (at > 0) {
                     const prev = parent.children[at - 1];
