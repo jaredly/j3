@@ -165,7 +165,7 @@ export const setIdText = (top: CTop, path: Path, text: string, end: number, ccls
     if (!(node instanceof CId)) {
         return [];
     }
-    return [node.setText(top.ts(), text, node.ccls ?? ccls), { type: 'move', to: { start: selStart(path, { type: 'id', end }) } }];
+    return [node.setText(top.ts(), text, ccls ?? node.ccls), { type: 'move', to: { start: selStart(path, { type: 'id', end }) } }];
 };
 
 export const nodesProxy = (get: (id: string) => Node): Nodes => {
