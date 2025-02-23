@@ -11,7 +11,7 @@ import { keyUpdate } from '../../ui/keyUpdate';
 import { Cursor, NodeSelection, selStart, Top } from '../../utils';
 import { LRW } from './crdt';
 import { CId, CList, CNode, CTree, insert, insertArray, isMain, Op, ParentOp } from './ctree';
-import { CTop, ctreeUpdate, justOps } from './ctree-update';
+import { CTop, ctreeUpdate, justOps, Up } from './ctree-update';
 
 export type CTState = { ctop: CTop; top: Top; sel: NodeSelection };
 
@@ -27,8 +27,9 @@ const asTop = (ctop: CTop) => {
     return top;
 };
 
-const showOp = (op: Op) => {
+const showOp = (op: Up) => {
     if (op instanceof ParentOp) {
+        if (!op.parent.value) return `[x parent] ${op.node}`;
         return `[parent] ${op.node} -> ${op.parent.value?.parent}.${op.parent.value?.attr}`;
     }
     if ('type' in op) return `sel:${op.type}`;
@@ -37,6 +38,7 @@ const showOp = (op: Op) => {
 
 export const applyCTreeUpdate = (state: CTState, updates: KeyAction[] | null | void, debug = false) => {
     if (!updates) return state;
+    // debug = true;
 
     updates.forEach((up) => {
         const ups = ctreeUpdate(state.ctop, up, state.sel);
@@ -56,9 +58,12 @@ export const applyCTreeUpdate = (state: CTState, updates: KeyAction[] | null | v
     });
 
     if (debug) {
-        console.log(state.ctop.tree.ids().map((id) => state.ctop.tree.node(id)?.show()));
-        console.log(state.ctop.tree.showParents());
-        console.log(state.ctop.tree.asNodes());
+        console.log(
+            'show nodes',
+            state.ctop.tree.ids().map((id) => state.ctop.tree.node(id)?.show()),
+        );
+        console.log('parents', state.ctop.tree.showParents());
+        console.log('nodes', state.ctop.tree.asNodes());
     }
     // checkConflicts(state.ctop.graph);
     return state;

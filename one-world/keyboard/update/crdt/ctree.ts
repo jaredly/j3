@@ -26,6 +26,8 @@ export class ParentOp {
     node: string;
     parent: Parent;
     constructor(node: string, parent: Parent) {
+        if (node == null) throw new Error('null node');
+        // if (parent.value?.parent == null) throw new Error('unll parent');
         this.node = node;
         this.parent = parent;
     }
@@ -37,6 +39,9 @@ const unwrapCons = (tree: CTree, id: string) => {
     const child = tree.node(id);
     if (child instanceof CCons) {
         return child.items;
+    }
+    if (child instanceof CNil) {
+        return [];
     }
     return [id];
 };
@@ -280,11 +285,17 @@ export const replaceChild = (ts: TS, node: CChild, ...locs: string[]): Op[] => {
         }
         return ops;
     }
+    const parent = node.parent;
+    if (!parent) throw new Error(`replacing orphan?`);
+    if (parent.attr === 'head') {
+        const pnode = node.tree.node(parent.parent);
+        if (pnode instanceof CCons) {
+            return replaceChild(ts, pnode, ...locs);
+        }
+    }
 
     const res = insertArray(ts, node.tree, locs);
 
-    const parent = node.parent;
-    if (!parent) throw new Error(`replacing orphan?`);
     return [...res.ops, new ParentOp(res.head, new LRW(parent, ts()))];
 };
 
