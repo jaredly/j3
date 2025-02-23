@@ -380,6 +380,34 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
         moveSel = true;
     }
 
+    // Smoosh collapse?
+    if (what.type === 'text') {
+        what.ccls;
+        const pnode = top.tree.node(parentLoc(path));
+        if (pnode instanceof CList && pnode.kind === 'smooshed') {
+            const children = pnode.children;
+            let at = children.indexOf(self);
+            at += left === self ? 1 : -1;
+            if (at >= 0 && at < children.length) {
+                const adj = top.tree.node(children[at]);
+                if (adj instanceof CId && adj.ccls === what.ccls) {
+                    return [
+                        adj.setText(top.ts(), left === self ? what.grem + adj.text : adj.text + what.grem),
+                        {
+                            type: 'move',
+                            to: {
+                                start: selStart(pathWithChildren(parentPath(path), adj.id), {
+                                    type: 'id',
+                                    end: left === self ? 1 : splitGraphemes(adj.text).length + 1,
+                                }),
+                            },
+                        },
+                    ];
+                }
+            }
+        }
+    }
+
     if (what.type === 'text' || what.type === 'string') {
         const newThing = insert(
             what.type === 'text' ? { type: 'id', text: what.grem, ccls: what.ccls, loc: nid } : { type: 'text', loc: nid, spans: [] },
