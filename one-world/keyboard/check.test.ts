@@ -7,7 +7,6 @@ import { expect } from 'bun:test';
 import { validate } from './validate';
 
 export const check = (state: TestState, exp: RecNodeT<boolean | number>, cursor: Cursor, endCursor?: Cursor) => {
-    validate(state);
     const { main, paths } = selPaths(exp);
     expect(shape(root(state))).toEqual(shape(exp));
     expect({
@@ -21,6 +20,7 @@ export const check = (state: TestState, exp: RecNodeT<boolean | number>, cursor:
         cursor,
         endCursor,
     });
+    validate(state);
 };
 
 export const checkm = (state: TestState, exp: RecNodeT<number>, cursor: Cursor) => {

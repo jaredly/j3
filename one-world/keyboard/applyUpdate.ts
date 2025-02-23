@@ -91,9 +91,9 @@ export const testCtree = (yes: boolean) => {
     TESTING_CTREE = yes;
 };
 
-export function applyUpdate<T extends TestState>(state: T, update: KeyAction[] | null | void): T {
+export function applyUpdate<T extends TestState>(state: T, update: KeyAction[] | null | void, debug = false): T {
     if (TESTING_CTREE) {
-        return applyCTreeUpdate(state as any, update) as any;
+        return applyCTreeUpdate(state as any, update, debug) as any;
     }
     return _applyUpdate(state, update);
 }

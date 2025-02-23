@@ -33,7 +33,7 @@ const showOp = (op: Up) => {
         return `[parent] ${op.node} -> ${op.parent.value?.parent}.${op.parent.value?.attr}`;
     }
     if ('type' in op) return `sel:${op.type}`;
-    return op.show();
+    return op.id + ' : ' + op.show();
 };
 
 export const applyCTreeUpdate = (state: CTState, updates: KeyAction[] | null | void, debug = false) => {

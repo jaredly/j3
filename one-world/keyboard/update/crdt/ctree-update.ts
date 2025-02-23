@@ -447,6 +447,7 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
         }
     }
 
+    console.log('now', moveSel);
     const splop = splitIn(
         top,
         parent,
@@ -475,6 +476,8 @@ export const replaceInOrWrap = (top: CTop, kind: 'smooshed' | 'spaced', path: Pa
     return [
         ...c_replaceAt(path.children, top, old, nid),
         ...insert({ type: 'list', children: nodes, kind, loc: nid }, top),
+        ...nodes.map((n) => ({ type: 'addparent' as const, loc: n, parent: nid })),
+        // {type: 'addparent', loc: },
         ...(sel ? [{ type: 'move' as const, to: { start: selStart(pathWithChildren(path, nid, ...sel.children), sel.cursor) } }] : []),
     ];
 };
