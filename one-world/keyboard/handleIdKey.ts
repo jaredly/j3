@@ -4,7 +4,7 @@ import { cursorSides } from './cursorSides';
 import { cursorSplit, idText } from './cursorSplit';
 import { Flat, addNeighborAfter, addNeighborBefore, findParent, listKindForKeyKind } from './flatenate';
 import { braced, splitListCell } from './handleListKey';
-import { isTag, richNode, selectStart } from './handleNav';
+import { handleNav, isTag, richNode, selectStart } from './handleNav';
 import { Kind, textKind } from './insertId';
 import { KeyAction, KeyWhat, moveA } from './keyActionToUpdate';
 import { collapseAdjacentIDs, flatten, pruneEmptyIds, unflat } from './rough';
@@ -149,6 +149,20 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
 
     const closeUp = handleTagCloser(top, node, grem, parent, path);
     if (closeUp) return closeUp;
+
+    if (kind === 'space') {
+        // check to see if we should just move to an adjacent space
+        if (parent?.node.kind === 'spaced') {
+            const right = handleNav('ArrowRight', { top, sel: { start: selStart(current.path, current.cursor) } });
+            if (right) {
+                const rn = top.nodes[lastChild(right.path)];
+                const rp = top.nodes[parentLoc(right.path)];
+                if (rp === parent.node && rn.type === 'id' && rn.text === '') {
+                    return [{ type: 'move', sel: right }];
+                }
+            }
+        }
+    }
 
     // return handleTextInsert(kind, grem, current, path, parent, top);
     return [

@@ -128,7 +128,7 @@ test('smoosh id split smoosh (end)', () => {
     check(state, spaced([id('+'), id('abc', true)]), idc(0));
 });
 
-test('smoosh round split smoosh ', () => {
+test.only('smoosh round split smoosh ', () => {
     let state = asTop(smoosh([round([], true), id('abc')]), listc('after'));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
     check(state, spaced([round([]), id('abc', true)]), idc(0));

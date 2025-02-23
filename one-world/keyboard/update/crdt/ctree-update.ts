@@ -337,9 +337,24 @@ export const c_replaceIn = (top: CTop, node: CNode, old: NodeID, ...locs: NodeID
 export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after' | number, what: KeyWhat): Up[] | null => {
     const parent = parentPath(path);
     const self = lastChild(path);
+    let current = top.tree.node(self);
+
+    // // check to see if we should adjust to one side
+    // if (what.type === 'space' && typeof pos !== 'number' && !(current instanceof CId)) {
+    //     const pnode = top.tree.node(lastChild(parent))
+    //     if (pnode instanceof CList) {
+    //         const children = pnode.children
+    //         const at = children.indexOf(self)
+    //         if (pos === 'before') {
+    //             if (at > 0) {
+    // wait maybe this won't work in the general case
+    //             }
+    //         }
+    //     }
+    // }
+
     const nid = top.ts();
     const ops: Up[] = [];
-    let current = top.tree.node(self);
 
     let left: string;
     let right: string;
@@ -447,7 +462,6 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
         }
     }
 
-    console.log('now', moveSel);
     const splop = splitIn(
         top,
         parent,
