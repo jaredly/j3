@@ -438,20 +438,26 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
         return rep ? [...ops, ...newThing, ...rep] : null;
     }
 
-    // const newThing = insertNodes([new MId(nid, rightText)], []);
+    ops.push(new CId(nid, new LRW(rightText, nid), top.tree));
 
-    // const splop = splitIn(
-    //     top,
-    //     parent,
-    //     self,
-    //     left,
-    //     right,
-    //     what.type === 'sep' ? 'list' : what.type === 'space' ? 'spaced' : 'smooshed',
-    //     moveSel ? { children: [nid], cursor: { type: 'id', end: 0 } } : undefined,
-    // );
-    // if (!splop) return null;
-    // return [...ops, newThing, ...splop];
-    return null;
+    if (what.type === 'sep' && what.newLine) {
+        const node = top.tree.node(lastChild(parent));
+        if (node instanceof CList) {
+            ops.push(node.setMulti(true, top.ts()));
+        }
+    }
+
+    const splop = splitIn(
+        top,
+        parent,
+        self,
+        left,
+        right,
+        what.type === 'sep' ? 'list' : what.type === 'space' ? 'spaced' : 'smooshed',
+        moveSel ? { children: [nid], cursor: { type: 'id', end: 0 } } : undefined,
+    );
+    if (!splop) return null;
+    return [...ops, ...splop];
 };
 
 export const replaceInOrWrap = (top: CTop, kind: 'smooshed' | 'spaced', path: Path, old: string, nodes: string[], sel?: PartialSel): Up[] | null => {
@@ -471,4 +477,102 @@ export const replaceInOrWrap = (top: CTop, kind: 'smooshed' | 'spaced', path: Pa
         ...insert({ type: 'list', children: nodes, kind, loc: nid }, top),
         ...(sel ? [{ type: 'move' as const, to: { start: selStart(pathWithChildren(path, nid, ...sel.children), sel.cursor) } }] : []),
     ];
+};
+
+export const splitIn = (
+    top: CTop,
+    path: Path,
+    old: string,
+    left: string,
+    right: string,
+    kind: 'smooshed' | 'spaced' | 'list' | 'row' | 'col',
+    sel?: PartialSel,
+): Up[] | null => {
+    if (path.children.length === 0) {
+        // we are at the top
+        if (kind === 'smooshed' || kind === 'spaced') {
+            return replaceInOrWrap(top, kind, path, old, [left, right], sel);
+        }
+        // OTHERWISEE WE need to make a new toplevel. this is not somthing I accommodate just yettt0
+    }
+
+    const node = top.tree.node(lastChild(path));
+    if (node instanceof CList) {
+        const lkind = node.kind;
+        if (!lkind) {
+            return null;
+        }
+        const matches = kind === 'smooshed' || kind === 'spaced' ? lkind === kind : lkind !== 'smooshed' && lkind !== 'spaced';
+        if (matches) {
+            const ops = replaceChild(top.ts, top.tree.node(old)!, left, right);
+            // node.replaceChild(top.graph.getEdge, top.ts, old, left, right);
+            if (!ops) {
+                return ops;
+            }
+            return ops
+                ? [...ops, ...(sel ? [{ type: 'move' as const, to: { start: selStart(pathWithChildren(path, ...sel.children), sel.cursor) } }] : [])]
+                : null;
+        }
+
+        if (kind === 'smooshed' || (kind === 'spaced' && lkind !== 'smooshed')) {
+            return replaceInOrWrap(top, kind, path, old, [left, right], sel);
+        }
+
+        const split = splitList(top, node, old, left, right);
+        if (!split) return null;
+        if (sel) {
+            if (left === sel.children[0] && split.left !== left) {
+                sel = { ...sel, children: [split.left, ...sel.children] };
+            }
+            if (right === sel.children[0] && split.right !== right) {
+                sel = { ...sel, children: [split.right, ...sel.children] };
+            }
+        }
+        const sub = splitIn(top, parentPath(path), node.id, split.left, split.right, kind, sel);
+        if (!sub) {
+            return null;
+        }
+        return [...split.ops, ...sub];
+    } else {
+        // TODO Table
+        return null;
+    }
+};
+
+export const splitList = (top: CTop, node: CList, at: string, left: string, right: string) => {
+    // it will be relevant to know whether the left or right was wrapped.
+    const kind = node.kind;
+    const dissolvable = kind === 'smooshed' || kind === 'spaced';
+    const child = node.childAt(top.graph.getEdge, at);
+    if (!child || !kind) return null;
+
+    if (dissolvable) {
+        if (child.first) {
+            const first = node.getChildEdge(top.graph.getEdge);
+            if (!first) return null;
+            if (first.end instanceof MCons) {
+                const hedge = first.end.getHeadEdge(top.graph.getEdge);
+                const ops: MOp[] = [replaceEdges([hedge.edge.del(top.ts())], hedge.edge.to(top.ts, right))];
+                return { left, right: node.id, ops };
+            } else {
+                return { left, right, ops: [] };
+            }
+        }
+    }
+
+    const ops: MOp[] = [];
+    ops.push(replaceEdges([child.edge.edge.del(top.ts())], child.edge.edge.to(top.ts, left)));
+    const nid = top.ts();
+    if (child.edge.end instanceof MCons) {
+        const hedge = child.edge.end.getHeadEdge(top.graph.getEdge);
+        ops.push(replaceEdges([hedge.edge.del(top.ts())], hedge.edge.to(top.ts, right)), insertList(top, nid, kind, [child.edge.end.id]));
+    } else {
+        ops.push(insertList(top, nid, kind, [right]));
+    }
+    return { left: node.id, right: nid, ops };
+    // child.first // whatt
+    // dissolvable // hrmms
+
+    // child?.edge
+    // child?.end
 };
