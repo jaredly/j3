@@ -4,7 +4,7 @@ the paper has (id, meta, parent, ts) as the quads.
 can I just do LWW for that?
 */
 
-import { Link, ListKind, Node, Nodes, Style } from '../../../shared/cnodes';
+import { Link, ListKind, Node, Nodes, Style, TextSpan } from '../../../shared/cnodes';
 import { isTag } from '../../handleNav';
 import { CRDT, LRW } from './crdt';
 import { CTop } from './ctree-update';
@@ -15,7 +15,7 @@ import { CTop } from './ctree-update';
 // CTextText, CTextEmbed
 // CTableRow
 
-type Child = CList | CCons | CId | CNil | CTextText;
+type Child = CList | CCons | CId | CNil | CText | CTextText | CTextEmbed;
 type Parent = LRW<{ parent: string; attr: string } | null>;
 
 export const isMain = (node: Child) => node instanceof CNode;
@@ -305,6 +305,25 @@ export abstract class CTextSpan extends CChild {
         super(id, tree);
         this.style = style;
     }
+    abstract asSpan(): TextSpan<string>;
+}
+
+export class CTextEmbed extends CTextSpan {
+    asSpan(): TextSpan<string> {
+        return { type: 'embed', item: this.item!, style: this.style.value.style, link: this.style.value.link, loc: this.id };
+    }
+
+    get item(): string | null {
+        return this.tree.children(this.id, 'item')[0] ?? null;
+    }
+
+    show(): string {
+        return `text:embed"${this.item}"`;
+    }
+
+    merge(other: CTextEmbed): CTextEmbed {
+        return new CTextEmbed(this.id, this.tree, this.style.merge(other.style));
+    }
 }
 
 export class CTextText extends CTextSpan {
@@ -312,6 +331,10 @@ export class CTextText extends CTextSpan {
     constructor(id: string, tree: CTree, style: LRW<{ link?: Link; style?: Style }>, text: LRW<string>) {
         super(id, tree, style);
         this.text = text;
+    }
+
+    asSpan(): TextSpan<string> {
+        return { type: 'text', text: this.text.value, style: this.style.value.style, link: this.style.value.link, loc: this.id };
     }
 
     show(): string {
@@ -334,12 +357,17 @@ export class CText extends CNode {
             .map((sid) => this.tree.node(sid) as CTextSpan);
     }
 
+    merge(other: CText): CText {
+        return this;
+    }
+
     show(): string {
         return `text(${this.spans})`;
     }
 
     asNode(): Node {
-        const spans = this.tree.children;
+        const spans = this.spans.map((span) => span.asSpan());
+        return { type: 'text', spans, loc: this.id };
     }
 }
 
@@ -416,6 +444,14 @@ export const insert = (node: Node, { ts, tree }: CTop): Op[] => {
                 ...result.ops,
                 new ParentOp(result.head, new LRW({ attr: 'children', parent: node.loc }, ts())),
             ];
+        }
+        case 'text': {
+            const spans = insertArray(
+                ts,
+                tree,
+                node.spans.map((s) => s.loc),
+            );
+            return [...spans.ops, new CText(node.loc, tree), new ParentOp(spans.head, new LRW({ attr: 'spans', parent: node.loc }, ts()))];
         }
     }
     throw new Error(`node type not yet ${node.type}`);
