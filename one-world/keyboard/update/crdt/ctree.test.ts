@@ -29,11 +29,11 @@ const asTop = (ctop: CTop) => {
 
 const showOp = (op: Up) => {
     if (op instanceof ParentOp) {
-        if (!op.parent.value) return `[x parent] ${op.node}`;
-        return `[parent] ${op.node} -> ${op.parent.value?.parent}.${op.parent.value?.attr}`;
+        if (!op.parent.value) return `[x parent] ${op.node} - ${op.stack} (${op.parent.ts})`;
+        return `[parent] ${op.node} -> ${op.parent.value?.parent}.${op.parent.value?.attr} - ${op.stack} (${op.parent.ts})`;
     }
     if ('type' in op) return `sel:${op.type}`;
-    return op.id + ' : ' + op.show();
+    return op.id + ' : ' + op.show() + ' ' + op.stack;
 };
 
 export const applyCTreeUpdate = (state: CTState, updates: KeyAction[] | null | void, debug = false) => {
@@ -60,9 +60,17 @@ export const applyCTreeUpdate = (state: CTState, updates: KeyAction[] | null | v
     if (debug) {
         console.log(
             'show nodes',
-            state.ctop.tree.ids().map((id) => state.ctop.tree.node(id)?.show()),
+            state.ctop.tree
+                .ids()
+                .map((id) => '\n\t' + id + ' : ' + state.ctop.tree.node(id)?.show())
+                .join(''),
         );
-        console.log('parents', state.ctop.tree.showParents());
+        console.log(
+            'parents',
+            Object.entries(state.ctop.tree.showParents())
+                .map(([k, v]) => `\n\t${k} -> ${v.value?.parent}.${v.value?.attr} (${v.ts})`)
+                .join(''),
+        );
         console.log('nodes', state.ctop.tree.asNodes());
     }
     // checkConflicts(state.ctop.graph);

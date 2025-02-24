@@ -3,7 +3,9 @@
 NEXT TUP
 
 - [x] keyUpdate '.' in a number, do the normal update instead of insert-text
-- [ ] smoosh test, make insert text work :)
+- [x] smoosh test, make insert text work :)
+
+... 014 is a cons, how did it become ... root?
 
 
 # Getting ready for CTree

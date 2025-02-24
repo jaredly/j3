@@ -5,7 +5,7 @@ import { SelStart } from '../../handleShiftNav';
 import { KeyAction, KeyWhat } from '../../keyActionToUpdate';
 import { Cursor, lastChild, move, NodeSelection, parentLoc, parentPath, PartialSel, Path, pathWithChildren, selStart, SelUpdate } from '../../utils';
 import { LRW } from './crdt';
-import { CCons, CId, CList, CNode, CTree, insert, insertArray, Op, ParentOp, replaceChild } from './ctree';
+import { CChild, CCons, CId, CList, CNode, CTree, insert, insertArray, Op, ParentOp, replaceChild } from './ctree';
 
 export type CTop = {
     tree: CTree;
@@ -237,7 +237,11 @@ export const c_replaceAt = (path: NodeID[], top: CTop, old: NodeID, ...locs: Nod
         if (locs.length !== 1) {
             throw new Error(`cant multi-replace at the toplevel ... not yet`);
         }
-        return [new ParentOp(root, new LRW(null, top.ts())), new ParentOp(locs[0], new LRW({ parent: 'root', attr: 'root' }, top.ts()))];
+        return [
+            new ParentOp(root, new LRW(null, top.ts())),
+            //
+            new ParentOp(locs[0], new LRW({ parent: 'root', attr: 'root' }, top.ts())),
+        ];
     }
 
     return c_replaceIn(top, top.tree.node(path[path.length - 1]) as CNode, old, ...locs);
@@ -339,20 +343,6 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
     const self = lastChild(path);
     let current = top.tree.node(self);
 
-    // // check to see if we should adjust to one side
-    // if (what.type === 'space' && typeof pos !== 'number' && !(current instanceof CId)) {
-    //     const pnode = top.tree.node(lastChild(parent))
-    //     if (pnode instanceof CList) {
-    //         const children = pnode.children
-    //         const at = children.indexOf(self)
-    //         if (pos === 'before') {
-    //             if (at > 0) {
-    // wait maybe this won't work in the general case
-    //             }
-    //         }
-    //     }
-    // }
-
     const nid = top.ts();
     const ops: Up[] = [];
 
@@ -411,7 +401,6 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
 
     // Smoosh collapse?
     if (what.type === 'text') {
-        what.ccls;
         const pnode = top.tree.node(parentLoc(path));
         if (pnode instanceof CList && pnode.kind === 'smooshed') {
             const children = pnode.children;
@@ -433,6 +422,65 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
                         },
                     ];
                 }
+            }
+        }
+    }
+
+    if (what.type === 'space') {
+        const pnode = top.tree.node(parentLoc(path));
+        if (pnode instanceof CList && pnode.kind === 'smooshed') {
+            const children = pnode.children;
+            let at = children.indexOf(self);
+            at += left === self ? 1 : -1;
+            if (at >= 0 && at < children.length) {
+                const right = top.tree.node(left === self ? children[at] : self);
+                if (!right) return null;
+                // if adj ... exists, then we just split in it.
+                const ops: Up[] = partitionn(top, right) as Up[];
+                if (!ops) return null;
+                const nid = top.ts();
+                ops.push(new CList(nid, new LRW(pnode.kind, nid), new LRW(null, nid), top.tree));
+                ops.push(new ParentOp(right.id, new LRW({ parent: nid, attr: 'children' }, top.ts())));
+
+                console.log('partitioned I guess', pnode.id, nid, right.id);
+
+                const inner = splitIn(top, parentPath(path), pnode.id, pnode.id, nid, 'spaced');
+                if (!inner) return null;
+                return [...inner, ...ops];
+                // if: left === self
+                // ...
+                // left => replace the cons
+                // ...
+                // right = children of the new list
+                // then `splitIn`
+
+                // splitin
+                // START HERE
+                // const split = splitList(top, node, old, left, right);
+                // if (!split) return null;
+                // if (sel) {
+                //     if (left === sel.children[0] && split.left !== left) {
+                //         sel = { ...sel, children: [split.left, ...sel.children] };
+                //     }
+                //     if (right === sel.children[0] && split.right !== right) {
+                //         sel = { ...sel, children: [split.right, ...sel.children] };
+                //     }
+                // }
+                // const sub = splitIn(top, parentPath(path), node.id, split.left, split.right, kind, sel);
+                // if (!sub) {
+                //     return null;
+                // }
+                // return [...split.ops, ...sub];
+
+                // return splitIn(
+                //     top,
+                //     parent,
+                //     self,
+                //     left,
+                //     right,
+                //     'spaced',
+                //     // moveSel ? { children: [nid], cursor: { type: 'id', end: 0 } } : undefined,
+                // );
             }
         }
     }
@@ -495,6 +543,7 @@ export const replaceInOrWrap = (top: CTop, kind: 'smooshed' | 'spaced', path: Pa
         }
     }
     const nid = top.ts();
+    console.log('wrapp', nid, old, nodes);
     return [
         ...c_replaceAt(path.children, top, old, nid),
         ...insert({ type: 'list', children: nodes, kind, loc: nid }, top),
@@ -557,11 +606,25 @@ export const splitIn = (
         if (!sub) {
             return null;
         }
-        return [...split.ops, ...sub];
+        return [
+            //
+            ...sub,
+            ...split.ops,
+        ];
     } else {
         // TODO Table
         return null;
     }
+};
+
+export const partitionn = (top: CTop, node: CChild) => {
+    const parent = node.parent;
+    if (!parent) return;
+    if (parent.attr !== 'tail') throw new Error(`not a thing`);
+    const cons = top.tree.node(parent.parent);
+    if (!cons || !cons.parent) return;
+    if (!(cons instanceof CCons)) throw new Error(`not a cons`);
+    return cons.head.map((id) => new ParentOp(id, new LRW(cons.parent, top.ts()))).concat([new ParentOp(cons.id, new LRW(null, top.ts()))]);
 };
 
 export const splitList = (top: CTop, node: CList, at: string, left: string, right: string) => {
@@ -599,6 +662,7 @@ export const splitList = (top: CTop, node: CList, at: string, left: string, righ
     const ops: Up[] = [];
     const nid = top.ts();
 
+    console.log('Reacpling child', child.id, left, right);
     ops.push(...replaceChild(top.ts, child, left, right));
 
     // ops.push(replaceEdges([child.edge.edge.del(top.ts())], child.edge.edge.to(top.ts, left)));

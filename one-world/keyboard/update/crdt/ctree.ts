@@ -25,11 +25,13 @@ export type Op = Child | ParentOp;
 export class ParentOp {
     node: string;
     parent: Parent;
+    stack: string;
     constructor(node: string, parent: Parent) {
         if (node == null) throw new Error('null node');
-        // if (parent.value?.parent == null) throw new Error('unll parent');
         this.node = node;
         this.parent = parent;
+        // const at = new Error().stack!.split('\n').slice(2, 5).join('\n');
+        this.stack = ''; //at;
     }
 }
 
@@ -49,9 +51,11 @@ const unwrapCons = (tree: CTree, id: string) => {
 export abstract class CChild {
     id: string;
     tree: CTree;
+    stack: string;
     constructor(id: string, tree: CTree) {
         this.id = id;
         this.tree = tree;
+        this.stack = new Error().stack!.split('\n').slice(3, 6).join('\n');
     }
     get parent() {
         return this.tree.parent(this.id);
@@ -185,7 +189,7 @@ export class CCons extends CChild {
     }
 
     show() {
-        return `cons(${this.head.join(',')} -> ${this.tail.join(',')})`;
+        return `cons(${this.head.join(',')} :: ${this.tail.join(',')})`;
     }
 
     get head() {

@@ -9,8 +9,8 @@ import { Cursor } from './utils';
 import { validate } from './validate';
 
 // MARK: space sep
-// beforeAll(() => testCtree(true));
-// afterAll(() => testCtree(false));
+beforeAll(() => testCtree(true));
+afterAll(() => testCtree(false));
 
 test('smoosh in space in sep', () => {
     let state = asTop(
@@ -128,9 +128,9 @@ test('smoosh id split smoosh (end)', () => {
     check(state, spaced([id('+'), id('abc', true)]), idc(0));
 });
 
-test('smoosh round split smoosh ', () => {
+test.only('smoosh round split smoosh ', () => {
     let state = asTop(smoosh([round([], true), id('abc')]), listc('after'));
-    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    state = applyUpdate(state, handleKey(state, ' ', js)!, true);
     check(state, spaced([round([]), id('abc', true)]), idc(0));
 });
 
