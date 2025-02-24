@@ -18,8 +18,8 @@ export type Up = Op | SelUpdate;
 export const justOps = (ups: Up[]): Op[] => ups.filter((up) => !('type' in up)) as Op[];
 
 export const ctreeUpdate = (top: CTop, action: KeyAction, sel: NodeSelection): Up[] | null => {
-    console.log('keyaction', action);
-    debugCtree(top.tree);
+    // console.log('keyaction', action);
+    // debugCtree(top.tree);
     switch (action.type) {
         case 'move':
             return [action.end ? move({ end: action.end, start: action.sel }) : move({ start: action.sel })];
@@ -459,11 +459,14 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
                     rid = nid;
                 }
 
-                console.log('partitioned I guess', pnode.id, lid, rid, right.id);
-                console.log(ops.map(showOp).join('\n') + '\n\n');
-                console.log(path);
+                // console.log('partitioned I guess', pnode.id, lid, rid, right.id);
+                // console.log(ops.map(showOp).join('\n') + '\n\n');
+                // console.log(path);
 
-                const inner = splitIn(top, parentPath(parentPath(path)), pnode.id, lid, rid, 'spaced');
+                const inner = splitIn(top, parentPath(parentPath(path)), pnode.id, lid, rid, 'spaced', {
+                    cursor: right instanceof CId ? { type: 'id', end: 0 } : { type: 'list', where: 'before' },
+                    children: [right.id],
+                });
                 if (!inner) return null;
                 return [...inner, ...ops];
                 // if: left === self
@@ -562,7 +565,6 @@ export const replaceInOrWrap = (top: CTop, kind: 'smooshed' | 'spaced', path: Pa
         }
     }
     const nid = top.ts();
-    console.log('wrapp', nid, old, nodes);
     return [
         ...c_replaceAt(path.children, top, old, nid),
         ...insert({ type: 'list', children: nodes, kind, loc: nid }, top),
