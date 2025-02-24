@@ -68,7 +68,7 @@ test('id in round - mid', () => {
 
 test('smoosh id after', () => {
     let state = asTop(spaced([id('one'), smoosh([id('+'), id('abc', true)])]), idc(3));
-    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    state = applyUpdate(state, handleKey(state, ' ', js)!, true);
     check(state, spaced([id('one'), smoosh([id('+'), id('abc')]), id('', true)]), idc(0));
 });
 

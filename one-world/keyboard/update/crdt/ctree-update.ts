@@ -539,6 +539,9 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
             ops.push(node.setMulti(true, top.ts()));
         }
     }
+    debugCtree(top.tree);
+
+    console.log('Splitting', { left, right, self });
 
     const splop = splitIn(
         top,
@@ -613,6 +616,7 @@ export const splitIn = (
             return replaceInOrWrap(top, kind, path, old, [left, right], sel);
         }
 
+        console.log(`split list`, node.id, { old, left, right });
         const split = splitList(top, node, old, left, right);
         if (!split) return null;
         if (sel) {
@@ -672,7 +676,14 @@ export const splitList = (top: CTop, node: CList, at: string, left: string, righ
         if (parent instanceof CCons && parent?.parent?.attr === 'children') {
             // const hedge = first.end.getHeadEdge(top.graph.getEdge);
             // const ops: Up[] = [replaceEdges([hedge.edge.del(top.ts())], hedge.edge.to(top.ts, right))];
-            return { left, right: node.id, ops: [new ParentOp(right, new LRW({ parent: parent.id, attr: 'head' }, top.ts()))] };
+
+            // We're splitting on the first item
+            if (child.parent.attr === 'head') {
+                return { left, right: node.id, ops: [new ParentOp(right, new LRW({ parent: parent.id, attr: 'head' }, top.ts()))] };
+            }
+
+            // We're splitting on the second of two items
+            return { left: node.id, right, ops: [new ParentOp(left, new LRW(child.parent, top.ts()))] };
 
             // const first = node.getChildEdge(top.graph.getEdge);
             // if (!first) return null;
