@@ -5,7 +5,8 @@ import { SelStart } from '../../handleShiftNav';
 import { KeyAction, KeyWhat } from '../../keyActionToUpdate';
 import { Cursor, lastChild, move, NodeSelection, parentLoc, parentPath, PartialSel, Path, pathWithChildren, selStart, SelUpdate } from '../../utils';
 import { LRW } from './crdt';
-import { CChild, CCons, CId, CList, CNode, CTree, insert, insertArray, Op, ParentOp, replaceChild } from './ctree';
+import { CChild, CCons, CId, CList, CNode, CTree, insert, insertArray, Op, ParentOp, replaceChild, showOp } from './ctree';
+import { debugCtree } from './ctree.test';
 
 export type CTop = {
     tree: CTree;
@@ -17,6 +18,8 @@ export type Up = Op | SelUpdate;
 export const justOps = (ups: Up[]): Op[] => ups.filter((up) => !('type' in up)) as Op[];
 
 export const ctreeUpdate = (top: CTop, action: KeyAction, sel: NodeSelection): Up[] | null => {
+    console.log('keyaction', action);
+    debugCtree(top.tree);
     switch (action.type) {
         case 'move':
             return [action.end ? move({ end: action.end, start: action.sel }) : move({ start: action.sel })];
@@ -433,18 +436,34 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
             let at = children.indexOf(self);
             at += left === self ? 1 : -1;
             if (at >= 0 && at < children.length) {
-                const right = top.tree.node(left === self ? children[at] : self);
+                let right = top.tree.node(left === self ? children[at] : self);
                 if (!right) return null;
+
+                if (right.parent?.attr === 'head') {
+                    // then we need to jump up to the ccons
+                    right = top.tree.node(right.parent.parent)!;
+                }
+
                 // if adj ... exists, then we just split in it.
-                const ops: Up[] = partitionn(top, right) as Up[];
-                if (!ops) return null;
-                const nid = top.ts();
-                ops.push(new CList(nid, new LRW(pnode.kind, nid), new LRW(null, nid), top.tree));
-                ops.push(new ParentOp(right.id, new LRW({ parent: nid, attr: 'children' }, top.ts())));
+                const res = partitionn(top, right);
+                if (!res) return null;
+                const ops = res.ops;
 
-                console.log('partitioned I guess', pnode.id, nid, right.id);
+                let lid = res.first ? res.head : pnode.id;
+                let rid = right.id;
 
-                const inner = splitIn(top, parentPath(path), pnode.id, pnode.id, nid, 'spaced');
+                if (right instanceof CCons) {
+                    const nid = top.ts();
+                    ops.push(new CList(nid, new LRW(pnode.kind, nid), new LRW(null, nid), top.tree));
+                    ops.push(new ParentOp(right.id, new LRW({ parent: nid, attr: 'children' }, top.ts())));
+                    rid = nid;
+                }
+
+                console.log('partitioned I guess', pnode.id, lid, rid, right.id);
+                console.log(ops.map(showOp).join('\n') + '\n\n');
+                console.log(path);
+
+                const inner = splitIn(top, parentPath(parentPath(path)), pnode.id, lid, rid, 'spaced');
                 if (!inner) return null;
                 return [...inner, ...ops];
                 // if: left === self
@@ -617,14 +636,20 @@ export const splitIn = (
     }
 };
 
-export const partitionn = (top: CTop, node: CChild) => {
+export const partitionn = (top: CTop, node: CChild): void | { first: false; ops: Up[] } | { first: true; head: string; ops: Up[] } => {
     const parent = node.parent;
     if (!parent) return;
-    if (parent.attr !== 'tail') throw new Error(`not a thing`);
+    if (parent.attr !== 'tail') throw new Error(`not a tail`);
     const cons = top.tree.node(parent.parent);
     if (!cons || !cons.parent) return;
     if (!(cons instanceof CCons)) throw new Error(`not a cons`);
-    return cons.head.map((id) => new ParentOp(id, new LRW(cons.parent, top.ts()))).concat([new ParentOp(cons.id, new LRW(null, top.ts()))]);
+    if (cons.parent.attr !== 'tail') {
+        return { first: true, ops: [], head: cons.head[0] };
+    }
+    return {
+        first: false,
+        ops: cons.head.map((id) => new ParentOp(id, new LRW(cons.parent, top.ts()))).concat([new ParentOp(cons.id, new LRW(null, top.ts()))]),
+    };
 };
 
 export const splitList = (top: CTop, node: CList, at: string, left: string, right: string) => {

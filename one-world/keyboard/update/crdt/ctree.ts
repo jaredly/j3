@@ -7,7 +7,7 @@ can I just do LWW for that?
 import { Link, ListKind, Node, Nodes, Style, TextSpan } from '../../../shared/cnodes';
 import { isTag } from '../../handleNav';
 import { CRDT, LRW } from './crdt';
-import { CTop } from './ctree-update';
+import { CTop, Up } from './ctree-update';
 
 // Kinds of things we can store:
 // CId, CList, CText, CTable
@@ -459,4 +459,12 @@ export const insert = (node: Node, { ts, tree }: CTop): Op[] => {
         }
     }
     throw new Error(`node type not yet ${node.type}`);
+};
+export const showOp = (op: Up) => {
+    if (op instanceof ParentOp) {
+        if (!op.parent.value) return `[x parent] ${op.node} - ${op.stack} (${op.parent.ts})`;
+        return `[parent] ${op.node} -> ${op.parent.value?.parent}.${op.parent.value?.attr} - ${op.stack} (${op.parent.ts})`;
+    }
+    if ('type' in op) return `sel:${op.type}`;
+    return op.id + ' : ' + op.show() + ' ' + op.stack;
 };
