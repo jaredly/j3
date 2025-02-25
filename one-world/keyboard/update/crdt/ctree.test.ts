@@ -66,6 +66,19 @@ export const applyCTreeUpdate = (state: CTState, updates: KeyAction[] | null | v
         updateTop(state, justOps(ups));
     });
 
+    {
+        // check parent duplicates
+        const seen: Record<string, string> = {};
+        Object.entries(state.ctop.tree.showParents()).forEach(([k, v]) => {
+            if (!v.value) return;
+            const key = `${v.value.parent} % ${v.value.attr}`;
+            if (seen[key]) {
+                throw new Error(`duplicate for parent: ${key} - ${seen[key]} vs ${k}`);
+            }
+            seen[key] = k;
+        });
+    }
+
     if (debug) {
         debugCtree(state.ctop.tree);
     }

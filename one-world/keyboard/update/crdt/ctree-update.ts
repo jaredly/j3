@@ -353,7 +353,7 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
     let right: string;
     let moveSel = false;
     let rightText = what.type === 'text' ? { text: what.grem, ccls: what.ccls } : { text: '' };
-    console.log('INS', pos, what);
+    // console.log('INS', pos, what);
 
     // console.log('want to insert text', path, pos, what);
     if (typeof pos === 'number') {
@@ -463,7 +463,7 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
                     ops.push(new ParentOp(right.id, new LRW({ parent: nid, attr: 'children' }, top.ts())));
                     rid = nid;
                     sel = [rid, oright.id];
-                    console.log('RID', nid);
+                    // console.log('RID', nid);
                 }
 
                 const inner = splitIn(top, parentPath(parentPath(path)), pnode.id, lid, rid, what.type === 'space' ? 'spaced' : 'list', {
@@ -542,9 +542,9 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
             ops.push(node.setMulti(true, top.ts()));
         }
     }
-    debugCtree(top.tree);
+    // debugCtree(top.tree);
 
-    console.log('Splitting', { left, right, self });
+    // console.log('Splitting', { left, right, self });
 
     const splop = splitIn(
         top,
@@ -629,7 +629,7 @@ export const splitIn = (
                 sel = { ...sel, children: [split.right, ...sel.children] };
             }
         }
-        console.log('INNNN', split.right, sel);
+        // console.log('INNNN', split.right, sel);
         // console.log(split.ops.map(showOp).join('\n'));
         const sub = splitIn(top, parentPath(path), node.id, split.left, split.right, kind, sel);
         if (!sub) {
@@ -654,7 +654,11 @@ export const partitionn = (top: CTop, node: CChild): void | { first: false; ops:
     if (!cons || !cons.parent) return;
     if (!(cons instanceof CCons)) throw new Error(`not a cons`);
     if (cons.parent.attr !== 'tail') {
-        return { first: true, ops: [], head: cons.head[0] };
+        return {
+            first: true,
+            ops: [new ParentOp(cons.parent.parent, new LRW(null, top.ts()))],
+            head: cons.head[0],
+        };
     }
     return {
         first: false,
@@ -727,7 +731,7 @@ export const splitList = (top: CTop, node: CList, at: string, left: string, righ
         return { ops, left: node.id, right: nid };
     }
 
-    console.log('Reacpling child', child.id, left, right);
+    // console.log('Reacpling child', child.id, left, right);
     ops.push(...replaceChild(top.ts, child, left, right));
     throw new Error('nop nop');
 

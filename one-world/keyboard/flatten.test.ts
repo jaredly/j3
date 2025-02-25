@@ -31,7 +31,7 @@ test('smoosh in space in sep', () => {
         ]),
         idc(1),
     );
-    state = applyUpdate(state, handleKey(state, ';', js)!, true);
+    state = applyUpdate(state, handleKey(state, ';', js)!);
     check(
         state,
         round([
@@ -68,7 +68,7 @@ test('id in round - mid', () => {
 
 test('smoosh id after', () => {
     let state = asTop(spaced([id('one'), smoosh([id('+'), id('abc', true)])]), idc(3));
-    state = applyUpdate(state, handleKey(state, ' ', js)!, true);
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
     check(state, spaced([id('one'), smoosh([id('+'), id('abc')]), id('', true)]), idc(0));
 });
 
