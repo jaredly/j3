@@ -1,6 +1,6 @@
 import { RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
-import { applySel, applyUpdate } from './applyUpdate';
+import { applySel, applyUpdate, testCtree } from './applyUpdate';
 import { check } from './check.test';
 import { handleDelete, normalizeTextCursorSide } from './handleDelete';
 import { handleKey } from './handleKey';
@@ -11,6 +11,8 @@ import { Cursor } from './utils';
 import { validate } from './validate';
 
 // Should get 100% of 'handleDelete'
+beforeAll(() => testCtree(true));
+afterAll(() => testCtree(false));
 
 test('at start', () => {
     let state = asTop(smoosh([id('helso', true), id('+')]), idc(0));

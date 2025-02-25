@@ -207,8 +207,8 @@ export const ltCursor = (one: Cursor, two: Cursor) => {
     }
 };
 
-const innerSide = (outer: SelStart, inner: SelStart, top: Top): { side: 'before' | 'after'; at: number } => {
-    const node = top.nodes[lastChild(outer.path)];
+const innerSide = (outer: SelStart, inner: SelStart, getNode: (id: string) => Node): { side: 'before' | 'after'; at: number } => {
+    const node = getNode(lastChild(outer.path));
     const child = inner.path.children[outer.path.children.length];
     if (outer.cursor.type === 'list') {
         const at =
@@ -228,7 +228,7 @@ const innerSide = (outer: SelStart, inner: SelStart, top: Top): { side: 'before'
     }
 
     if (outer.cursor.type === 'text') {
-        const node = top.nodes[lastChild(outer.path)];
+        const node = getNode(lastChild(outer.path));
         if (node.type !== 'text') {
             throw new Error(`node not a text`);
         }
@@ -274,7 +274,7 @@ export const compareSelections = (one: SelStart, two: SelStart, top: Top) => {
     }
 
     const [outer, inner] = one.path.children.length < two.path.children.length ? [one, two] : [two, one];
-    const side = innerSide(outer, inner, top);
+    const side = innerSide(outer, inner, (id) => top.nodes[id]);
     if (side.side === 'before') {
         return outer === one ? -1 : 1;
     } else {
@@ -283,7 +283,7 @@ export const compareSelections = (one: SelStart, two: SelStart, top: Top) => {
 };
 
 export const orderSelections = (one: SelStart, two: SelStart, top: Top): SelectionStatuses => {
-    const [left, neighbors, right, inside] = collectSelectedNodes(one, two, top);
+    const [left, neighbors, right, inside] = collectSelectedNodes(one, two, (id) => top.nodes[id]);
     const statuses: SelectionStatuses = {};
     neighbors.forEach((n) => (statuses[pathKey(n.path)] = { cursors: [], highlight: n.hl }));
 
@@ -347,12 +347,12 @@ const hasNoBraces = (node: Node): node is List<NodeID> => {
 
 export type Neighbor = { path: Path; hl: Highlight };
 
-const getNeighbors = (path: Path, i: number, top: Top, side: 'before' | 'after') => {
+const getNeighbors = (path: Path, i: number, getNode: (id: string) => Node, side: 'before' | 'after') => {
     const result: Neighbor[] = [];
     for (; i < path.children.length - 1; i++) {
         const parent = path.children[i];
         const next = path.children[i + 1];
-        const pnode = top.nodes[parent];
+        const pnode = getNode(parent);
         const ppath: Path = { ...path, children: path.children.slice(0, i + 1) };
         if (pnode.type === 'text') {
             const at = pnode.spans.findIndex((s) => s.type === 'embed' && s.item === next);
@@ -422,7 +422,7 @@ export const getCurrent = (selection: NodeSelection, top: Top): Current => {
 export const collectSelectedNodes = (
     one: SelStart,
     two: SelStart,
-    top: Top,
+    getNode: (id: string) => Node,
 ): [SelStart, Neighbor[], SelStart, { side: 'before' | 'after'; at: number } | null] => {
     const neighbors: Neighbor[] = [];
     if (one.path.root.top !== two.path.root.top) throw new Error(`sorry not yettt`);
@@ -437,7 +437,7 @@ export const collectSelectedNodes = (
         const o = one.path.children[i];
         const t = two.path.children[i];
         if (o === t) continue;
-        const pnode = top.nodes[one.path.children[i - 1]];
+        const pnode = getNode(one.path.children[i - 1]);
         const ppath: Path = { ...one.path, children: one.path.children.slice(0, i) };
         if (pnode.type === 'text') {
             const oat = pnode.spans.findIndex((s) => s.type === 'embed' && s.item === o);
@@ -459,8 +459,8 @@ export const collectSelectedNodes = (
                 },
             });
 
-            neighbors.push(...getNeighbors(one.path, i, top, oat < tat ? 'after' : 'before'));
-            neighbors.push(...getNeighbors(two.path, i, top, oat < tat ? 'before' : 'after'));
+            neighbors.push(...getNeighbors(one.path, i, getNode, oat < tat ? 'after' : 'before'));
+            neighbors.push(...getNeighbors(two.path, i, getNode, oat < tat ? 'before' : 'after'));
             return oat < tat ? [one, neighbors, two, null] : [two, neighbors, one, null];
         }
         const locs = childLocs(pnode);
@@ -469,18 +469,18 @@ export const collectSelectedNodes = (
         if (oat === -1 || tat === -1) throw new Error(`not innnn`);
         const mid = oat < tat ? locs.slice(oat + 1, tat) : locs.slice(tat + 1, oat);
         mid.forEach((c) => neighbors.push({ path: pathWithChildren(ppath, c), hl: { type: 'full' } }));
-        neighbors.push(...getNeighbors(one.path, i, top, oat < tat ? 'after' : 'before'));
-        neighbors.push(...getNeighbors(two.path, i, top, oat < tat ? 'before' : 'after'));
+        neighbors.push(...getNeighbors(one.path, i, getNode, oat < tat ? 'after' : 'before'));
+        neighbors.push(...getNeighbors(two.path, i, getNode, oat < tat ? 'before' : 'after'));
         return oat < tat ? [one, neighbors, two, null] : [two, neighbors, one, null];
     }
 
     const [outer, inner] = one.path.children.length < two.path.children.length ? [one, two] : [two, one];
-    const side = innerSide(outer, inner, top);
+    const side = innerSide(outer, inner, getNode);
     if (side.side === 'before') {
-        neighbors.push(...getNeighbors(inner.path, outer.path.children.length - 1, top, 'before'));
+        neighbors.push(...getNeighbors(inner.path, outer.path.children.length - 1, getNode, 'before'));
         return [outer, neighbors, inner, side];
     } else {
-        neighbors.push(...getNeighbors(inner.path, outer.path.children.length - 1, top, 'after'));
+        neighbors.push(...getNeighbors(inner.path, outer.path.children.length - 1, getNode, 'after'));
         return [inner, neighbors, outer, side];
     }
 };

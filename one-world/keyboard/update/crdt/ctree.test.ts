@@ -11,7 +11,7 @@ import { keyUpdate } from '../../ui/keyUpdate';
 import { Cursor, NodeSelection, selStart, Top } from '../../utils';
 import { LRW } from './crdt';
 import { CId, CList, CNode, CTree, insert, insertArray, isMain, Op, ParentOp, showOp } from './ctree';
-import { CTop, ctreeUpdate, justOps } from './ctree-update';
+import { collapseSmooshes, CTop, ctreeUpdate, justOps } from './ctree-update';
 
 export type CTState = { ctop: CTop; top: Top; sel: NodeSelection };
 
@@ -66,6 +66,17 @@ export const applyCTreeUpdate = (state: CTState, updates: KeyAction[] | null | v
         updateTop(state, justOps(ups));
     });
 
+    // debugCtree(state.ctop.tree);
+    const ups = collapseSmooshes(state.ctop);
+    // console.log(ups.map(showOp).join('\n'));
+    state.ctop.tree.apply(justOps(ups));
+    ups.forEach((up) => {
+        if ('type' in up) {
+            state.sel = applySelUp(state.sel, up);
+        }
+    });
+    updateTop(state, justOps(ups));
+
     {
         // check parent duplicates
         const seen: Record<string, string> = {};
@@ -77,6 +88,7 @@ export const applyCTreeUpdate = (state: CTState, updates: KeyAction[] | null | v
             }
             seen[key] = k;
         });
+        // TODO: check that all reachable nodes have fully populated children.
     }
 
     if (debug) {

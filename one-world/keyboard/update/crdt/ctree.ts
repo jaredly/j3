@@ -15,8 +15,9 @@ import { CTop, Up } from './ctree-update';
 // CTextText, CTextEmbed
 // CTableRow
 
-type Child = CList | CCons | CId | CNil | CText | CTextText | CTextEmbed;
-type Parent = LRW<{ parent: string; attr: string } | null>;
+export type Child = CList | CCons | CId | CNil | CText | CTextText | CTextEmbed;
+export type ParentObj = { parent: string; attr: string };
+export type Parent = LRW<ParentObj | null>;
 
 export const isMain = (node: Child) => node instanceof CNode;
 
@@ -148,6 +149,9 @@ export class CTree {
                 this.parents[op.node] = op.parent;
                 if (op.parent.value) this.cacheChild(op.node, op.parent.value.parent, op.parent.value.attr);
             } else {
+                if (this.nodes[op.id] && this.nodes[op.id].$kind !== op.$kind) {
+                    throw new Error(`cant change 'kind' ${op.id}`);
+                }
                 this.nodes[op.id] = this.nodes[op.id]?.merge(op as any) ?? op;
             }
         });
@@ -173,8 +177,8 @@ export class CTree {
 }
 
 export class CCons extends CChild {
-    static kind = 'ccons';
-    readonly kind = 'ccons' as const;
+    static $kind = 'ccons';
+    readonly $kind = 'ccons' as const;
 
     merge(other: CCons) {
         return this;
@@ -204,8 +208,8 @@ export class CCons extends CChild {
 }
 
 export class CNil extends CChild {
-    static kind = 'cnil';
-    readonly kind = 'cnil' as const;
+    static $kind = 'cnil';
+    readonly $kind = 'cnil' as const;
 
     merge(other?: CNil) {
         return this;
@@ -313,6 +317,9 @@ export abstract class CTextSpan extends CChild {
 }
 
 export class CTextEmbed extends CTextSpan {
+    static $kind = 'ctext:embed';
+    readonly $kind = 'ctext:embed' as const;
+
     asSpan(): TextSpan<string> {
         return { type: 'embed', item: this.item!, style: this.style.value.style, link: this.style.value.link, loc: this.id };
     }
@@ -331,6 +338,9 @@ export class CTextEmbed extends CTextSpan {
 }
 
 export class CTextText extends CTextSpan {
+    static $kind = 'ctext:text';
+    readonly $kind = 'ctext:text' as const;
+
     text: LRW<string>;
     constructor(id: string, tree: CTree, style: LRW<{ link?: Link; style?: Style }>, text: LRW<string>) {
         super(id, tree, style);
@@ -427,6 +437,37 @@ export class CList extends CNode {
         return this.tree.children(this.id, 'children').map((id) => new ParentOp(id, new LRW(null, ts)));
     }
 }
+
+export const filterConsList = (ts: () => string, head: Child, hp: ParentObj, filter: (v: Child) => boolean): Op[] => {
+    if (head instanceof CCons) {
+        const hd = head.tree.node(head.head[0]);
+        const tl = head.tree.node(head.tail[0]);
+        if (!hd || !tl) return [];
+        if (filter(hd)) {
+            return filterConsList(ts, tl, { parent: head.id, attr: 'tail' }, filter);
+        }
+        return [
+            //
+            new ParentOp(hd.id, new LRW(null, ts())),
+            new ParentOp(head.id, new LRW(null, ts())),
+            new ParentOp(tl.id, new LRW(hp, ts())),
+            ...filterConsList(ts, tl, hp, filter),
+        ];
+    } else {
+        if (!head.parent) return [];
+        // we are at the tail, it's a single-element list
+        if (!filter(head)) {
+            const nid = ts();
+            return [
+                //
+                new ParentOp(head.id, new LRW(null, ts())),
+                new CNil(nid, head.tree),
+                new ParentOp(nid, new LRW(head.parent, ts())),
+            ];
+        }
+        return [];
+    }
+};
 
 export const insert = (node: Node, { ts, tree }: CTop): Op[] => {
     switch (node.type) {

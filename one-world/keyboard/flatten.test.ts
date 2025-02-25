@@ -1,11 +1,7 @@
-import { RecNodeT } from '../shared/cnodes';
-import { shape } from '../shared/shape';
 import { applyUpdate, testCtree } from './applyUpdate';
 import { check } from './check.test';
 import { handleKey } from './handleKey';
-import { root } from './root';
-import { asTop, atPath, id, idc, js, listc, noText, round, selPath, smoosh, spaced, TestState, text } from './test-utils';
-import { Cursor } from './utils';
+import { asTop, id, idc, js, listc, round, smoosh, spaced, text } from './test-utils';
 import { validate } from './validate';
 
 // MARK: space sep

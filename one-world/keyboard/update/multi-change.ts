@@ -24,9 +24,9 @@ import {
     Update,
 } from '../utils';
 
-export const shouldNudgeRight = (path: Path, cursor: Cursor, top: Top) => {
-    const node = top.nodes[lastChild(path)];
-    const pnode = top.nodes[parentLoc(path)];
+export const shouldNudgeRight = (path: Path, cursor: Cursor, getNode: (id: string) => Node) => {
+    const node = getNode(lastChild(path));
+    const pnode = getNode(parentLoc(path));
     if (!pnode) return false;
     if (node.type === 'id') {
         if (cursor.type !== 'id' || cursor.end < splitGraphemes(node.text).length) {
@@ -41,9 +41,9 @@ export const shouldNudgeRight = (path: Path, cursor: Cursor, top: Top) => {
     if (pnode.type !== 'list') return false;
     return true;
 };
-export const shouldNudgeLeft = (path: Path, cursor: Cursor, top: Top) => {
-    const node = top.nodes[lastChild(path)];
-    const pnode = top.nodes[parentLoc(path)];
+export const shouldNudgeLeft = (path: Path, cursor: Cursor, getNode: (id: string) => Node) => {
+    const node = getNode(lastChild(path));
+    const pnode = getNode(parentLoc(path));
     if (!pnode) return false;
     if (node.type === 'id') {
         if (cursor.type !== 'id' || cursor.end > 0) {
@@ -60,9 +60,9 @@ export const shouldNudgeLeft = (path: Path, cursor: Cursor, top: Top) => {
 };
 
 export const handleDeleteTooMuch = (top: Top, start: SelStart, end: SelStart): JustSelUpdate | void => {
-    const [left, neighbors, right, _] = collectSelectedNodes(start, end, top);
-    const lnudge = shouldNudgeRight(left.path, left.cursor, top);
-    const rnudge = shouldNudgeLeft(right.path, right.cursor, top);
+    const [left, neighbors, right, _] = collectSelectedNodes(start, end, (id) => top.nodes[id]);
+    const lnudge = shouldNudgeRight(left.path, left.cursor, (id) => top.nodes[id]);
+    const rnudge = shouldNudgeLeft(right.path, right.cursor, (id) => top.nodes[id]);
     if (!lnudge) neighbors.push({ path: left.path, hl: { type: 'full' } });
     let rpartial = null as null | Node;
     {
@@ -75,7 +75,7 @@ export const handleDeleteTooMuch = (top: Top, start: SelStart, end: SelStart): J
         }
     }
     if (!rnudge && rpartial == null) neighbors.push({ path: right.path, hl: { type: 'full' } });
-    const sorted = partitionNeighbors(neighbors, top, false);
+    const sorted = partitionNeighbors(neighbors, (id) => top.nodes[id], false);
     const lloc = lastChild(left.path);
 
     const nodes: Nodes = {};
@@ -205,9 +205,9 @@ export const pasteUpdate = (top: Top, path: Path, cursor: Cursor, values: Copied
 
 export const handleCopyMulti = (state: TestState): void | CopiedValues => {
     if (!state.sel.end) return;
-    const [left, neighbors, right, _] = collectSelectedNodes(state.sel.start, state.sel.end!, state.top);
-    const lnudge = shouldNudgeRight(left.path, left.cursor, state.top);
-    const rnudge = shouldNudgeLeft(right.path, right.cursor, state.top);
+    const [left, neighbors, right, _] = collectSelectedNodes(state.sel.start, state.sel.end!, (id) => state.top.nodes[id]);
+    const lnudge = shouldNudgeRight(left.path, left.cursor, (id) => state.top.nodes[id]);
+    const rnudge = shouldNudgeLeft(right.path, right.cursor, (id) => state.top.nodes[id]);
     if (!lnudge) neighbors.push({ path: left.path, hl: { type: 'full' } });
 
     if (left.key === right.key) {
@@ -234,7 +234,7 @@ export const handleCopyMulti = (state: TestState): void | CopiedValues => {
     }
 
     if (!rnudge) neighbors.push({ path: right.path, hl: { type: 'full' } });
-    const sorted = partitionNeighbors(neighbors, state.top, false);
+    const sorted = partitionNeighbors(neighbors, (id) => state.top.nodes[id], false);
 
     const allParents: Record<NodeID, true> = {};
     sorted.forEach(({ path }) => path.children.forEach((loc) => (allParents[loc] = true)));
@@ -274,13 +274,13 @@ export const handleCopyMulti = (state: TestState): void | CopiedValues => {
     return { tree, single: left.key === right.key };
 };
 
-export const partitionNeighbors = (items: Neighbor[], top: Top, noSmoosh = true) => {
+export const partitionNeighbors = (items: Neighbor[], getNode: (id: string) => Node, noSmoosh = true) => {
     const byParent: Record<string, { path: Path; children: NodeID[] }> = {};
     items.forEach((item) => {
         if (item.hl.type === 'full') {
             let path = item.path;
             while (path.children.length > 1) {
-                const pnode = top.nodes[parentLoc(path)];
+                const pnode = getNode(parentLoc(path));
                 if (pnode.type === 'list' && (!noSmoosh || (pnode.kind !== 'smooshed' && pnode.kind !== 'spaced'))) {
                     break;
                 }

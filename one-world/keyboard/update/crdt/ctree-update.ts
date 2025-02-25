@@ -1,11 +1,13 @@
 import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
-import { fromRec, ListKind, Node, NodeID, Nodes, RecNodeT } from '../../../shared/cnodes';
-import { isTag, selectStart } from '../../handleNav';
+import { fromRec, Id, ListKind, Node, NodeID, Nodes, RecNodeT } from '../../../shared/cnodes';
+import { isTag, selectEnd, selectStart } from '../../handleNav';
 import { SelStart } from '../../handleShiftNav';
 import { KeyAction, KeyWhat } from '../../keyActionToUpdate';
+import { collectSelectedNodes } from '../../selections';
 import { Cursor, lastChild, move, NodeSelection, parentLoc, parentPath, PartialSel, Path, pathWithChildren, selStart, SelUpdate } from '../../utils';
+import { partitionNeighbors, shouldNudgeLeft, shouldNudgeRight } from '../multi-change';
 import { LRW } from './crdt';
-import { CChild, CCons, CId, CList, CNode, CTree, insert, insertArray, Op, ParentOp, replaceChild, showOp } from './ctree';
+import { CChild, CCons, CId, CList, CNode, CTree, filterConsList, insert, insertArray, Op, ParentObj, ParentOp, replaceChild, showOp } from './ctree';
 import { debugCtree } from './ctree.test';
 
 export type CTop = {
@@ -40,7 +42,10 @@ export const ctreeUpdate = (top: CTop, action: KeyAction, sel: NodeSelection): U
             if (node instanceof CList) {
                 return [node.setMulti(!node.multi.value, top.ts())];
             }
+            return null;
         }
+        case 'multi-delete':
+            return handleDeleteTooMuch(top, action.start, action.end);
     }
     console.warn(`no update ${action.type}`);
     return null;
@@ -749,4 +754,140 @@ export const splitList = (top: CTop, node: CList, at: string, left: string, righ
     // }
 
     return { left: node.id, right: nid, ops };
+};
+
+export const handleDeleteTooMuch = (top: CTop, start: SelStart, end: SelStart): Up[] | null => {
+    const getNode = (id: string) => (top.tree.node(id) as CNode).asNode();
+    const [left, neighbors, right, _] = collectSelectedNodes(start, end, getNode);
+    const lnudge = shouldNudgeRight(left.path, left.cursor, getNode);
+    const rnudge = shouldNudgeLeft(right.path, right.cursor, getNode);
+    if (!lnudge) neighbors.push({ path: left.path, hl: { type: 'full' } });
+    let rpartial = null as null | Id<string>;
+    {
+        const rnode = getNode(lastChild(right.path));
+        if (rnode.type === 'id' && right.cursor.type === 'id') {
+            const grems = splitGraphemes(rnode.text);
+            if (right.cursor.end < grems.length) {
+                rpartial = { ...rnode, text: grems.slice(right.cursor.end).join('') };
+            }
+        }
+    }
+    if (!rnudge && rpartial == null) neighbors.push({ path: right.path, hl: { type: 'full' } });
+    const sorted = partitionNeighbors(neighbors, getNode, false);
+    const lloc = lastChild(left.path);
+
+    const ops: Up[] = [];
+
+    // const nodes: Nodes = {};
+    sorted.forEach(({ path, children: selected }) => {
+        const node = top.tree.node(lastChild(path));
+        if (!(node instanceof CList)) return;
+        const child = top.tree.children(node.id, 'children');
+        if (!child.length) return;
+        ops.push(
+            ...filterConsList(
+                top.ts,
+                top.tree.node(child[0])!,
+                { parent: node.id, attr: 'children' },
+                (child) => !selected.includes(child.id) || lloc === child.id,
+            ),
+        );
+        // STOPSHIP;
+        // throw new Error('got to do a filter on the tree node array');
+        // const children = node.children.slice().filter((c) => !selected.includes(c) || lloc === c);
+        // nodes[node.loc] = { ...node, children };
+    });
+
+    let leftCursor = 0;
+    if (!lnudge) {
+        // nodes[lloc] = { type: 'id', text: '', loc: lloc };
+        const lnode = getNode(lloc);
+        if (lnode.type === 'id' && left.cursor.type === 'id' && left.cursor.end !== 0) {
+            const text = splitGraphemes(lnode.text).slice(0, left.cursor.end).join('');
+            // nodes[lloc] = { type: 'id', text, loc: lloc, ccls: lnode.ccls };
+            ops.push(new CId(lloc, new LRW({ text, ccls: lnode.ccls }, top.ts()), top.tree));
+            leftCursor = left.cursor.end;
+        } else {
+            ops.push(new CId(lloc, new LRW({ text: '' }, top.ts()), top.tree));
+        }
+    }
+
+    if (rpartial) {
+        // nodes[rpartial.loc] = rpartial;
+        ops.push(new CId(rpartial.loc, new LRW({ text: rpartial.text, ccls: rpartial.ccls }, top.ts()), top.tree));
+    }
+    const sel = lnudge
+        ? selectEnd(left.path, {
+              nodes: new Proxy(
+                  {},
+                  {
+                      get(target, p, receiver) {
+                          if (typeof p === 'string') {
+                              return (top.tree.node(p) as CNode).asNode();
+                          }
+                          throw new Error(`no node ${p.toString()}`);
+                      },
+                  },
+              ),
+          })
+        : selStart(left.path, { type: 'id', end: leftCursor });
+    if (!sel) return null;
+
+    let selection: NodeSelection = { start: sel };
+    ops.push({ type: 'move', to: selection });
+
+    const lparent = parentLoc(left.path);
+    const rparent = parentLoc(right.path);
+    if (lparent === rparent) {
+        // This is modifying one of the nodes from `sorted` above...
+        // const pnode = nodes[lparent];
+        // if (pnode?.type === 'list' && pnode.kind !== 'smooshed') {
+        //     const i1 = pnode.children.indexOf(lastChild(left.path));
+        //     const i2 = pnode.children.indexOf(lastChild(right.path));
+        //     if (i2 === i1 + 1) {
+        //         const children = pnode.children.slice();
+        //         const loc = top.ts()
+        //         const two = children.splice(i1, 2, loc);
+        //         nodes[loc] = { type: 'list', kind: 'smooshed', children: two, loc };
+        //         nodes[pnode.loc] = { ...pnode, children };
+        //         ops.push({ type: 'addparent', loc: two[0], parent: loc });
+        //         ops.push({ type: 'addparent', loc: two[1], parent: loc });
+        //     }
+        // }
+    }
+
+    return ops;
+};
+
+export const collapseSmooshes = (top: CTop) => {
+    const root = top.tree.root;
+    const ops: Up[] = [];
+    const walk = (node: CChild, p: ParentObj) => {
+        // console.log('walk', node.id, node.show(), p);
+        if (node instanceof CList) {
+            const kind = node.kind;
+            if (kind === 'smooshed' || kind === 'spaced') {
+                const children = node.children;
+                // console.log('is smoosh', children);
+                if (children.length === 1) {
+                    // console.log('change it maybe');
+                    ops.push(new ParentOp(children[0], new LRW(p, top.ts())), new ParentOp(node.id, new LRW(null, top.ts())));
+                    walk(top.tree.node(children[0])!, p);
+                    ops.push({ type: 'unparent', loc: node.id });
+                    return;
+                }
+            }
+            const children = top.tree.children(node.id, 'children');
+            if (children.length !== 1) throw new Error('need 1 children for list node');
+            walk(top.tree.node(children[0])!, { parent: node.id, attr: 'children' });
+        }
+        if (node instanceof CCons) {
+            const hd = node.head[0];
+            walk(top.tree.node(hd)!, { parent: node.id, attr: 'head' });
+            const tl = node.tail[0];
+            walk(top.tree.node(tl)!, { parent: node.id, attr: 'tail' });
+        }
+    };
+    walk(top.tree.node(root)!, { parent: 'root', attr: 'root' });
+    return ops;
 };

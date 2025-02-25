@@ -1,4 +1,14 @@
 
+Deletion is making some progress
+however,
+cleaning up single-element smooshes is still something I need to mess with.
+Is it a "do this after the ops get processed" kind of thing?
+seems like that might make sense.
+
+how ... much ... do I need to go through things, too?
+
+----
+
 story goes
 we have a smoosh
 that gets split into two spaced

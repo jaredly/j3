@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { hasControls, isRich, ListKind, Node, NodeID, TableKind, Text, TextSpan } from '../shared/cnodes';
+import { hasControls, isRich, ListKind, Node, NodeID, Nodes, TableKind, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 // import { textCursorSides, textCursorSides2 } from './insertId';
 import { TestState } from './test-utils';
@@ -78,7 +78,7 @@ export const selectStart = (path: Path, top: Top, plus1 = false, tab = false): N
     return selStart(path, { type: 'list', where: 'before' });
 };
 
-export const selectEnd = (path: Path, top: Top, plus1: boolean = false): NodeSelection['start'] | void => {
+export const selectEnd = (path: Path, top: { nodes: Nodes }, plus1: boolean = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
     const node = top.nodes[loc];
     if (!node) throw new Error(`no node ${loc} : ${JSON.stringify(path)}`);
@@ -133,7 +133,7 @@ export const goLateral = (path: Path, top: Top, left: boolean, tab = false): Nod
     return left ? goLeft(path, top, tab) : goRight(path, top, tab);
 };
 
-export const goLeft = (path: Path, top: Top, tab = false): NodeSelection['start'] | void => {
+export const goLeft = (path: Path, top: { nodes: Nodes }, tab = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
     const ploc = parentLoc(path);
     const pnode = top.nodes[ploc];
@@ -465,7 +465,7 @@ export const navLeft = (current: Current, state: TestState): SelStart | void => 
     }
 };
 
-export function spanEnd(last: TextSpan<NodeID>, path: Path, index: TextIndex, top: Top, plus1: boolean) {
+export function spanEnd(last: TextSpan<NodeID>, path: Path, index: TextIndex, top: { nodes: Nodes }, plus1: boolean) {
     switch (last.type) {
         case 'text':
             return selStart(path, { type: 'text', end: { index, cursor: splitGraphemes(last.text).length - (plus1 ? 1 : 0) } });
