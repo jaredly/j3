@@ -32,6 +32,7 @@ export const debugCtree = (tree: CTree) => {
         'show nodes',
         tree
             .ids()
+            .sort()
             .map((id) => '\n\t' + id + ' : ' + tree.node(id)?.show())
             .join(''),
     );

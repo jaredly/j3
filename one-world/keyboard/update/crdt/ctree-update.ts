@@ -353,6 +353,7 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
     let right: string;
     let moveSel = false;
     let rightText = what.type === 'text' ? { text: what.grem, ccls: what.ccls } : { text: '' };
+    console.log('INS', pos, what);
 
     // console.log('want to insert text', path, pos, what);
     if (typeof pos === 'number') {
@@ -429,7 +430,7 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
         }
     }
 
-    if (what.type === 'space') {
+    if (what.type === 'space' || what.type === 'sep') {
         const pnode = top.tree.node(parentLoc(path));
         if (pnode instanceof CList && pnode.kind === 'smooshed') {
             const children = pnode.children;
@@ -438,6 +439,8 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
             if (at >= 0 && at < children.length) {
                 let right = top.tree.node(left === self ? children[at] : self);
                 if (!right) return null;
+
+                const oright = right;
 
                 if (right.parent?.attr === 'head') {
                     // then we need to jump up to the ccons
@@ -450,22 +453,22 @@ export const c_handleInsertText = (top: CTop, path: Path, pos: 'before' | 'after
                 const ops = res.ops;
 
                 let lid = res.first ? res.head : pnode.id;
-                let rid = right.id;
+                let rid = oright.id;
+
+                let sel = [rid];
 
                 if (right instanceof CCons) {
                     const nid = top.ts();
                     ops.push(new CList(nid, new LRW(pnode.kind, nid), new LRW(null, nid), top.tree));
                     ops.push(new ParentOp(right.id, new LRW({ parent: nid, attr: 'children' }, top.ts())));
                     rid = nid;
+                    sel = [rid, oright.id];
+                    console.log('RID', nid);
                 }
 
-                // console.log('partitioned I guess', pnode.id, lid, rid, right.id);
-                // console.log(ops.map(showOp).join('\n') + '\n\n');
-                // console.log(path);
-
-                const inner = splitIn(top, parentPath(parentPath(path)), pnode.id, lid, rid, 'spaced', {
-                    cursor: right instanceof CId ? { type: 'id', end: 0 } : { type: 'list', where: 'before' },
-                    children: [right.id],
+                const inner = splitIn(top, parentPath(parentPath(path)), pnode.id, lid, rid, what.type === 'space' ? 'spaced' : 'list', {
+                    cursor: oright instanceof CId ? { type: 'id', end: 0 } : { type: 'list', where: 'before' },
+                    children: sel,
                 });
                 if (!inner) return null;
                 return [...inner, ...ops];
@@ -616,7 +619,6 @@ export const splitIn = (
             return replaceInOrWrap(top, kind, path, old, [left, right], sel);
         }
 
-        console.log(`split list`, node.id, { old, left, right });
         const split = splitList(top, node, old, left, right);
         if (!split) return null;
         if (sel) {
@@ -627,6 +629,8 @@ export const splitIn = (
                 sel = { ...sel, children: [split.right, ...sel.children] };
             }
         }
+        console.log('INNNN', split.right, sel);
+        // console.log(split.ops.map(showOp).join('\n'));
         const sub = splitIn(top, parentPath(path), node.id, split.left, split.right, kind, sel);
         if (!sub) {
             return null;
@@ -658,6 +662,10 @@ export const partitionn = (top: CTop, node: CChild): void | { first: false; ops:
     };
 };
 
+/**
+ * Split a list (node) on the child item {at}, where {at} gets replaced with {left} as the end
+ * of the list, and everything else gets prefixed with {right} and added to a new list.
+ */
 export const splitList = (top: CTop, node: CList, at: string, left: string, right: string) => {
     // it will be relevant to know whether the left or right was wrapped.
     const kind = node.kind;
@@ -695,13 +703,33 @@ export const splitList = (top: CTop, node: CList, at: string, left: string, righ
             //     return { left, right, ops: [] };
             // }
         }
+        // Splitting on last item
+        if (child.parent.attr === 'tail') {
+            return { left: node.id, right, ops: [new ParentOp(left, new LRW(child.parent, top.ts()))] };
+        }
     }
 
     const ops: Up[] = [];
     const nid = top.ts();
 
+    // Step 1: (at) needs to be trimmed to be the endd
+
+    // Normal case
+    if (child.parent?.attr === 'head') {
+        const cons = top.tree.node(child.parent.parent);
+        if (!cons?.parent) return;
+        ops.push(new ParentOp(child.id, new LRW(null, top.ts())));
+        ops.push(new ParentOp(left, new LRW(cons.parent, top.ts())));
+        const nid = top.ts();
+        ops.push(new CList(nid, new LRW(kind, nid), new LRW(null, nid), top.tree));
+        ops.push(new ParentOp(cons.id, new LRW({ parent: nid, attr: 'children' }, top.ts())));
+        ops.push(new ParentOp(right, new LRW({ parent: cons.id, attr: 'head' }, top.ts())));
+        return { ops, left: node.id, right: nid };
+    }
+
     console.log('Reacpling child', child.id, left, right);
     ops.push(...replaceChild(top.ts, child, left, right));
+    throw new Error('nop nop');
 
     // ops.push(replaceEdges([child.edge.edge.del(top.ts())], child.edge.edge.to(top.ts, left)));
     // if (child.edge.end instanceof MCons) {

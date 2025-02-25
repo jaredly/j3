@@ -31,7 +31,7 @@ test('smoosh in space in sep', () => {
         ]),
         idc(1),
     );
-    state = applyUpdate(state, handleKey(state, ';', js)!);
+    state = applyUpdate(state, handleKey(state, ';', js)!, true);
     check(
         state,
         round([
