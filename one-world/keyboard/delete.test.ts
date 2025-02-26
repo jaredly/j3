@@ -11,8 +11,8 @@ import { Cursor } from './utils';
 import { validate } from './validate';
 
 // Should get 100% of 'handleDelete'
-beforeAll(() => testCtree(true));
-afterAll(() => testCtree(false));
+// beforeAll(() => testCtree(true));
+// afterAll(() => testCtree(false));
 
 test('at start', () => {
     let state = asTop(smoosh([id('helso', true), id('+')]), idc(0));

@@ -7,6 +7,8 @@ seems like that might make sense.
 
 how ... much ... do I need to go through things, too?
 
+12 passing from deletes, celebrage with me
+
 ----
 
 story goes

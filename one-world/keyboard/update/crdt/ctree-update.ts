@@ -1,13 +1,45 @@
 import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
-import { fromRec, Id, ListKind, Node, NodeID, Nodes, RecNodeT } from '../../../shared/cnodes';
+import { fromRec, Id, ListKind, Node, NodeID, Nodes, RecNodeT, TextSpan } from '../../../shared/cnodes';
 import { isTag, selectEnd, selectStart } from '../../handleNav';
 import { SelStart } from '../../handleShiftNav';
 import { KeyAction, KeyWhat } from '../../keyActionToUpdate';
 import { collectSelectedNodes } from '../../selections';
-import { Cursor, lastChild, move, NodeSelection, parentLoc, parentPath, PartialSel, Path, pathWithChildren, selStart, SelUpdate } from '../../utils';
+import {
+    Cursor,
+    lastChild,
+    move,
+    NodeSelection,
+    parentLoc,
+    parentPath,
+    PartialSel,
+    Path,
+    pathWithChildren,
+    selStart,
+    SelUpdate,
+    TextIndex,
+} from '../../utils';
 import { partitionNeighbors, shouldNudgeLeft, shouldNudgeRight } from '../multi-change';
 import { LRW } from './crdt';
-import { CChild, CCons, CId, CList, CNode, CTree, filterConsList, insert, insertArray, Op, ParentObj, ParentOp, replaceChild, showOp } from './ctree';
+import {
+    CChild,
+    CCons,
+    CId,
+    CList,
+    CNode,
+    CText,
+    CTextText,
+    CTree,
+    filterConsList,
+    insert,
+    insertAfter,
+    insertArray,
+    insertTextSpan,
+    Op,
+    ParentObj,
+    ParentOp,
+    replaceChild,
+    showOp,
+} from './ctree';
 import { debugCtree } from './ctree.test';
 
 export type CTop = {
@@ -44,6 +76,8 @@ export const ctreeUpdate = (top: CTop, action: KeyAction, sel: NodeSelection): U
             }
             return null;
         }
+        case 'add-span':
+            return addSpan(top, action.path, action.span, action.index, action.cursor, action.within) ?? null;
         case 'multi-delete':
             return handleDeleteTooMuch(top, action.start, action.end);
     }
@@ -890,4 +924,147 @@ export const collapseSmooshes = (top: CTop) => {
     };
     walk(top.tree.node(root)!, { parent: 'root', attr: 'root' });
     return ops;
+};
+
+export const addSpan = (
+    top: CTop,
+    path: Path,
+    recSpan: TextSpan<RecNodeT<boolean>>,
+    index: TextIndex,
+    cursor: number | Cursor,
+    within?: number,
+): void | Up[] => {
+    const node = top.tree.node(lastChild(path));
+    if (!(node instanceof CText)) return;
+    // const spans = node.spans.slice();
+
+    const ops: Up[] = [];
+    // const nodes: Nodes = {};
+
+    let sel: SelStart;
+    const id = top.ts();
+
+    // let span: TextSpan<NodeID>;
+
+    if (recSpan.type === 'embed') {
+        const result = insertRecNodes(top, [recSpan.item]);
+        ops.push(...result.ops);
+        ops.push(...insertTextSpan(top, { ...recSpan, item: result.roots[0] }));
+
+        sel =
+            result.selPath.length && typeof cursor !== 'number'
+                ? selStart(pathWithChildren(path, ...result.selPath), cursor)
+                : selStart(path, { type: 'text', end: { index: id, cursor: 0 } });
+
+        // nextLoc = top.nextLoc;
+        // let selPath: NodeID[] = [];
+        // const root = fromRec(recSpan.item, nodes, (loc, __, path) => {
+        //     const nl = nextLoc!++ + '';
+        //     if (loc === true) {
+        //         selPath = path.concat([nl]);
+        //     }
+        //     return nl;
+        // });
+        // span = { ...recSpan, item: root };
+        // sel =
+        //     selPath.length && typeof cursor !== 'number'
+        //         ? selStart(pathWithChildren(path, ...selPath), cursor)
+        //         : selStart(path, { type: 'text', end: { index: index, cursor: 0 } });
+    } else {
+        ops.push(...insertTextSpan(top, recSpan));
+
+        if (typeof cursor !== 'number') {
+            cursor = 0;
+        }
+
+        sel = selStart(path, { type: 'text', end: { index: id, cursor } });
+    }
+
+    const spans = node.spans;
+
+    // let at = getSpanIndex(spans, index);
+    if (index === 0 && spans.length === 0) {
+        const child = top.tree.children(node.id, 'spans')[0];
+        ops.push(new ParentOp(child, new LRW(null, top.ts())));
+        ops.push(new ParentOp(recSpan.loc, new LRW({ parent: node.id, attr: 'spans' }, top.ts())));
+        ops.push({ type: 'move', to: { start: sel } });
+        return ops;
+        // then we ... are maybe replacing an empty?
+    }
+    if (index != null && typeof index !== 'string') {
+        throw new Error('no numeric index ' + index);
+    }
+
+    let child;
+    let after = false;
+    if (index === null) {
+        child = spans[spans.length - 1];
+        // child = lastTail(spans, top.graph.getEdge);
+        after = true;
+        // index = child.end.id;
+        index = child.id;
+    } else {
+        child = top.tree.node(index);
+        // child = childAt(top.graph.getEdge, index, spans)?.edge;
+    }
+    if (!child) return;
+
+    if (within != null) {
+        if (after) {
+            throw new Error(`cant do within and also be adding to the end`);
+        }
+        if (child instanceof CTextText) {
+            const text = splitGraphemes(child.text.value);
+            if (within < text.length) {
+                const nid = top.ts();
+                ops.push(
+                    child.setText(text.slice(0, within).join(''), top.ts()),
+                    child.clone(nid).setText(text.slice(within).join(''), top.ts()),
+                    // updateNode(span.setText()),
+                    // insertNodes([span.clone(nid).setText()], []),
+                    ...insertAfter(top.ts, top.tree.node(id)!, nid),
+                );
+                return [...ops, { type: 'move', to: { start: sel } }];
+            }
+            after = true;
+        }
+
+        // const current = spans[at];
+        // if (current?.type === 'text') {
+        //     const text = splitGraphemes(current.text);
+        //     if (within < text.length) {
+        //         spans[at] = { ...current, text: text.slice(0, within).join('') };
+        //         spans.splice(at + 1, 0, { ...current, text: text.slice(within).join('') });
+        //     }
+        //     at++;
+        // }
+    }
+
+    const left = maybeJoin(spans[at - 1], span);
+    if (left) {
+        spans[at - 1] = left.joined;
+        if (sel.cursor.type === 'text') {
+            if (typeof sel.cursor.end.index === 'number') {
+                sel.cursor.end.index--;
+            } else {
+                sel.cursor.end.index = spans[at - 1].loc;
+            }
+            sel.cursor.end.cursor += left.off;
+        }
+    } else {
+        const right = maybeJoin(span, spans[at]);
+        if (right) {
+            spans[at] = right.joined;
+        } else {
+            spans.splice(at, 0, span);
+        }
+    }
+
+    nodes[node.loc] = { ...node, spans };
+
+    return {
+        nodes,
+        selection: { start: sel },
+        nextLoc,
+    };
 };

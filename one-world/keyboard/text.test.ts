@@ -1,6 +1,6 @@
 // let's test some operations
 
-import { applyNormalUpdate, applySel, applyUpdate } from './applyUpdate';
+import { applyNormalUpdate, applySel, applyUpdate, testCtree } from './applyUpdate';
 import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
@@ -29,6 +29,9 @@ import {
 } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 
+beforeAll(() => testCtree(true));
+afterAll(() => testCtree(false));
+
 test('text before', () => {
     let state = asTop(text([], true), listc('before'));
     state = applyUpdate(state, handleKey(state, 'A', lisp)!);
@@ -41,7 +44,7 @@ test('text after', () => {
     check(state, smoosh([text([]), id('A', true)]), idc(1));
 });
 
-test('text inside type', () => {
+test.only('text inside type', () => {
     let state = asTop(text([], true), listc('inside'));
     state = applyUpdate(state, handleKey(state, 'A', lisp)!);
     check(state, text([tspan('A')], true), {

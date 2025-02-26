@@ -4,7 +4,7 @@ the paper has (id, meta, parent, ts) as the quads.
 can I just do LWW for that?
 */
 
-import { Link, ListKind, Node, Nodes, Style, TextSpan } from '../../../shared/cnodes';
+import { Link, ListKind, Node, NodeID, Nodes, Style, TextSpan } from '../../../shared/cnodes';
 import { isTag } from '../../handleNav';
 import { CRDT, LRW } from './crdt';
 import { CTop, Up } from './ctree-update';
@@ -222,6 +222,42 @@ export class CNil extends CChild {
 
 export type TS = () => string;
 
+export const insertAfter = (ts: TS, one: CChild, after: string): Op[] => {
+    if (!one.parent) throw new Error(`no parent`);
+    if (one.parent.attr === 'head') {
+        // in an array
+        const parent = one.tree.node(one.parent.parent);
+        if (!(parent instanceof CCons)) throw new Error(`parent not a cons`);
+        const tail = parent.tail[0];
+        const ncons = new CCons(ts(), one.tree);
+        return [
+            ncons,
+            parent.setTail(ncons.id, ncons.id),
+            // new ParentOp(ncons.id, new LRW({ parent: parent.id, attr: 'tail' }, ncons.id)),
+            ncons.setHead(after, ts()),
+            ncons.setTail(tail, ts()),
+            // new ParentOp(after, new LRW({ parent: ncons.id, attr: 'head' }, ts())),
+            // new ParentOp(tail, new LRW({ parent: ncons.id, attr: 'tail' }, ts())),
+        ];
+    } else {
+        // const parent = one.tree.node(one.parent.parent);
+        // if (parent instanceof CCons) {
+        // } else {
+        //     //
+        // }
+        const ncons = new CCons(ts(), one.tree);
+        return [
+            ncons,
+            new ParentOp(ncons.id, new LRW(one.parent, ncons.id)),
+            // new ParentOp(ncons.id, new LRW({ parent: parent.id, attr: 'tail' }, ncons.id)),
+            ncons.setHead(one.id, ts()),
+            ncons.setTail(after, ts()),
+            // new ParentOp(after, new LRW({ parent: ncons.id, attr: 'head' }, ts())),
+            // new ParentOp(tail, new LRW({ parent: ncons.id, attr: 'tail' }, ts())),
+        ];
+    }
+};
+
 export const insertArray = (ts: TS, tree: CTree, items: string[]): { head: string; ops: Op[] } => {
     if (items.length === 1) return { head: items[0], ops: [] };
     if (items.length === 0) {
@@ -347,6 +383,14 @@ export class CTextText extends CTextSpan {
         this.text = text;
     }
 
+    setText(text: string, ts: string) {
+        return new CTextText(this.id, this.tree, this.style, this.text.set(text, ts));
+    }
+
+    clone(id: string) {
+        return new CTextText(id, this.tree, this.style, this.text);
+    }
+
     asSpan(): TextSpan<string> {
         return { type: 'text', text: this.text.value, style: this.style.value.style, link: this.style.value.link, loc: this.id };
     }
@@ -469,6 +513,27 @@ export const filterConsList = (ts: () => string, head: Child, hp: ParentObj, fil
     }
 };
 
+export const insertTextSpan = (top: CTop, span: TextSpan<NodeID>): Up[] => {
+    if (span.type === 'embed') {
+        // return insertNodes(
+        //     [new MTextEmbed(span.loc, new TextMeta(new LRW(span.link ?? null, span.loc), new LRW(span.style ?? null, span.loc)))],
+        //     [MTextEmbed.newItemEdge(span.loc, span.item, top.ts())],
+        // );
+        return [
+            new CTextEmbed(span.loc, top.tree, new LRW({ style: span.style, link: span.link }, top.ts())),
+            new ParentOp(span.item, new LRW({ parent: span.loc, attr: 'item' }, top.ts())),
+        ];
+    }
+    if (span.type === 'text') {
+        return [new CTextText(span.loc, top.tree, new LRW({ style: span.style, link: span.link }, top.ts()), new LRW(span.text, top.ts()))];
+        // return insertNodes(
+        //     [new MTextText(span.loc, new LRW(span.text, span.loc), new TextMeta(new LRW(null, span.loc), new LRW(null, span.loc)))],
+        //     [],
+        // );
+    }
+    throw new Error(`text span type not supported ${span.type}`);
+};
+
 export const insert = (node: Node, { ts, tree }: CTop): Op[] => {
     switch (node.type) {
         case 'id':
@@ -501,6 +566,7 @@ export const insert = (node: Node, { ts, tree }: CTop): Op[] => {
     }
     throw new Error(`node type not yet ${node.type}`);
 };
+
 export const showOp = (op: Up) => {
     if (op instanceof ParentOp) {
         if (!op.parent.value) return `[x parent] ${op.node} - ${op.stack} (${op.parent.ts})`;
