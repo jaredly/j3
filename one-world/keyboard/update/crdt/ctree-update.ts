@@ -949,7 +949,7 @@ export const addSpan = (
     if (recSpan.type === 'embed') {
         const result = insertRecNodes(top, [recSpan.item]);
         ops.push(...result.ops);
-        ops.push(...insertTextSpan(top, { ...recSpan, item: result.roots[0] }));
+        ops.push(...insertTextSpan(top, { ...recSpan, loc: id, item: result.roots[0] }));
 
         sel =
             result.selPath.length && typeof cursor !== 'number'
@@ -971,7 +971,7 @@ export const addSpan = (
         //         ? selStart(pathWithChildren(path, ...selPath), cursor)
         //         : selStart(path, { type: 'text', end: { index: index, cursor: 0 } });
     } else {
-        ops.push(...insertTextSpan(top, recSpan));
+        ops.push(...insertTextSpan(top, { ...recSpan, loc: id }));
 
         if (typeof cursor !== 'number') {
             cursor = 0;
@@ -986,7 +986,7 @@ export const addSpan = (
     if (index === 0 && spans.length === 0) {
         const child = top.tree.children(node.id, 'spans')[0];
         ops.push(new ParentOp(child, new LRW(null, top.ts())));
-        ops.push(new ParentOp(recSpan.loc, new LRW({ parent: node.id, attr: 'spans' }, top.ts())));
+        ops.push(new ParentOp(id, new LRW({ parent: node.id, attr: 'spans' }, top.ts())));
         ops.push({ type: 'move', to: { start: sel } });
         return ops;
         // then we ... are maybe replacing an empty?

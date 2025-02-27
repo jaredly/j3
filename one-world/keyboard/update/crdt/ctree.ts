@@ -29,6 +29,7 @@ export class ParentOp {
     stack: string;
     constructor(node: string, parent: Parent) {
         if (node == null) throw new Error('null node');
+        if (node === '') throw new Error('empty node id');
         this.node = node;
         this.parent = parent;
         // const at = new Error().stack!.split('\n').slice(2, 5).join('\n');
@@ -137,6 +138,7 @@ export class CTree {
     apply(ops: Op[]) {
         ops.forEach((op) => {
             if (op instanceof ParentOp) {
+                if (op.node === '') throw new Error('cant have empty id');
                 const cur = this.parents[op.node];
                 if (cur) {
                     if (cur.ts > op.parent.ts) {
@@ -162,7 +164,7 @@ export class CTree {
     }
 
     parent(id: string): { parent: string; attr: string } | null {
-        return this.parents[id].value;
+        return this.parents[id]?.value;
     }
 
     children(parent: string, attr: string) {

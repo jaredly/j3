@@ -29,8 +29,8 @@ import {
 } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 
-beforeAll(() => testCtree(true));
-afterAll(() => testCtree(false));
+// beforeAll(() => testCtree(true));
+// afterAll(() => testCtree(false));
 
 test('text before', () => {
     let state = asTop(text([], true), listc('before'));
@@ -44,7 +44,7 @@ test('text after', () => {
     check(state, smoosh([text([]), id('A', true)]), idc(1));
 });
 
-test.only('text inside type', () => {
+test('text inside type', () => {
     let state = asTop(text([], true), listc('inside'));
     state = applyUpdate(state, handleKey(state, 'A', lisp)!);
     check(state, text([tspan('A')], true), {
