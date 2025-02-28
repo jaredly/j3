@@ -29,8 +29,8 @@ import {
 } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 
-beforeAll(() => testCtree(true));
-afterAll(() => testCtree(false));
+// beforeAll(() => testCtree(true));
+// afterAll(() => testCtree(false));
 
 test('text before', () => {
     let state = asTop(text([], true), listc('before'));
@@ -54,7 +54,7 @@ test('text inside type', () => {
 });
 
 test('before embed', () => {
-    let state = asTop(text([tembed(id(''))], true), textc(0, 0));
+    let state = asTop(text([tembed(id(''), u, true)]), textc('', 0));
     state = applyUpdate(state, handleKey(state, 'A', lisp)!);
     check(state, text([tspan('A'), tembed(id(''))], true), {
         type: 'text',
@@ -65,7 +65,7 @@ test('before embed', () => {
 test('id to text', () => {
     let state = asTop(id('', true), idc(0));
     state = applyUpdate(state, handleKey(state, '"', lisp)!);
-    check(state, text([tspan('')], true), textc(0, 0));
+    check(state, text([tspan('', u, true)]), textc(0, 0));
 });
 
 test('text inside leavee', () => {
@@ -79,7 +79,7 @@ const u = undefined;
 test('text inside list', () => {
     let state = asTop(round([], true), listc('inside'));
     state = applyUpdate(state, handleKey(state, '"', lisp)!);
-    check(state, round([text([tspan('', u, true)])]), textc(0, 0));
+    check(state, round([text([tspan('', u, true)])]), textc('2', 0));
 });
 
 test('text wrap in empty', () => {
@@ -431,13 +431,13 @@ test('delete at start', () => {
 test('alt-left in text', () => {
     let state = asTop(text([tspan('one two three', undefined, true)]), textc('', 8));
     state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', { alt: true }));
-    check(state, text([tspan('one two three', undefined, true)]), textc(0, 4));
+    check(state, text([tspan('one two three', undefined, true)]), textc('1', 4));
 });
 
 test('shift-alt-left in text', () => {
     let state = asTop(text([tspan('one two three', undefined, true)]), textc('', 8));
     state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', { alt: true, shift: true }));
-    check(state, text([tspan('one two three', undefined, true)]), textc(0, 8), textc(0, 4));
+    check(state, text([tspan('one two three', undefined, true)]), textc('1', 8), textc('1', 4));
 });
 
 test('getting out of an embed', () => {

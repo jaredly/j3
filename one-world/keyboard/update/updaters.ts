@@ -178,6 +178,10 @@ export const addInside = (top: Top, path: Path, children: RecNodeT<boolean>[], c
         }),
     );
 
+    if (cursor.type === 'text' && typeof cursor.end.index === 'number') {
+        cursor.end.index = selPath.pop()!;
+    }
+
     if (selPath.length === 0) throw new Error(`nothing selected in node to add`);
 
     nodes[node.loc] = node.type === 'table' ? { ...node, rows: [roots] } : { ...node, children: roots };

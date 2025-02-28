@@ -51,9 +51,9 @@ export const handleTextText = (
 
                 let next = current.spans[at + 1];
                 if (at === current.spans.length - 1 || next.type !== 'text' || !stylesEqual(span.style, next.style)) {
-                    return [{ type: 'add-span', path, index: at + 1, cursor: 1, span: { type: 'text', style: span.style, text: grem, loc: '' } }];
+                    return [{ type: 'add-span', path, index: next.loc, cursor: 1, span: { type: 'text', style: span.style, text: grem, loc: '' } }];
                 }
-                return moveA(selStart(path, { type: 'text', end: { index: at + 1, cursor: 1 } }));
+                return moveA(selStart(path, { type: 'text', end: { index: next.loc, cursor: 1 } }));
             }
         }
         return;

@@ -16,6 +16,7 @@ import {
 } from '../shared/cnodes';
 import { Ctx, ParseResult } from '../syntaxes/dsl';
 import { TESTING_CTREE } from './applyUpdate';
+import { fixTextSel } from './ctdt-test-utils';
 import { selEnd, Src } from './handleShiftNav';
 import { charClass } from './insertId';
 import { initial } from './update/crdt/ctree.test';
@@ -114,10 +115,12 @@ export const asTop = (node: RecNodeT<number | boolean>, cursor: Cursor, endCurso
  */
 export const _asTop = (node: RecNodeT<number | boolean>, cursor: Cursor, endCursor?: Cursor): TestState => {
     const { top, sel, sels } = asTopAndPath(node);
+    const start = selStart({ children: sel, root: { ids: [], top: '' } }, cursor);
+    fixTextSel(start);
     return {
         top,
         sel: {
-            start: selStart({ children: sel, root: { ids: [], top: '' } }, cursor),
+            start,
             end: endCursor ? selStart({ children: sels[2] ?? sel, root: { ids: [], top: '' } }, endCursor) : undefined,
         },
     };
@@ -345,4 +348,9 @@ export const tspan = (text: string, style?: Style, loc?: boolean | number): Text
     style,
     loc: loc ?? 0,
 });
-export const tembed = (item: RecNodeT<boolean | number>, style?: Style): TextSpan<any, number | boolean> => ({ type: 'embed', item, style, loc: 0 });
+export const tembed = (item: RecNodeT<boolean | number>, style?: Style, loc?: boolean): TextSpan<any, number | boolean> => ({
+    type: 'embed',
+    item,
+    style,
+    loc: loc ?? 0,
+});
