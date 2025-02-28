@@ -164,7 +164,7 @@ const findCurlyClose = (path: Path, top: Top, notListTop: boolean): SelStart | v
             const at = node.spans.findIndex((s) => s.type === 'embed' && s.item === inner)!;
             return selStart(
                 { ...path, children: path.children.slice(0, i + 1) },
-                { type: 'text', end: { index: node.spans[at + 1].loc, cursor: 0 } },
+                { type: 'text', end: { index: at < node.spans.length - 1 ? node.spans[at + 1].loc : node.spans[at].loc, cursor: 0 } },
             );
         }
     }
