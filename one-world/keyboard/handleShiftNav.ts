@@ -202,7 +202,13 @@ export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSele
     return goLateral(path, top, shift, true);
 };
 
-const wordNext = (node: Text<NodeID>, left: boolean, index: number, cursor: number, grems?: string[]): { index: number; cursor: number } | null => {
+const wordNext = (
+    node: Text<NodeID>,
+    left: boolean,
+    index: number,
+    cursor: number,
+    grems?: string[],
+): { index: number | string; cursor: number } | null => {
     const span = node.spans[index];
 
     if (left) {
@@ -213,7 +219,7 @@ const wordNext = (node: Text<NodeID>, left: boolean, index: number, cursor: numb
                 const pt = splitGraphemes(prev.text);
                 return wordNext(node, left, index - 1, pt.length, pt);
             } else {
-                return { index: index - 1, cursor: 0 };
+                return { index: prev.loc, cursor: 0 };
             }
         }
 
@@ -222,7 +228,7 @@ const wordNext = (node: Text<NodeID>, left: boolean, index: number, cursor: numb
             let i = cursor - 2;
             for (; i >= 0 && text[i] !== ' ' && text[i] !== '\n'; i--);
             i++;
-            return { index, cursor: i };
+            return { index: span.loc, cursor: i };
         }
     }
 
@@ -234,14 +240,14 @@ const wordNext = (node: Text<NodeID>, left: boolean, index: number, cursor: numb
             const grems = splitGraphemes(next.text);
             return wordNext(node, left, index + 1, 0, grems);
         } else {
-            return { index: index + 1, cursor: 1 };
+            return { index: next.loc, cursor: 1 };
         }
     }
 
     let i = cursor + 2;
     for (; i < text.length && text[i] !== ' ' && text[i] !== '\n'; i++);
     if (i > text.length) i = text.length;
-    return { index, cursor: i };
+    return { index: span.loc, cursor: i };
 };
 
 export const toggleFormat = (style: Style, up: Partial<Style>) => {

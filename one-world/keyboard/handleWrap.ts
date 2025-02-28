@@ -161,8 +161,11 @@ const findCurlyClose = (path: Path, top: Top, notListTop: boolean): SelStart | v
         }
         if (node.type === 'text' && i < path.children.length - 1) {
             const inner = path.children[i + 1];
-            const at = node.spans.findIndex((s) => s.type === 'embed' && s.item === inner);
-            return selStart({ ...path, children: path.children.slice(0, i + 1) }, { type: 'text', end: { index: at, cursor: 1 } });
+            const at = node.spans.findIndex((s) => s.type === 'embed' && s.item === inner)!;
+            return selStart(
+                { ...path, children: path.children.slice(0, i + 1) },
+                { type: 'text', end: { index: node.spans[at + 1].loc, cursor: 0 } },
+            );
         }
     }
 };

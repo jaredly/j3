@@ -154,6 +154,8 @@ export const initial = (iroot: RecNodeT<boolean | number | null>, cursor: Cursor
     Object.values(nodes).forEach((node) => ctop.tree.apply(insert(node, ctop)));
     ctop.tree.apply([new ParentOp(root.loc, new LRW({ attr: 'root', parent: 'root' }, ts()))]);
 
+    // debugCtree(ctop.tree);
+
     return { ctop, top: asTop(ctop), sel };
 };
 

@@ -99,6 +99,10 @@ export const c_addInside = (top: CTop, path: Path, children: RecNodeT<boolean>[]
     ops.push(...child.map((cid) => new ParentOp(cid, new LRW(null, top.ts()))));
     ops.push(new ParentOp(rootList.head, new LRW({ parent: node.id, attr: 'children' }, top.ts())));
 
+    if (cursor.type === 'text') {
+        cursor.end.index = selPath.pop()!;
+    }
+
     return [...ops, { type: 'move', to: { start: selStart(pathWithChildren(path, ...selPath), cursor) } }];
 };
 
@@ -1040,6 +1044,7 @@ export const addSpan = (
         // }
     }
 
+    /*
     const left = maybeJoin(spans[at - 1], span);
     if (left) {
         spans[at - 1] = left.joined;
@@ -1067,4 +1072,5 @@ export const addSpan = (
         selection: { start: sel },
         nextLoc,
     };
+    */
 };

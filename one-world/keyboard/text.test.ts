@@ -29,8 +29,8 @@ import {
 } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 
-// beforeAll(() => testCtree(true));
-// afterAll(() => testCtree(false));
+beforeAll(() => testCtree(true));
+afterAll(() => testCtree(false));
 
 test('text before', () => {
     let state = asTop(text([], true), listc('before'));
@@ -47,7 +47,7 @@ test('text after', () => {
 test('text inside type', () => {
     let state = asTop(text([], true), listc('inside'));
     state = applyUpdate(state, handleKey(state, 'A', lisp)!);
-    check(state, text([tspan('A')], true), {
+    check(state, text([tspan('A', undefined, true)]), {
         type: 'text',
         end: { index: 0, cursor: 1 },
     });
@@ -74,16 +74,18 @@ test('text inside leavee', () => {
     check(state, text([], true), listc('after'));
 });
 
+const u = undefined;
+
 test('text inside list', () => {
     let state = asTop(round([], true), listc('inside'));
     state = applyUpdate(state, handleKey(state, '"', lisp)!);
-    check(state, round([text([tspan('')], true)]), textc(0, 0));
+    check(state, round([text([tspan('', u, true)])]), textc(0, 0));
 });
 
 test('text wrap in empty', () => {
     let state = asTop(text([], true), listc('inside'));
     state = applyUpdate(state, handleWrap(state, '(')!);
-    check(state, text([tspan('(')], true), textc(0, 1));
+    check(state, text([tspan('(', undefined, true)]), textc(0, 1));
 });
 
 test('text after id', () => {
@@ -427,21 +429,21 @@ test('delete at start', () => {
 });
 
 test('alt-left in text', () => {
-    let state = asTop(text([tspan('one two three')], true), textc(0, 8));
+    let state = asTop(text([tspan('one two three', undefined, true)]), textc('', 8));
     state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', { alt: true }));
-    check(state, text([tspan('one two three')], true), textc(0, 4));
+    check(state, text([tspan('one two three', undefined, true)]), textc(0, 4));
 });
 
 test('shift-alt-left in text', () => {
-    let state = asTop(text([tspan('one two three')], true), textc(0, 8));
+    let state = asTop(text([tspan('one two three', undefined, true)]), textc('', 8));
     state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', { alt: true, shift: true }));
-    check(state, text([tspan('one two three')], true), textc(0, 8), textc(0, 4));
+    check(state, text([tspan('one two three', undefined, true)]), textc(0, 8), textc(0, 4));
 });
 
 test('getting out of an embed', () => {
     let state = asTop(text([tspan('hi'), tembed(round([id('a')], true)), tspan('ho')]), listc('after'));
     state = applyUpdate(state, keyUpdate(state, '}', {}));
-    check(state, text([tspan('hi'), tembed(round([id('a')])), tspan('ho')], true), textc(1, 1));
+    check(state, text([tspan('hi'), tembed(round([id('a')])), tspan('ho', undefined, true)]), textc('5', 0));
 });
 
 // TODO delete rich in table

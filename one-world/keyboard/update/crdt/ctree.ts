@@ -422,7 +422,7 @@ export class CText extends CNode {
     }
 
     show(): string {
-        return `text(${this.spans})`;
+        return `text(${this.spans.map((s) => s.id)})`;
     }
 
     asNode(): Node {
@@ -515,7 +515,7 @@ export const filterConsList = (ts: () => string, head: Child, hp: ParentObj, fil
     }
 };
 
-export const insertTextSpan = (top: CTop, span: TextSpan<NodeID>): Up[] => {
+export const insertTextSpan = (top: CTop, span: TextSpan<NodeID>): Op[] => {
     if (span.type === 'embed') {
         // return insertNodes(
         //     [new MTextEmbed(span.loc, new TextMeta(new LRW(span.link ?? null, span.loc), new LRW(span.style ?? null, span.loc)))],
@@ -536,7 +536,8 @@ export const insertTextSpan = (top: CTop, span: TextSpan<NodeID>): Up[] => {
     throw new Error(`text span type not supported ${span.type}`);
 };
 
-export const insert = (node: Node, { ts, tree }: CTop): Op[] => {
+export const insert = (node: Node, top: CTop): Op[] => {
+    const { ts, tree } = top;
     switch (node.type) {
         case 'id':
             return [new CId(node.loc, new LRW({ text: node.text, ccls: node.ccls }, node.loc), tree)];
@@ -563,7 +564,12 @@ export const insert = (node: Node, { ts, tree }: CTop): Op[] => {
                 tree,
                 node.spans.map((s) => s.loc),
             );
-            return [...spans.ops, new CText(node.loc, tree), new ParentOp(spans.head, new LRW({ attr: 'spans', parent: node.loc }, ts()))];
+            return [
+                ...node.spans.flatMap((span) => insertTextSpan(top, span)),
+                ...spans.ops,
+                new CText(node.loc, tree),
+                new ParentOp(spans.head, new LRW({ attr: 'spans', parent: node.loc }, ts())),
+            ];
         }
     }
     throw new Error(`node type not yet ${node.type}`);
