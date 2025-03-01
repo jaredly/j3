@@ -8,7 +8,7 @@ import { KeyAction } from './keyActionToUpdate';
 import { CGraph, checkConflicts, rootEdge } from './update/crdt/cgraph';
 import { MOp, MId, MList, MCons, MListKind, MListTag, isMain, insertText, insertTextSpan } from './update/crdt/crdtnodes';
 import { graphToXMLs, showXMLs } from './update/crdt/show-graph';
-import { Cursor, NodeSelection, Path, selStart, Top } from './utils';
+import { Cursor, NodeSelection, Path, pathKey, selStart, Top } from './utils';
 
 export const expand = (top: CTop, node: Node): RecNodeT<NodeID> => {
     switch (node.type) {
@@ -35,6 +35,7 @@ export const full = (top: CTop) => {
 export const fixTextSel = (sel: SelStart) => {
     if (sel.cursor.type === 'text' && sel.cursor.end.index === '') {
         sel.cursor.end.index = sel.path.children.pop()!;
+        sel.key = pathKey(sel.path);
     }
     return sel;
 };

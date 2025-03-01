@@ -1,4 +1,11 @@
 
+Gotta make TextIndex be just string.
+
+now all tests are passing in the old things.
+
+
+##
+
 Deletion is making some progress
 however,
 cleaning up single-element smooshes is still something I need to mess with.

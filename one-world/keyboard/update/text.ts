@@ -33,7 +33,7 @@ export const textDelete = (top: Top, path: Path, left: Spat, right: Spat) => {
         if (span.type === 'text') {
             const grems = splitGraphemes(span.text);
             grems.splice(left.cursor, right.cursor - left.cursor);
-            return setTextText(top, path, grems.join(''), lindex, left.cursor);
+            return setTextText(top, path, grems.join(''), left.index, left.cursor);
         }
     }
 
@@ -67,8 +67,8 @@ export const textDelete = (top: Top, path: Path, left: Spat, right: Spat) => {
                           type: 'text',
                           end:
                               lindex >= spans.length
-                                  ? { index: spans.length - 1, cursor: spanLength(spans[spans.length - 1], undefined, 0) }
-                                  : { index: lindex, cursor: left.cursor },
+                                  ? { index: spans[spans.length - 1].loc, cursor: spanLength(spans[spans.length - 1], undefined, 0) }
+                                  : { index: left.index, cursor: left.cursor },
                       },
             ),
         },
@@ -207,9 +207,11 @@ export const handleTextFormat = (
     const node = top.nodes[lastChild(path)];
     if (node.type !== 'text') return;
 
-    const res = specialTextMod(node, left, right, (style) => toggleFormat(style, format));
+    const res = specialTextMod(node, left, right, (style) => toggleFormat(style, format), top.nextLoc);
     if (!res) return;
+    // console.log('mod', res, left, right);
     return {
+        nextLoc: res.nextLoc,
         nodes: { [node.loc]: res.node },
         selection:
             select === 'after'
@@ -243,8 +245,9 @@ export const handleJoinText = (top: Top, path: Path) => {
     const spans = prev.spans.concat(node.spans);
     const cursor: TextCursor = {
         type: 'text',
-        end: { index: prev.spans.length, cursor: 0 },
+        end: { index: spans[prev.spans.length].loc, cursor: 0 },
     };
+    console.log(spans, cursor);
     return {
         nodes: {
             [prev.loc]: { ...prev, spans: mergeAdjacentSpans(spans, cursor) },

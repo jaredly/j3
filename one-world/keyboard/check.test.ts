@@ -12,6 +12,7 @@ export const check = (state: TestState, exp: RecNodeT<boolean | number>, cursor:
     const { main, paths } = selPaths(exp);
     expect(shape(root(state))).toEqual(shape(exp));
     const sel = atPath(state.top.root, state.top, main);
+    const endSel = paths[2] ? atPath(state.top.root, state.top, paths[2]) : sel;
     if (cursor.type === 'text') {
         if (TESTING_CTREE) {
             cursor.end.index = sel.pop()!;
@@ -23,7 +24,14 @@ export const check = (state: TestState, exp: RecNodeT<boolean | number>, cursor:
                 }
             }
         } else if (sel[sel.length - 1] === '' || typeof cursor.end.index === 'string') {
-            sel.pop();
+            if (!state.top.nodes[sel[sel.length - 1]]) {
+                sel.pop();
+            }
+            if (endSel !== sel) {
+                if (!state.top.nodes[endSel[endSel.length - 1]]) {
+                    endSel.pop();
+                }
+            }
         }
     }
     expect({
@@ -33,7 +41,7 @@ export const check = (state: TestState, exp: RecNodeT<boolean | number>, cursor:
         endPath: state.sel.end?.path.children ?? state.sel.start.path.children,
     }).toEqual({
         sel,
-        endPath: paths[2] ? atPath(state.top.root, state.top, paths[2]) : sel,
+        endPath: endSel,
         cursor,
         endCursor,
     });

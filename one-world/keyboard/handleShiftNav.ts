@@ -312,6 +312,7 @@ export const handleSpecial = (state: TestState, key: string, mods: Mods): void |
                 return [{ type: 'text-format', path: current.path, left: left.end, right: right.end, format: mod }];
             }
         }
+        // console.log('NOT IT', state.sel.end.key, state.sel.start.key);
 
         // TODO: iterate through all middles, and if everything is a text, go to town.
     }

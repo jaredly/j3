@@ -54,7 +54,7 @@ export type IdCursor = {
     end: number;
 };
 
-export type TextIndex = number | string;
+export type TextIndex = string;
 
 export const getSpanIndex = (spans: TextSpan<any>[], index: TextIndex) =>
     typeof index === 'number' ? index : spans.findIndex((s) => s.loc === index);

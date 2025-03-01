@@ -39,6 +39,16 @@ const validateNextLoc = (top: Top) => {
 const validateNodes = (top: Top, id: NodeID) => {
     const node = top.nodes[id];
 
+    // if (node.type === 'text') {
+    //     const seen: Record<string, true> = {};
+    //     node.spans.forEach((span) => {
+    //         if (!span.loc || top.nodes[span.loc] || seen[span.loc]) {
+    //             throw new Error(`bad span loc ${span.loc}`);
+    //         }
+    //         seen[span.loc] = true;
+    //     });
+    // }
+
     if (node.type === 'id' && (node.text === '') !== (node.ccls == null)) {
         console.log(node);
         throw new Error(`ccls must be set if text is not empty "${node.text}" vs ${node.ccls}, and vice versa`);
@@ -121,7 +131,8 @@ const validateCursor = (state: TestState) => {
         if (current.cursor.type === 'text') {
             const span = getSpan(current.node, current.cursor.end.index);
             if (!span) {
-                throw new Error(`invalid text cursor`);
+                console.log(current.node, current.cursor.end.index);
+                throw new Error(`invalid text cursor ${current.cursor.end.index}`);
             }
             const at = current.node.spans.indexOf(span);
             if (at < 0 || at >= current.node.spans.length) {

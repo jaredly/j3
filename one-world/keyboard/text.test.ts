@@ -301,7 +301,7 @@ test('left into embed', () => {
 test('del an embed', () => {
     let state = asTop(text([tspan('a'), tembed(id('ho'))], true), textc(1, 1));
     state = applyUpdate(state, handleDelete(state));
-    check(state, text([tspan('a')], true), textc(0, 1));
+    check(state, text([tspan('a', u, true)]), textc('1', 1));
 });
 
 test('del in an embed', () => {
@@ -419,7 +419,7 @@ test('remove list item', () => {
 test('delete previous', () => {
     let state = asTop(bullet([text([tspan('one')]), text([tspan('two')], true)]), textc(0, 0));
     state = applyUpdate(state, keyUpdate(state, 'Backspace', {}));
-    check(state, bullet([text([tspan('onetwo')], true)]), textc(0, 3));
+    check(state, bullet([text([tspan('onetwo', u, true)])]), textc('2', 3));
 });
 
 test('delete at start', () => {
