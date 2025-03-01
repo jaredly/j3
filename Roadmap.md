@@ -3,6 +3,9 @@ Gotta make TextIndex be just string.
 
 now all tests are passing in the old things.
 
+- [ ] set the validateNodes span loc thing to true, then fix the errors that happen
+- [ ] go through the rest of the type errors from `TextIndex = string` and fix them
+
 
 ##
 
