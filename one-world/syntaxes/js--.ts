@@ -1,7 +1,7 @@
 import { js, TestParser } from '../keyboard/test-utils';
 import { Id, Loc, TextSpan } from '../shared/cnodes';
 import { Ctx, list, match, or, Rule, ref, tx, seq, kwd, group, id, star, Src, number, text, table, opt } from './dsl3';
-import { binops, Block, Expr, kwds, Stmt } from './js--types';
+import { binops, Block, Expr, kwds, Spread, Stmt } from './js--types';
 import { mergeSrc, nodesSrc } from './ts-types';
 
 const stmts: Record<string, Rule<Stmt>> = {
@@ -69,9 +69,9 @@ const exprs: Record<string, Rule<Expr>> = {
     'expr num': tx(group('value', number), (ctx, src) => ({ type: 'number', value: ctx.ref<number>('value'), src })),
     'expr var': tx(group('id', id(null)), (ctx, src) => ({ type: 'var', name: ctx.ref<Id<Loc>>('id').text, src })),
     'expr text': tx(group('spans', text(ref('expr'))), (ctx, src) => ({ type: 'text', spans: ctx.ref<TextSpan<Expr>[]>('spans'), src })),
-    'expr array': tx(list('square', group('items', star(ref('expr')))), (ctx, src) => ({
+    'expr array': tx(list('square', group('items', star(ref('spread expr')))), (ctx, src) => ({
         type: 'array',
-        items: ctx.ref<Expr[]>('items'),
+        items: ctx.ref<(Expr | Spread<Expr>)[]>('items'),
         src,
     })),
     'expr table': tx(
@@ -121,6 +121,14 @@ const rules = {
     ),
     // list('curly', star(ref('stmt'))),
     ...stmts,
+    'spread expr': or(
+        tx<Spread<Expr>>(list('smooshed', seq(kwd('...'), ref('expr..', 'inner'))), (ctx, src) => ({
+            type: 'spread',
+            inner: ctx.ref<Expr>('inner'),
+            src,
+        })),
+        ref('expr'),
+    ),
     'expr..': tx<Expr>(
         seq(
             ref('expr', 'base'),
@@ -185,7 +193,7 @@ export const ctx: Ctx = {
     meta: {},
 };
 
-export const parser: TestParser = {
+export const parser: TestParser<Stmt> = {
     config: {
         // punct: [],
         // so js's default is just 'everything for itself'
@@ -201,6 +209,7 @@ export const parser: TestParser = {
     },
     spans: () => [],
     parse(node, cursor) {
+        console.log('aprse prel');
         const c = {
             ...ctx,
             meta: {},

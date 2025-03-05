@@ -1,7 +1,7 @@
 import { fromRec, Node, Nodes, RecNodeT } from '../../../shared/cnodes';
 import { shape } from '../../../shared/shape';
 import { applySelUp } from '../../applyUpdate';
-import { ticker } from '../../crdt-check.test';
+import { ticker } from '../../CTState';
 import { fixTextSel, pathWith, withLocs } from '../../ctdt-test-utils';
 import { isTag } from '../../handleNav';
 import { KeyAction } from '../../keyActionToUpdate';

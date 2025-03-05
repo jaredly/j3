@@ -1,4 +1,4 @@
-import { watch } from 'fs';
+import { unlinkSync, watch } from 'fs';
 import { join } from 'path';
 
 const bounce = (time: number, fn: () => unknown) => {
@@ -26,7 +26,11 @@ const rebuild = bounce(10, () => {
         }),
     ])
         .then(([one]) => {
-            // console.log(one.logs, two.logs);
+            if (!one.success) {
+                unlinkSync('./run.js');
+                throw new Error('build failureeee');
+            }
+            console.log('rebuilt successfully');
         })
         .catch((err) => {
             console.log('failed? idk');

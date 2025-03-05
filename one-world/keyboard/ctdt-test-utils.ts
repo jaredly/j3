@@ -1,6 +1,6 @@
 import { RecNodeT, NodeID, ListKind, Node, mapLocs, fromRec, Nodes } from '../shared/cnodes';
 import { applySelUp } from './applyUpdate';
-import { CTState, ticker } from './crdt-check.test';
+import { CTState, ticker } from './CTState';
 import { isTag } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import { CTop, CUpdate, insertNode, justOps, justUps, keyActionToUpdate, replaceEdges } from './keyActionToCRDTUpdate';

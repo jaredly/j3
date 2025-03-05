@@ -61,14 +61,14 @@ export const w_infer = (
                 expr.values[1].values.length === 1 &&
                 expr.values[1].values[0].type === 'identifier'
             ) {
-                const name = expr.values[1].values[0].text;
+                const argName = expr.values[1].values[0].text;
                 const vn = newTV(env);
                 const at = { type: 'var', name: vn } as const;
                 const cenv: Env = {
                     ...env,
                     scope: {
                         ...env.scope,
-                        [name]: {
+                        [argName]: {
                             vbls: [],
                             body: at,
                         },
@@ -145,11 +145,6 @@ export const w_infer = (
 function applyEnv(env: Env, sub1: Subst): Env {
     return {
         ...env,
-        scope: Object.fromEntries(
-            Object.entries(env.scope).map(([k, v]) => [
-                k,
-                { ...v, body: apply(sub1, v.body) },
-            ]),
-        ),
+        scope: Object.fromEntries(Object.entries(env.scope).map(([k, v]) => [k, { ...v, body: apply(sub1, v.body) }])),
     };
 }

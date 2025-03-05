@@ -26,9 +26,9 @@ export type TestState = {
     top: Top;
     sel: NodeSelection;
 };
-export type TestParser = {
+export type TestParser<T> = {
     config: Config;
-    parse(node: RecNode, cursor?: NodeID): ParseResult<any>;
+    parse(node: RecNode, cursor?: NodeID): ParseResult<T>;
     spans(ast: any): Src[];
 };
 

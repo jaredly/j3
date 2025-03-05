@@ -441,7 +441,7 @@ export const ctx = (cursor?: NodeID): Ctx => ({
     autocomplete: cursor ? { loc: cursor, concrete: [], kinds: [] } : undefined,
 });
 
-export const tsParser: TestParser = {
+export const tsParser: TestParser<Stmt> = {
     config: js,
     parse(node, cursor) {
         return parse(matchers.stmt, node, ctx(cursor));

@@ -1,5 +1,5 @@
 import { shape } from '../shared/shape';
-import { CTState } from './crdt-check.test';
+import { CTState } from './CTState';
 import { addInPath, removeInPath } from './handleDelete';
 import { SelStart } from './handleShiftNav';
 import { KeyAction, keyActionToUpdate, selUpdate } from './keyActionToUpdate';

@@ -1,4 +1,5 @@
-import { ccheck, ticker } from './crdt-check.test';
+import { ccheck } from './crdt-check.test';
+import { ticker } from './CTState';
 import { full, initial, op, pathWith } from './ctdt-test-utils';
 import { c_handleInsertList, c_setIdText, CTop, insertRoot, justOps } from './keyActionToCRDTUpdate';
 import { id, idc, list, listc, round, smoosh, spaced, square, tembed, text, textc, tspan } from './test-utils';

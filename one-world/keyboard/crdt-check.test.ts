@@ -2,21 +2,11 @@ import { RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { root } from './root';
 import { atPath, noText, selPath, selPathN, selPaths, TestState } from './test-utils';
-import { Cursor, NodeSelection, selStart, Top } from './utils';
+import { Cursor, selStart } from './utils';
 import { expect } from 'bun:test';
 import { validate } from './validate';
-import { CTop } from './keyActionToCRDTUpdate';
 import { pathWith, withLocs } from './ctdt-test-utils';
-
-export type CTState = { ctop: CTop; top: Top; sel: NodeSelection };
-
-export const ticker = () => {
-    let i = 0;
-    return () => {
-        if (i >= 999) throw new Error('no ahh');
-        return (i++).toString().padStart(3, '0');
-    };
-};
+import { CTState } from './CTState';
 
 export const ccheck = (state: CTState, exp: RecNodeT<boolean | number | null>, cursor: Cursor, endCursor?: Cursor) => {
     const { main, paths } = selPaths(exp);

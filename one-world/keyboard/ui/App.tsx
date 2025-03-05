@@ -95,7 +95,7 @@ const putOnWindow = (obj: any) => {
 export type AppState = {
     top: Top;
     selections: NodeSelection[];
-    parser?: TestParser;
+    parser?: TestParser<any>;
     history: HistoryItem[];
 };
 
@@ -650,7 +650,7 @@ const useKeyFns = (
     state: AppState,
     parsed: ParseResult<any>,
     dispatch: (s: Action) => void,
-    parser: TestParser,
+    parser: TestParser<any>,
     menu: Menu | null,
     setMenu: (m: Menu | null) => void,
 ) => {

@@ -75,36 +75,40 @@ export type Rule<T> =
     | { type: 'list'; kind: ListKind<Rule<unknown>>; item: Rule<unknown> }
     | { type: 'table'; kind: TableKind; row: Rule<unknown> };
 
-// const show = (rule: Rule<unknown>): string => {
-//     switch (rule.type) {
-//         case 'kwd':
-//             return rule.kwd;
-//         case 'ref':
-//             return '$' + rule.name;
-//         case 'seq':
-//             return `seq(${rule.rules.map(show).join(' ')})`;
-//         case 'star':
-//             return `${show(rule.inner)}*`;
-//         case 'opt':
-//             return `${show(rule.inner)}?`;
-//         case 'id':
-//             return `id`;
-//         case 'text':
-//             return `text(${show(rule.embed)})`;
-//         case 'list':
-//             return `list[${isTag(rule.kind) ? show(rule.kind.node) : typeof rule.kind === 'string' ? rule.kind : JSON.stringify(rule.kind)}](${show(
-//                 rule.item,
-//             )})`;
-//         case 'table':
-//             return `table[${rule.kind}](${show(rule.row)})`;
-//         case 'or':
-//             return `(${rule.opts.map(show).join('|')})`;
-//         case 'tx':
-//             return show(rule.inner);
-//         case 'group':
-//             return show(rule.inner);
-//     }
-// };
+const show = (rule: Rule<unknown>): string => {
+    switch (rule.type) {
+        case 'kwd':
+            return rule.kwd;
+        case 'ref':
+            return '$' + rule.name;
+        case 'seq':
+            return `seq(${rule.rules.map(show).join(' ')})`;
+        case 'star':
+            return `${show(rule.inner)}*`;
+        case 'opt':
+            return `${show(rule.inner)}?`;
+        case 'id':
+            return `id`;
+        case 'text':
+            return `text(${show(rule.embed)})`;
+        case 'list':
+            return `list[${isTag(rule.kind) ? show(rule.kind.node) : typeof rule.kind === 'string' ? rule.kind : JSON.stringify(rule.kind)}](${show(
+                rule.item,
+            )})`;
+        case 'table':
+            return `table[${rule.kind}](${show(rule.row)})`;
+        case 'or':
+            return `(${rule.opts.map(show).join('|')})`;
+        case 'tx':
+            return show(rule.inner);
+        case 'group':
+            return show(rule.inner);
+        case 'any':
+            return '<any>';
+        case 'number':
+            return `<number>`;
+    }
+};
 
 let indent = 0;
 
@@ -583,7 +587,7 @@ export const ctx: Ctx = {
     meta: {},
 };
 
-export const parser: TestParser = {
+export const parser: TestParser<Stmt> = {
     config: js,
     parse(node, cursor) {
         const c = {
