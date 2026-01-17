@@ -1,4 +1,16 @@
 
+https://flix.dev/
+
+# Thinking about PRs
+
+a common thing is "Here's a PR: I ran this automated script, that's what happened".
+It would be nice to have a VCS that ... had some explicit knowledge of that kind of thing.
+
+#
+
+https://simon.peytonjones.org/abs-den/
+Better pattern maching exhaustiveness checking??
+
 # What aboutt targetting some kind of VM?
 
 https://github.com/toitlang/toit
@@ -6,6 +18,14 @@ https://github.com/koder77/l1vm
 https://github.com/SynchronVM/SynchronVM
 https://bernsteinbear.com/blog/scrapscript-ir/
 - ScrapScript is super cool
+
+
+# HM and stuff
+
+- algw in swift https://gist.github.com/CodaFi/ca35a0c22fbd96eca505b5df45f2509e
+- thih https://web.cecs.pdx.edu/~mpj/thih/thih.pdf
+- generlizing hm algorithms https://dspace.library.uu.nl/bitstream/handle/1874/23951/heeren_02_generalizinghindleymilner.pdf?sequence=1
+- algw step by step https://github.com/wh5a/Algorithm-W-Step-By-Step/blob/master/AlgorithmW.pdf
 
 
 

@@ -221,6 +221,7 @@ export const foldExpr = <T>(expr: SExpr, i: T, v: Visitor<T>): T => {
                     i = foldExpr(row.value, i, v);
                 }
             });
+            return i;
         default:
             return i;
     }

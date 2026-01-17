@@ -5,8 +5,12 @@ import { App } from './App';
 import { useHash } from '../../../web/ide/ground-up/useHash';
 import { Examples } from './Examples';
 
+declare global {
+    interface Window {
+        _root: Root;
+    }
+}
 const getRoot = (): Root => {
-    // @ts-ignore
     return window._root ?? (window._root = createRoot(document.getElementById('root')!));
 };
 

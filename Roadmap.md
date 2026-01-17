@@ -1,4 +1,71 @@
 
+# I ... do kinda want to get <> lists working
+
+Abc< produces a list
+<> at the start of something ... is empty? maybe?
+
+< is plain, but <* makes it a list
+like, you can have < or <= or whatever, but if it becomes part of a smoosh,
+we nix that and make an angle-list for you.
+
+oh waiiit how does this play with jsx
+
+# Let's get something demoable off the ground.
+
+I'm thinking; put the CRDT stuff on hold for a minute; the tests should keep for now.
+
+We make a little editor thing that doesn't try to do the hash-based addressing stuff.
+Just modules.
+A module has things in it.
+
+A module has a selected language configuration.
+A module can import other modules, and the imported modules get evaluated with the same language configuration as the current one.
+Also ... like maybe tests are run as well? To ensure that the module you're importing is sane.
+
+left pane: modules, in a tree probably
+right pane: auxiliary stuff, like a
+- keyboard input help pane (for help with the structured editor)
+- undo/redo stack, visual clipboard
+- parsing debugger (CST/AST view)
+- type inference debugger (yay)
+- execution debugger (classic stepping debugger probably)
+- maybe a place to {pin} tests, or example outputs, or something?
+middle pane:
+- the module you're editing.
+
+should also be able to do a "find all usages" of a given thing, and edit all of those at once ... somehow.
+
+A LANGUAGE CONFIGURATION IS:
+- a parser
+- a type checker (optional)
+- an interpreter (optional)
+- a compiler (optional?)
+
+Ok and these things are separately configurable, on a per-module basis, because they shouldn't impact
+compatibility with other modules
+- maybe a set of editor plugins
+- a set of macros to be using, which are .. imported probably? yeah they have to be defined in other modules.
+
+Annnnnnd I think we're breaking with the j3 repo.
+Let's get going on kipos
+
+#
+
+Yeah I'm kinda digging kipos. Let a million flowers bloom.
+
+okkkkkk folks I guess I do want to support a text-based approach.
+
+#
+
+What about 'kipos'? Greek for garden?
+strong's lexicon transliterates it as `képos`, but I feel like that's worse..
+although 'kipos' might read as 'kih-pos' which I don't want. `keypos`, `keepos`
+yeah, so there are plenty of restaurants that adopted the `kipos` spelling, so it sounds good to me.
+
+or "pariboli", which is maybe courtyard or similar.
+
+##
+
 Gotta make TextIndex be just string.
 
 now all tests are passing in the old things.

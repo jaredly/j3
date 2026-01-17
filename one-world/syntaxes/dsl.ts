@@ -29,6 +29,7 @@ export type Matcher<Res> =
     | { type: 'switch'; choices: Matcher<any>[]; f: (v: any) => Res }
     | { type: 'meta'; inner: Matcher<Res>; kind?: string; autocomplete?: AutoComplete }
     | { type: 'mref'; id: string };
+
 //; f: (v: any) => any }
 // | { type: 'kswitch'; choices: Record<string, Matcher>; f: (v: any) => any };
 export const show = (matcher: Matcher<any>): string => {
